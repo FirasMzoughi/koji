@@ -1,11 +1,13 @@
+import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:koji/features/estimates/data/models/estimate_model.dart';
 
 class PdfService {
-  static Future<void> generateAndShareEstimatePdf(
+  static Future<String> generateAndSaveEstimatePdf(
     ClientInfo? client,
     String description,
     double surface,
@@ -149,11 +151,29 @@ class PdfService {
       ),
     );
 
-    // Share/Print the PDF
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: 'devis_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
-    );
+    final bytes = await pdf.save();
+    final fileName = 'devis_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+
+    // Save to Downloads folder on Android, Documents on iOS
+    if (Platform.isAndroid) {
+      // For Android, save to Downloads
+      final directory = Directory('/storage/emulated/0/Download');
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(bytes);
+      return file.path;
+    } else {
+      // For iOS, use app documents directory and share
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(bytes);
+      
+      // Share on iOS
+      await Printing.sharePdf(bytes: bytes, filename: fileName);
+      return file.path;
+    }
   }
 
   static pw.Widget _buildLineItem(String label, double price) {

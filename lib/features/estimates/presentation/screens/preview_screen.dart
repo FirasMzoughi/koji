@@ -115,8 +115,8 @@ class PreviewScreen extends ConsumerWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  // Generate and share PDF
-                  await PdfService.generateAndShareEstimatePdf(
+                  // Generate and save PDF to Downloads
+                  final filePath = await PdfService.generateAndSaveEstimatePdf(
                     draft.client,
                     draft.description,
                     draft.surface,
@@ -132,9 +132,10 @@ class PreviewScreen extends ConsumerWidget {
                   
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Devis validé et PDF généré ! 📄'),
+                      SnackBar(
+                        content: Text('PDF enregistré dans Downloads ! 📄\n$filePath'),
                         backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 4),
                       ),
                     );
                     context.go('/dashboard');
