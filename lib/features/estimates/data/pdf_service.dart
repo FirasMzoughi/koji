@@ -2,7 +2,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
-import 'package:koji/models/estimate_model.dart';
+import 'package:koji/features/estimates/data/models/estimate_model.dart';
 
 class PdfService {
   static Future<void> generateAndShareEstimatePdf(
