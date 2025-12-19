@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:koji/providers/estimate_provider.dart';
 import 'package:koji/models/estimate_model.dart';
+import 'package:go_router/go_router.dart';
+import 'package:koji/providers/company_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -11,6 +13,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final provider = ref.watch(estimateProvider);
+    final companyProfile = ref.watch(companyProfileProvider);
+    final companyName = companyProfile.name.isNotEmpty ? companyProfile.name : 'Maître Artisan';
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -26,23 +30,26 @@ class DashboardScreen extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Bonjour,',
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: Colors.grey[600],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Bonjour,',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Maître Artisan',
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                color: theme.primaryColor,
-                                fontWeight: FontWeight.bold,
+                              Text(
+                                companyName,
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  color: theme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const CircleAvatar(
                           backgroundImage: NetworkImage('https://i.pravatar.cc/300?img=11'), // Mock avatar
@@ -50,7 +57,84 @@ class DashboardScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
+
+                    // Subscription Banner
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 24),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [const Color(0xFF1A237E), const Color(0xFF3949AB)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1A237E).withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 32),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Passez à la vitesse supérieure',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Abonnez-vous pour débloquer toutes les fonctionnalités.',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => context.push('/subscription'),
+                            icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
                     
+                    // Quick Actions
+                    Text(
+                      'Actions Rapides',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildActionBtn(context, 'Nouveau Devis', Icons.add_circle, Colors.blue, () {
+                           provider.startNewEstimate();
+                           Navigator.pushNamed(context, '/create_estimate');
+                        }),
+                        _buildActionBtn(context, 'Mes Devis', Icons.description, Colors.orange, () {}),
+                        _buildActionBtn(context, 'Clients', Icons.people, Colors.purple, () {}),
+                        _buildActionBtn(context, 'Abonnement', Icons.card_membership, Colors.green, () {
+                           context.push('/subscription');
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+
                     // Stats Cards
                     Row(
                       children: [
@@ -101,6 +185,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
             ),
+             const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
           ],
         ),
       ),
@@ -111,6 +196,29 @@ class DashboardScreen extends ConsumerWidget {
         },
         label: const Text('Nouveau Devis'),
         icon: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildActionBtn(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }

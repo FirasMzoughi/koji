@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class LoginScreen extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:koji/providers/account_provider.dart';
+
+class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final accountType = ref.watch(accountTypeProvider);
+    final isIndividual = accountType == AccountType.individual;
     
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -20,6 +25,32 @@ class LoginScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (isIndividual)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 24),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.blue),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.person, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text(
+                            'Mode Particulier',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   const Icon(
                     Icons.format_paint_outlined,
                     size: 80,
@@ -66,7 +97,11 @@ class LoginScreen extends StatelessWidget {
                   
                   ElevatedButton(
                     onPressed: () {
-                      context.go('/dashboard');
+                      if (accountType == AccountType.pro) {
+                         context.go('/pro/domain-selection');
+                      } else {
+                         context.go('/dashboard');
+                      }
                     },
                     child: const Text('Se connecter'),
                   ),
@@ -98,7 +133,11 @@ class LoginScreen extends StatelessWidget {
                     onPressed: () {
                       // TODO: Implement Google Sign In
                       debugPrint('Google Sign In pressed');
-                      context.go('/dashboard');
+                      if (accountType == AccountType.pro) {
+                         context.go('/pro/domain-selection');
+                      } else {
+                         context.go('/dashboard');
+                      }
                     },
                     icon: const Icon(Icons.g_mobiledata, size: 28),
                     label: const Text('Continuer avec Google'),
@@ -115,7 +154,11 @@ class LoginScreen extends StatelessWidget {
                     onPressed: () {
                       // TODO: Implement Apple Sign In
                       debugPrint('Apple Sign In pressed');
-                      context.go('/dashboard');
+                      if (accountType == AccountType.pro) {
+                         context.go('/pro/domain-selection');
+                      } else {
+                         context.go('/dashboard');
+                      }
                     },
                     icon: const Icon(Icons.apple, size: 24),
                     label: const Text('Continuer avec Apple'),
