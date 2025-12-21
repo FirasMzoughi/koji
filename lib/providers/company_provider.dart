@@ -6,6 +6,7 @@ class CompanyProfile {
   final String? email;
   final String? phone;
   final String? address;
+  final String? siret;
   final String? logoPath;
 
   CompanyProfile({
@@ -14,6 +15,7 @@ class CompanyProfile {
     this.email,
     this.phone,
     this.address,
+    this.siret,
     this.logoPath,
   });
 
@@ -23,6 +25,7 @@ class CompanyProfile {
     String? email,
     String? phone,
     String? address,
+    String? siret,
     String? logoPath,
   }) {
     return CompanyProfile(
@@ -31,6 +34,7 @@ class CompanyProfile {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      siret: siret ?? this.siret,
       logoPath: logoPath ?? this.logoPath,
     );
   }
@@ -48,6 +52,7 @@ class CompanyProfileNotifier extends StateNotifier<CompanyProfile> {
     String? email,
     String? phone,
     String? address,
+    String? siret,
     String? logoPath,
   }) {
     state = state.copyWith(
@@ -55,6 +60,7 @@ class CompanyProfileNotifier extends StateNotifier<CompanyProfile> {
       email: email,
       phone: phone,
       address: address,
+      siret: siret,
       logoPath: logoPath,
     );
   }

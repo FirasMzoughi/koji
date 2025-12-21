@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:koji/models/room_model.dart';
-import 'package:koji/providers/estimate_provider.dart';
 import 'package:uuid/uuid.dart';
 
 class RoomSelectionScreen extends ConsumerStatefulWidget {
@@ -26,7 +26,10 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
   void _addRoom() {
     if (_roomNameController.text.isEmpty || _selectedCondition == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir tous les champs')),
+        const SnackBar(
+          content: Text('Veuillez remplir tous les champs'),
+          backgroundColor: Color(0xFFD32F2F),
+        ),
       );
       return;
     }
@@ -45,24 +48,38 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
   void _continueToEstimate() {
     if (_rooms.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez ajouter au moins une pièce')),
+        const SnackBar(
+          content: Text('Veuillez ajouter au moins une pièce'),
+          backgroundColor: Color(0xFFD32F2F),
+        ),
       );
       return;
     }
 
-    // Store rooms in estimate provider or pass to next screen
-    context.push('/pro/company-info');
+    // Aller directement au dashboard
+    context.go('/dashboard');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FE), // Matching new dashboard background
       appBar: AppBar(
-        title: const Text('Sélection des pièces'),
+        title: Text(
+          'Sélection des pièces',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF1A237E),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: const Color(0xFF1A237E),
+        centerTitle: true,
+        leading: BackButton(
+          color: const Color(0xFF1A237E),
+          onPressed: () => context.go('/pro/company-info'),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -73,77 +90,79 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Room Name Input
+                    Text(
+                      'Ajoutez les pièces à rénover',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Card pour l'ajout
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50),
-                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Nom de la pièce',
-                            style: TextStyle(
-                              color: Colors.white,
+                          Text(
+                            'Nouvelle pièce',
+                            style: GoogleFonts.poppins(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              color: const Color(0xFF1A237E),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          // Room Name Input
+                          TextField(
+                            controller: _roomNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Nom de la pièce',
+                              hintText: 'Ex: Salon, Chambre...',
+                              prefixIcon: const Icon(Icons.meeting_room_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: Color(0xFF1A237E), width: 2),
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF8F9FE),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Wall Condition Selection
+                          Text(
+                            'État des murs',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1A237E),
                             ),
                           ),
                           const SizedBox(height: 12),
-                          TextField(
-                            controller: _roomNameController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: 'Ex: Salon, Chambre...',
-                              hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.2),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Wall Condition Selection
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Mur: État de mur',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           ...WallCondition.values.map((condition) {
                             final isSelected = _selectedCondition == condition;
                             return Padding(
@@ -154,17 +173,17 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                                     _selectedCondition = condition;
                                   });
                                 },
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? Colors.white
-                                        : Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
+                                        ? const Color(0xFF1A237E)
+                                        : const Color(0xFFF8F9FE),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                       color: isSelected
-                                          ? const Color(0xFF4CAF50)
+                                          ? const Color(0xFF1A237E)
                                           : Colors.transparent,
                                       width: 2,
                                     ),
@@ -176,8 +195,8 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                                             ? Icons.radio_button_checked
                                             : Icons.radio_button_unchecked,
                                         color: isSelected
-                                            ? const Color(0xFF4CAF50)
-                                            : Colors.white,
+                                            ? Colors.white
+                                            : Colors.grey[400],
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -186,21 +205,20 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                                           children: [
                                             Text(
                                               condition.displayName,
-                                              style: TextStyle(
+                                              style: GoogleFonts.poppins(
                                                 color: isSelected
-                                                    ? const Color(0xFF1A237E)
-                                                    : Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
+                                                    ? Colors.white
+                                                    : const Color(0xFF1A237E),
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                            const SizedBox(height: 4),
                                             Text(
                                               condition.description,
-                                              style: TextStyle(
+                                              style: GoogleFonts.poppins(
                                                 color: isSelected
-                                                    ? Colors.grey[600]
-                                                    : Colors.white.withOpacity(0.8),
+                                                    ? Colors.white.withOpacity(0.8)
+                                                    : Colors.grey[600],
                                                 fontSize: 12,
                                               ),
                                             ),
@@ -213,50 +231,58 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                               ),
                             );
                           }).toList(),
+                          const SizedBox(height: 24),
+
+                          // Add Room Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _addRoom,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Ajouter cette pièce'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4CAF50), // Green for add action
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                textStyle: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // Add Room Button
-                    ElevatedButton.icon(
-                      onPressed: _addRoom,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Ajouter cette pièce'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A237E),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
                     // Added Rooms List
                     if (_rooms.isNotEmpty) ...[
-                      const Text(
-                        'Pièces ajoutées',
-                        style: TextStyle(
-                          color: Color(0xFF1A237E),
+                      Text(
+                        'Pièces ajoutées (${_rooms.length})',
+                        style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1A237E),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       ..._rooms.map((room) {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 5,
-                                offset: const Offset(0, 2),
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
@@ -265,12 +291,12 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF4CAF50).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: const Color(0xFFE8EAF6),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
-                                  Icons.room,
-                                  color: Color(0xFF4CAF50),
+                                  Icons.meeting_room,
+                                  color: Color(0xFF1A237E),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -280,18 +306,18 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                                   children: [
                                     Text(
                                       room.name,
-                                      style: const TextStyle(
-                                        color: Color(0xFF1A237E),
+                                      style: GoogleFonts.poppins(
                                         fontSize: 16,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF1A237E),
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 2),
                                     Text(
-                                      'État: ${room.wallCondition.displayName}',
-                                      style: TextStyle(
+                                      room.wallCondition.displayName,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
                                         color: Colors.grey[600],
-                                        fontSize: 14,
                                       ),
                                     ),
                                   ],
@@ -304,7 +330,9 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                                   });
                                 },
                                 icon: const Icon(Icons.delete_outline),
-                                color: Colors.red,
+                                color: const Color(0xFFE53935),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
                               ),
                             ],
                           ),
@@ -324,44 +352,35 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_rooms.isNotEmpty)
-                    Text(
-                      'Voulez-vous rajouter une pièce?',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
+              child: SafeArea(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
                     onPressed: _continueToEstimate,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
+                      backgroundColor: const Color(0xFF1A237E), // Primary Blue
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 20),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
+                      textStyle: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      elevation: 8,
+                      shadowColor: const Color(0xFF1A237E).withOpacity(0.4),
                     ),
                     child: Text(
-                      _rooms.isEmpty ? 'Ajouter une pièce' : 'Continuer vers le devis',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      _rooms.isEmpty ? 'Ajouter une pièce d\'abord' : 'Terminer et voir le Dashboard',
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ],
