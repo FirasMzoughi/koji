@@ -5,16 +5,20 @@ phases:
     runtime-versions:
       java: corretto17
     commands:
-      - echo Installing Flutter...
+      - echo "Installing Flutter..."
       - git clone https://github.com/flutter/flutter.git -b stable
       - export PATH="$PATH:`pwd`/flutter/bin"
+      - flutter --version
+      - flutter doctor --android-licenses
       
   pre_build:
     commands:
-      - echo Resolving dependencies...
+      - echo "Resolving dependencies..."
       - flutter pub get
-      # Create key.properties if needed, or rely on env vars in build.gradle
-      # Decoding keystore from env var (base64 encoded) if provided
+      
+      - echo "Setting up Keystore..."
+      # Create the keystore file from the base64 environment variable
+      # We place it in android/app/ so the build.gradle.kts logic finds it explicitly or as default
       - |
         if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
@@ -22,14 +26,17 @@ phases:
 
   build:
     commands:
-      - echo Building Android App Bundle...
+      - echo "Building Android App Bundle..."
       - flutter build appbundle --release --build-name=1.0.$CODEBUILD_BUILD_NUMBER --build-number=$CODEBUILD_BUILD_NUMBER
-
+      
   post_build:
     commands:
-      - echo Build completed on `date`
+      - echo "Organizing artifacts..."
+      - mkdir -p build_output/android
+      - cp build/app/outputs/bundle/release/app-release.aab build_output/android/app-release.aab
+      - echo "Build completed on `date`"
 
 artifacts:
   files:
-    - build/app/outputs/bundle/release/app-release.aab
+    - build_output/android/**/*
   name: android-app-bundle
