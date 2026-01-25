@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "609607683354",
+    "project_id": "koji-backend",
+    "storage_bucket": "koji-backend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:609607683354:android:ca42eb8dbe2c66bfa9b0a3",
+        "android_client_info": {
+          "package_name": "com.example.kojimobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "609607683354-ali0gctesk8al2af7haq5brasjf411fe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kojimobile",
+            "certificate_hash": "57cfd0d949cf691c437f79b8ab1be52ccc080dca"
+          }
+        },
+        {
+          "client_id": "609607683354-9kra7dc62e0pge7bcjc42jppgt110n2r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCV0ooUJds_7yPi9GPtqiewEZj5OpbCz1M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "609607683354-9kra7dc62e0pge7bcjc42jppgt110n2r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "609607683354-8tr8aa2oesn4jhggsg301m14r7uqeemo.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kojimobile"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
