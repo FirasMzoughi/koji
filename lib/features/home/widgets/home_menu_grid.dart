@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 // Helper for Grid Items
 class HomeMenuGrid extends StatelessWidget {
@@ -16,22 +17,22 @@ class HomeMenuGrid extends StatelessWidget {
       padding: EdgeInsets.zero,
       children: [
         _buildItem(context, "Mes Chantiers", Icons.home_filled, const Color(0xFF1D74FF)),
-        _buildItem(context, "Fournitures", Icons.build, const Color(0xFF1D74FF)),
+        _buildItem(context, "Fournitures", Icons.build, const Color(0xFF1D74FF), onTap: () => context.push('/fournitures')),
         _buildItem(context, "Historique", Icons.map_outlined, const Color(0xFF1D74FF)),
         
-        _buildItem(context, "Signature", Icons.draw_outlined, const Color(0xFF1D74FF)),
+        _buildItem(context, "Signature", Icons.draw_outlined, const Color(0xFF1D74FF), onTap: () => context.push('/signature')),
         _buildItem(context, "Calendrier", Icons.calendar_today, const Color(0xFF1D74FF)),
         _buildItem(context, "Synchronisation", Icons.group_outlined, const Color(0xFF1D74FF)),
       ],
     );
   }
 
-  Widget _buildItem(BuildContext context, String title, IconData icon, Color mainColor) {
+  Widget _buildItem(BuildContext context, String title, IconData icon, Color mainColor, {VoidCallback? onTap}) {
     return HomeGridItem(
       title: title,
       icon: icon,
       mainColor: mainColor,
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 }

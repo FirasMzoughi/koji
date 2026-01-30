@@ -244,7 +244,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               elevation: 0,
             ),
             child: const Text(
-              'Valider la quantité',
+              'Valider et ajouter à la tâche',
               style: TextStyle(
                 fontFamily: 'Outfit',
                 fontSize: 16,

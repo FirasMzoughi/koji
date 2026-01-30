@@ -114,7 +114,7 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                         child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
-                            pw.Text(company['name'] ?? 'Koji Rénovation', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, color: colorNavy)),
+                            pw.Text(company['name'] ?? 'Koji ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, color: colorNavy)),
                             pw.Text(company['address'] ?? '', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                             pw.Text(company['phone'] ?? '', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                             pw.Text(company['email'] ?? '', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),

@@ -242,7 +242,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
-      style: TextStyle(fontFamily: 'Outfit', ),
+      cursorColor: const Color(0xFF1E3A8A),
+      style: const TextStyle(fontFamily: 'Outfit', color: Color(0xFF1F2937)),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(fontFamily: 'Outfit', color: Colors.grey[400]),

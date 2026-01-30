@@ -66,12 +66,9 @@ class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
     state = state.copyWith(selectedRoomIds: roomIds);
   }
 
-  void updateRoomTasks(String roomId, Set<String> tasks, Map<String, String> notes) {
+  void updateRoomTasks(String roomId, Map<String, dynamic> taskDetails) {
     final newTasks = Map<String, dynamic>.from(state.roomTasks);
-    newTasks[roomId] = {
-      'tasks': tasks.toList(),
-      'notes': notes,
-    };
+    newTasks[roomId] = taskDetails;
     state = state.copyWith(roomTasks: newTasks);
   }
 

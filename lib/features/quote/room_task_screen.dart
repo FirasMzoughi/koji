@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koji/features/quote/profession_tasks_data.dart'; // Still using for categories structure
 import 'package:koji/features/quote/models/quote_models.dart';
 import 'package:koji/features/quote/product_details_screen.dart';
+import 'package:koji/features/quote/product_selection_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
 
@@ -43,8 +44,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   final TextEditingController _searchController = TextEditingController();
   
   // Logic State
-  final Map<String, RoomTaskState> _taskStates = {}; 
-  final TextEditingController _productSearchController = TextEditingController();
+  final Map<String, RoomTaskState> _taskStates = {};
 
   @override
   void initState() {
@@ -135,11 +135,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                newState.inputs[field.id] = field.defaultValue;
              }
            }
-           // initialize default products
-           for(var prod in getDefaultProductsForTask(taskId)) {
-              // Calculate initial quantity
-              newState.selectedProducts[prod.id] = _calculateQuantity(prod, newState.inputs);
-           }
+           // Do NOT initialize default products anymore
            _taskStates[key] = newState;
         } else {
           // Just expand
@@ -204,12 +200,11 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
 
   double _calculateTotal(RoomTaskState state) {
     double total = 0;
-    final defaultProds = getDefaultProductsForTask(state.taskId); // Limiting lookup scope for MVP
     
     state.selectedProducts.forEach((prodId, qty) {
        // Lookup product
-       var prod = defaultProds.firstWhere((p) => p.id == prodId, orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: ''));
-       // TODO: Lookup in added products if not found
+       final allProds = getAllProducts();
+       final prod = allProds.firstWhere((p) => p.id == prodId, orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: ''));
        if(prod.id != 'err') {
          total += prod.priceHT * qty;
        }
@@ -463,11 +458,10 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       }
     });
 
-    // 2. Process each room
+       // 2. Process each room
     tasksByRoom.forEach((roomId, tasks) {
        final expenseItems = <ExpenseItem>[];
-       final taskIds = <String>{};
-       final notes = <String, String>{};
+       final taskDetails = <String, dynamic>{}; // Store full details
 
        for (var taskState in tasks) {
           // Calculate Product Cost
@@ -508,16 +502,20 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
              tax: 20.0, // Default tax
           ));
           
-          taskIds.add(taskState.taskId);
-
-          if (taskState.note != null && taskState.note!.isNotEmpty) {
-             notes[taskState.taskId] = taskState.note!;
-          }
+          // Serialize Task State for persistence
+           taskDetails[taskState.taskId] = {
+             'taskId': taskState.taskId,
+             'label': taskState.label,
+             'inputs': taskState.inputs,
+             'selectedProducts': taskState.selectedProducts,
+             'note': taskState.note,
+             'photoPaths': taskState.photoPaths,
+           };
        }
        
        // Update Provider
        ref.read(quoteCreationProvider.notifier).updateRoomEstimation(roomId, expenseItems);
-       ref.read(quoteCreationProvider.notifier).updateRoomTasks(roomId, taskIds, notes);
+       ref.read(quoteCreationProvider.notifier).updateRoomTasks(roomId, taskDetails);
     });
 
     // 3. Save User Profession if selected
@@ -731,8 +729,11 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                    
                    // Products List
                    ...state.selectedProducts.entries.map((entry) {
-                      final prods = getDefaultProductsForTask(taskItem.id);
-                      final prod = prods.firstWhere((p) => p.id == entry.key, orElse: () => const Product(id: '?', name: '?', imageUrl: '', priceHT: 0, unit: ''));
+                      final allProds = getAllProducts();
+                      final prod = allProds.firstWhere(
+                        (p) => p.id == entry.key, 
+                        orElse: () => const Product(id: '?', name: '?', imageUrl: '', priceHT: 0, unit: '')
+                      );
                       
                       return _buildProductRow(prod, entry.value, (newQty) {
                         setState(() {
@@ -939,139 +940,30 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   }
   
 
-  void _showAddProductModal(String roomId, String taskId) {
-    showModalBottomSheet(
-      context: context, 
-      backgroundColor: const Color(0xFFF8F9FA),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) {
-         return StatefulBuilder(
-           builder: (context, setModalState) {
-             final allProducts = getAllProducts();
-             final query = _productSearchController.text.toLowerCase();
-             final filteredProducts = allProducts.where((p) {
-                return p.name.toLowerCase().contains(query) || 
-                       p.brand.toLowerCase().contains(query) ||
-                       p.category.toLowerCase().contains(query);
-             }).toList();
-
-             return DraggableScrollableSheet(
-               initialChildSize: 0.8,
-               minChildSize: 0.5,
-               maxChildSize: 0.95,
-               expand: false,
-               builder: (context, scrollController) {
-                  return Column(
-                    children: [
-                       AppBar(
-                         title: const Text('Recherche de Produits', style: TextStyle(color: Color(0xFF0F2648), fontWeight: FontWeight.bold)),
-                         centerTitle: true,
-                         backgroundColor: Colors.transparent,
-                         elevation: 0,
-                         automaticallyImplyLeading: false,
-                         leading: IconButton(icon: const Icon(Icons.close, color: Colors.black), onPressed: () => Navigator.pop(ctx)),
-                       ),
-                       Padding(
-                         padding: const EdgeInsets.all(16),
-                         child: TextField(
-                            controller: _productSearchController,
-                            onChanged: (val) {
-                              setModalState(() {});
-                            },
-                            decoration: InputDecoration(
-                               hintText: 'Peinture, Enduit, Outillage...',
-                               prefixIcon: const Icon(Icons.search),
-                               filled: true,
-                               fillColor: Colors.white,
-                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                            ),
-                         ),
-                       ),
-                       Expanded(
-                         child: filteredProducts.isEmpty 
-                           ? const Center(child: Text("Aucun produit trouvé"))
-                           : ListView.builder(
-                               controller: scrollController,
-                               padding: const EdgeInsets.all(16),
-                               itemCount: filteredProducts.length,
-                               itemBuilder: (ctx, index) {
-                                 final product = filteredProducts[index];
-                                 return _buildSearchProductItem(product, roomId, taskId);
-                               },
-                           ),
-                       ),
-                    ],
-                  );
-               }
-             );
-           }
-         );
-      }
-    );
-  }
-  
-  Widget _buildSearchProductItem(Product prod, String roomId, String taskId) {
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: Row(
-        children: [
-          Container(
-            width: 80, height: 80, 
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: prod.imageUrl.isNotEmpty
-                ? (prod.imageUrl.startsWith('http') 
-                    ? Image.network(prod.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.broken_image, color: Colors.grey))
-                    : Image.asset(prod.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.image, color: Colors.grey)))
-                : const Icon(Icons.image, color: Colors.grey),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(prod.brand.toUpperCase(), style: const TextStyle(fontSize: 10, color: Color(0xFF1D74FF), fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                const SizedBox(height: 4),
-                Text(prod.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                const SizedBox(height: 4),
-                Text('${prod.priceHT}€ HT / ${prod.unit}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_circle, color: Color(0xFF1D74FF), size: 32),
-            onPressed: () {
-               // Add to state
-               final key = _getKey(roomId, taskId);
-               setState(() {
-                  // Default to 1 if not exists, else +1? Or just set to 1.
-                  // Usually adding implies setting an initial quantity.
-                  if (_taskStates[key] == null) {
-                    // Initialize state if null (though it should be initialized by task view)
-                    // But here we are safe to just update the map if the TaskState exists
-                  }
-                  
-                  // We need to ensure the entry exists
-                  if (!_taskStates.containsKey(key)) {
-                    _taskStates[key] = RoomTaskState(taskId: taskId, label: '', selectedProducts: {});
-                  }
-                  
-                  _taskStates[key]!.selectedProducts[prod.id] = 1.0;
-               });
-               Navigator.pop(context);
-            },
-          )
-        ],
+  Future<void> _showAddProductModal(String roomId, String taskId) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductSelectionScreen(roomId: roomId, taskId: taskId),
       ),
     );
+
+    if (result != null && result is Map) {
+      final product = result['product'] as Product;
+      final quantity = result['quantity'] as double;
+      
+      final key = _getKey(roomId, taskId);
+      setState(() {
+        if (!_taskStates.containsKey(key)) {
+           // Should ideally be initialized by task selection but if somehow not:
+           _taskStates[key] = RoomTaskState(taskId: taskId, label: '', selectedProducts: {});
+        }
+        
+        // Add or Update product
+        _taskStates[key]!.selectedProducts[product.id] = quantity;
+      });
+    }
   }
+  
+
 }

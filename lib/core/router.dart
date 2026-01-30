@@ -19,6 +19,11 @@ import 'package:koji/features/quote/quote_summary_screen.dart';
 import 'package:koji/features/quote/quote_detail_screen.dart';
 import 'package:koji/features/quote/quote_success_screen.dart';
 import 'package:koji/features/quote/client_details_screen.dart';
+import 'package:koji/features/fournitures/fournitures_project_screen.dart';
+import 'package:koji/features/fournitures/fournitures_detail_screen.dart';
+import 'package:koji/features/signature/signature_list_screen.dart';
+import 'package:koji/features/signature/signature_screen.dart';
+import 'package:koji/features/signature/signature_success_screen.dart';
 
 // Custom page transition for faster navigation - OPTIMIZED
 Page<dynamic> _buildPageWithTransition(
@@ -224,6 +229,53 @@ final router = GoRouter(
           ),
         );
       },
+    ),
+    GoRoute(
+      path: '/fournitures',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const FournituresProjectScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/fournitures/detail',
+      pageBuilder: (context, state) {
+        final quoteData = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          FournituresDetailScreen(quote: quoteData),
+        );
+      },
+    ),
+    // Signature Routes
+    GoRoute(
+      path: '/signature',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const SignatureListScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/signature/sign',
+      pageBuilder: (context, state) {
+        final quoteData = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          SignatureScreen(quote: quoteData),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/signature/success',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const SignatureSuccessScreen(),
+      ),
     ),
   ],
 );

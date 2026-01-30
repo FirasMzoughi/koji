@@ -28,7 +28,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   Map<String, dynamic> _roomTasks = {};
 
   // Header State Variables
-  String _companyName = "Koji Rénovation";
+  String _companyName = "Koji ";
   String _companyAddress = "8 Av. des artisans, Paris";
   String _companyPhone = "01 42 55 000 77";
   String _companyEmail = "Contact@Koji.fr";
@@ -286,6 +286,8 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         'materialCost': e.materialCost,
         'quantity': e.quantity,
       }).toList())),
+      
+      'tasks': _roomTasks, // Persist rich task data including selected products
       
       'totals': {
         'ht': totalHT,

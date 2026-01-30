@@ -69,6 +69,33 @@ class Product {
     this.category = 'Materiaux',
     this.brand = 'Generic',
   });
+
+  factory Product.fromJson(Map<String, dynamic> json) {
+    // Parse Consumption Rule (defaults if missing)
+    final ruleTypeStr = json['consumption_rule_type'] as String? ?? 'fixed';
+    final ruleFactor = (json['consumption_rule_factor'] as num?)?.toDouble() ?? 1.0;
+
+    ConsumptionRuleType type;
+    switch (ruleTypeStr) {
+      case 'perM2': type = ConsumptionRuleType.perM2; break;
+      case 'perLinearMeter': type = ConsumptionRuleType.perLinearMeter; break;
+      case 'perPiece': type = ConsumptionRuleType.perPiece; break;
+      case 'custom': type = ConsumptionRuleType.custom; break;
+      default: type = ConsumptionRuleType.fixed;
+    }
+
+    return Product(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      imageUrl: json['image_url'] as String? ?? '', 
+      priceHT: (json['price_ht'] as num?)?.toDouble() ?? 0.0,
+      unit: json['unit'] as String? ?? 'u',
+      packaging: json['packaging'] as String? ?? '',
+      category: json['category'] as String? ?? 'Materiaux',
+      brand: json['brand'] as String? ?? 'Generic',
+      consumptionRule: ConsumptionRule(type: type, factor: ruleFactor),
+    );
+  }
 }
 
 /// Holds the state of a specific selected task in a room
@@ -130,7 +157,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_peinture_blanc_mat',
     name: 'Peinture Blanche Mat Premium',
-    imageUrl: 'https://images.unsplash.com/photo-1562259949-00161109a1c1?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/10/200/200',
     priceHT: 45.90,
     unit: 'L',
     packaging: 'Pot 10L',
@@ -141,7 +168,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_peinture_velours',
     name: 'Peinture Velours Garnissante',
-    imageUrl: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/11/200/200',
     priceHT: 52.50,
     unit: 'L',
     packaging: 'Pot 10L',
@@ -152,7 +179,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_enduit_lissage',
     name: 'Enduit de Lissage en Pâte',
-    imageUrl: 'https://images.unsplash.com/photo-1620619767323-b95a89183081?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/12/200/200',
     priceHT: 28.90,
     unit: 'kg',
     packaging: 'Seau 25kg',
@@ -163,7 +190,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_rouleau',
     name: 'Rouleau Microfibre 180mm',
-    imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/13/200/200',
     priceHT: 12.50,
     unit: 'u',
     brand: 'L\'Outil Parfait',
@@ -172,7 +199,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_scocth',
     name: 'Ruban de Masquage Pro',
-    imageUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/14/200/200',
     priceHT: 4.50,
     unit: 'u',
     brand: '3M',
@@ -181,7 +208,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_peinture_satinee',
     name: 'Peinture Satinée Lessivable',
-    imageUrl: 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=400',
+    imageUrl: 'https://picsum.photos/id/15/200/200',
     priceHT: 48.00,
     unit: 'L',
     packaging: 'Pot 5L',
@@ -192,7 +219,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_enduit_rebouchage',
     name: 'Enduit de Rebouchage Poudre',
-    imageUrl: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?w=400',
+    imageUrl: 'https://picsum.photos/id/16/200/200',
     priceHT: 12.50,
     unit: 'kg',
     packaging: 'Sac 5kg',
@@ -202,7 +229,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_sous_couche',
     name: 'Sous-Couche Universelle',
-    imageUrl: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400',
+    imageUrl: 'https://picsum.photos/id/17/200/200',
     priceHT: 35.00,
     unit: 'L',
     packaging: 'Pot 10L',
@@ -213,7 +240,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_pinceau',
     name: 'Pinceau Plat Professionnel 50mm',
-    imageUrl: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400',
+    imageUrl: 'https://picsum.photos/id/18/200/200',
     priceHT: 8.90,
     unit: 'u',
     brand: 'Purdy',
@@ -222,7 +249,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'p_bache_protection',
     name: 'Bâche de Protection 4x5m',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/19/200/200',
     priceHT: 15.00,
     unit: 'u',
     brand: 'Tesa',
@@ -233,7 +260,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_cable_ro2v',
     name: 'Câble R2V 3G2.5mm²',
-    imageUrl: 'https://images.unsplash.com/photo-1544724569-5f546fd6dd2a?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/20/200/200',
     priceHT: 0.85,
     unit: 'm',
     packaging: 'Touret',
@@ -244,7 +271,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_prise_courant',
     name: 'Prise de Courant 2P+T Blanche',
-    imageUrl: 'https://images.unsplash.com/photo-1558227691-41ea78d1f631?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/21/200/200',
     priceHT: 6.90,
     unit: 'u',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perPiece, factor: 1),
@@ -254,7 +281,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_interrupteur',
     name: 'Interrupteur Va-et-Vient',
-    imageUrl: 'https://plus.unsplash.com/premium_photo-1678823282035-15a092c20694?auto=format&fit=crop&q=80&w=200', // Placeholder
+    imageUrl: 'https://picsum.photos/id/22/200/200',
     priceHT: 5.50,
     unit: 'u',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perPiece, factor: 1),
@@ -264,7 +291,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_disjoncteur',
     name: 'Disjoncteur 16A Phase+Neutre',
-    imageUrl: 'https://images.unsplash.com/photo-1563851726-25812cb07dcf?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/23/200/200',
     priceHT: 9.90,
     unit: 'u',
     brand: 'Hager',
@@ -273,7 +300,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_cable_1_5',
     name: 'Câble H07V-U 1.5mm²',
-    imageUrl: 'https://images.unsplash.com/photo-1544724569-5f546fd6dd2a?w=400',
+    imageUrl: 'https://picsum.photos/id/24/200/200',
     priceHT: 0.45,
     unit: 'm',
     packaging: 'Couronne 100m',
@@ -284,7 +311,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_prise_usb',
     name: 'Prise avec USB Intégré',
-    imageUrl: 'https://images.unsplash.com/photo-1591290619762-d2c2e7c5c7e4?w=400',
+    imageUrl: 'https://picsum.photos/id/25/200/200',
     priceHT: 18.50,
     unit: 'u',
     brand: 'Legrand Céliane',
@@ -293,7 +320,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_variateur',
     name: 'Variateur LED 400W',
-    imageUrl: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400',
+    imageUrl: 'https://picsum.photos/id/26/200/200',
     priceHT: 24.90,
     unit: 'u',
     brand: 'Legrand',
@@ -302,7 +329,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_differentiel',
     name: 'Interrupteur Différentiel 30mA',
-    imageUrl: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400',
+    imageUrl: 'https://picsum.photos/id/27/200/200',
     priceHT: 45.00,
     unit: 'u',
     brand: 'Schneider',
@@ -311,7 +338,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_tableau',
     name: 'Coffret Électrique 3 Rangées',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/28/200/200',
     priceHT: 85.00,
     unit: 'u',
     brand: 'Legrand',
@@ -320,7 +347,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_spot_led',
     name: 'Spot LED Encastrable 7W',
-    imageUrl: 'https://images.unsplash.com/photo-1565814636199-ae8133055c1c?w=400',
+    imageUrl: 'https://picsum.photos/id/29/200/200',
     priceHT: 12.90,
     unit: 'u',
     brand: 'Philips',
@@ -329,7 +356,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_plafonnier',
     name: 'Plafonnier LED 24W',
-    imageUrl: 'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=400',
+    imageUrl: 'https://picsum.photos/id/30/200/200',
     priceHT: 35.00,
     unit: 'u',
     brand: 'Osram',
@@ -338,7 +365,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'e_gaine_icta',
     name: 'Gaine ICTA Ø20mm',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/31/200/200',
     priceHT: 0.35,
     unit: 'm',
     packaging: 'Couronne 25m',
@@ -351,7 +378,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_tuyau_cuivre',
     name: 'Tube Cuivre Ø14mm',
-    imageUrl: 'https://images.unsplash.com/photo-1608613304899-bfda17d8e874?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/32/200/200',
     priceHT: 8.50,
     unit: 'm',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perLinearMeter, factor: 1.05),
@@ -361,7 +388,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_raccord_laiton',
     name: 'Raccord Laiton à Souder',
-    imageUrl: 'https://images.unsplash.com/photo-1533630654593-b26a1ca471df?auto=format&fit=crop&q=80&w=200', // Placeholder
+    imageUrl: 'https://picsum.photos/id/33/200/200',
     priceHT: 2.30,
     unit: 'u',
     brand: 'Generic',
@@ -370,7 +397,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_mitigeur',
     name: 'Mitigeur Lavabo Chrome',
-    imageUrl: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/34/200/200',
     priceHT: 89.00,
     unit: 'u',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perPiece, factor: 1),
@@ -380,7 +407,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_wc_suspendu',
     name: 'Pack WC Suspendu Bati-Support',
-    imageUrl: 'https://images.unsplash.com/photo-1564540578253-933010b98eb6?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/35/200/200',
     priceHT: 250.00,
     unit: 'u',
     brand: 'Geberit',
@@ -389,7 +416,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_tuyau_per',
     name: 'Tube PER Ø16mm',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/36/200/200',
     priceHT: 2.80,
     unit: 'm',
     packaging: 'Couronne 50m',
@@ -400,7 +427,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_raccord_per',
     name: 'Raccord PER à Glissement',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/37/200/200',
     priceHT: 3.50,
     unit: 'u',
     brand: 'Comap',
@@ -409,7 +436,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_mitigeur_douche',
     name: 'Mitigeur Douche Thermostatique',
-    imageUrl: 'https://images.unsplash.com/photo-1620626011761-996317b8d101?w=400',
+    imageUrl: 'https://picsum.photos/id/38/200/200',
     priceHT: 145.00,
     unit: 'u',
     brand: 'Hansgrohe',
@@ -418,7 +445,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_lavabo',
     name: 'Lavabo Céramique 60cm',
-    imageUrl: 'https://images.unsplash.com/photo-1620626011761-996317b8d101?w=400',
+    imageUrl: 'https://picsum.photos/id/39/200/200',
     priceHT: 120.00,
     unit: 'u',
     brand: 'Villeroy & Boch',
@@ -427,7 +454,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_receveur',
     name: 'Receveur de Douche 90x90',
-    imageUrl: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=400',
+    imageUrl: 'https://picsum.photos/id/40/200/200',
     priceHT: 180.00,
     unit: 'u',
     brand: 'Allia',
@@ -436,7 +463,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_siphon',
     name: 'Siphon Lavabo Chromé',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/41/200/200',
     priceHT: 15.50,
     unit: 'u',
     brand: 'Nicoll',
@@ -445,7 +472,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'pl_chauffe_eau',
     name: 'Chauffe-eau Électrique 200L',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/42/200/200',
     priceHT: 450.00,
     unit: 'u',
     brand: 'Atlantic',
@@ -456,7 +483,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_colle_carrelage',
     name: 'Colle Carrelage Flex C2S1',
-    imageUrl: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?auto=format&fit=crop&q=80&w=200', // Poudre/Mortier placeholder
+    imageUrl: 'https://picsum.photos/id/43/200/200',
     priceHT: 22.00,
     unit: 'kg',
     packaging: 'Sac 25kg',
@@ -467,7 +494,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_joint',
     name: 'Mortier Joint Gris',
-    imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&q=80&w=200', // Placeholder
+    imageUrl: 'https://picsum.photos/id/44/200/200',
     priceHT: 12.00,
     unit: 'kg',
     packaging: 'Sac 5kg',
@@ -478,7 +505,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_carrelage_gres',
     name: 'Carrelage Grès Cérame 60x60',
-    imageUrl: 'https://images.unsplash.com/photo-1620027720232-a567ea3c09dd?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/45/200/200',
     priceHT: 35.00,
     unit: 'm2',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perM2, factor: 1.1),
@@ -488,7 +515,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_colle_carrelage_blanc',
     name: 'Colle Carrelage Blanche C2',
-    imageUrl: 'https://images.unsplash.com/photo-1620619767323-b95a89183081?w=400',
+    imageUrl: 'https://picsum.photos/id/46/200/200',
     priceHT: 28.00,
     unit: 'kg',
     packaging: 'Sac 25kg',
@@ -499,7 +526,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_joint_epoxy',
     name: 'Joint Époxy Blanc',
-    imageUrl: 'https://images.unsplash.com/photo-1620619767323-b95a89183081?w=400',
+    imageUrl: 'https://picsum.photos/id/47/200/200',
     priceHT: 35.00,
     unit: 'kg',
     packaging: 'Kit 5kg',
@@ -509,7 +536,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_faience',
     name: 'Faïence Murale 25x40',
-    imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400',
+    imageUrl: 'https://picsum.photos/id/48/200/200',
     priceHT: 28.00,
     unit: 'm2',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perM2, factor: 1.1),
@@ -519,7 +546,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_ragreage',
     name: 'Ragréage Autolissant',
-    imageUrl: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?w=400',
+    imageUrl: 'https://picsum.photos/id/49/200/200',
     priceHT: 18.00,
     unit: 'kg',
     packaging: 'Sac 25kg',
@@ -530,7 +557,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_primaire',
     name: 'Primaire d\'Accrochage',
-    imageUrl: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400',
+    imageUrl: 'https://picsum.photos/id/50/200/200',
     priceHT: 25.00,
     unit: 'L',
     packaging: 'Bidon 5L',
@@ -541,7 +568,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_silicone',
     name: 'Silicone Sanitaire Transparent',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/51/200/200',
     priceHT: 8.50,
     unit: 'u',
     brand: 'Rubson',
@@ -550,19 +577,18 @@ final List<Product> _allProducts = [
   const Product(
     id: 'c_croisillons',
     name: 'Croisillons Auto-Nivelants 2mm',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/52/200/200',
     priceHT: 12.00,
     unit: 'u',
     packaging: 'Boîte 100pcs',
     brand: 'Rubi',
     category: 'Outillage',
   ),
-
   // --- Menuisier ---
   const Product(
     id: 'm_parquet',
     name: 'Parquet Contrecollé Chêne',
-    imageUrl: 'https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/53/200/200',
     priceHT: 45.00,
     unit: 'm2',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perM2, factor: 1.1),
@@ -572,7 +598,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_plinthe',
     name: 'Plinthe Bois à Peindre',
-    imageUrl: 'https://images.unsplash.com/photo-1595846519845-68e298c2edd8?auto=format&fit=crop&q=80&w=200', // Wood placeholder
+    imageUrl: 'https://picsum.photos/id/54/200/200',
     priceHT: 5.50,
     unit: 'ml',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perLinearMeter, factor: 1.05),
@@ -582,7 +608,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_porte',
     name: 'Bloc Porte Intérieur',
-    imageUrl: 'https://images.unsplash.com/photo-1506308006509-02ef598df241?auto=format&fit=crop&q=80&w=200',
+    imageUrl: 'https://picsum.photos/id/55/200/200',
     priceHT: 120.00,
     unit: 'u',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perPiece, factor: 1),
@@ -592,7 +618,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_parquet_massif',
     name: 'Parquet Massif Chêne 14mm',
-    imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400',
+    imageUrl: 'https://picsum.photos/id/56/200/200',
     priceHT: 65.00,
     unit: 'm2',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perM2, factor: 1.1),
@@ -602,7 +628,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_plinthe_mdf',
     name: 'Plinthe MDF Blanche 80mm',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/57/200/200',
     priceHT: 3.80,
     unit: 'ml',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perLinearMeter, factor: 1.05),
@@ -612,7 +638,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_porte_coulissante',
     name: 'Porte Coulissante avec Rail',
-    imageUrl: 'https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?w=400',
+    imageUrl: 'https://picsum.photos/id/58/200/200',
     priceHT: 280.00,
     unit: 'u',
     brand: 'Mantion',
@@ -621,7 +647,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_fenetre_pvc',
     name: 'Fenêtre PVC 2 Vantaux',
-    imageUrl: 'https://images.unsplash.com/photo-1545259742-24f9d0c65e0c?w=400',
+    imageUrl: 'https://picsum.photos/id/59/200/200',
     priceHT: 450.00,
     unit: 'u',
     brand: 'Tryba',
@@ -630,7 +656,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_placard',
     name: 'Kit Placard Coulissant 2m',
-    imageUrl: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400',
+    imageUrl: 'https://picsum.photos/id/60/200/200',
     priceHT: 380.00,
     unit: 'u',
     brand: 'Kazed',
@@ -639,7 +665,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_sous_couche_parquet',
     name: 'Sous-Couche Parquet 3mm',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/61/200/200',
     priceHT: 8.50,
     unit: 'm2',
     consumptionRule: ConsumptionRule(type: ConsumptionRuleType.perM2, factor: 1.0),
@@ -649,7 +675,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_vernis',
     name: 'Vernis Parquet Incolore',
-    imageUrl: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400',
+    imageUrl: 'https://picsum.photos/id/62/200/200',
     priceHT: 42.00,
     unit: 'L',
     packaging: 'Pot 2.5L',
@@ -660,7 +686,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_colle_parquet',
     name: 'Colle Parquet MS Polymère',
-    imageUrl: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?w=400',
+    imageUrl: 'https://picsum.photos/id/63/200/200',
     priceHT: 35.00,
     unit: 'kg',
     packaging: 'Cartouche 290ml',
@@ -670,7 +696,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_poignee',
     name: 'Poignée de Porte Inox',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/64/200/200',
     priceHT: 18.50,
     unit: 'u',
     brand: 'Vachette',
@@ -679,7 +705,7 @@ final List<Product> _allProducts = [
   const Product(
     id: 'm_serrure',
     name: 'Serrure Encastrée 3 Points',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400',
+    imageUrl: 'https://picsum.photos/id/65/200/200',
     priceHT: 85.00,
     unit: 'u',
     brand: 'Bricard',
