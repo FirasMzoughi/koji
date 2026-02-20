@@ -62,8 +62,21 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
       final roomLabel = _getRoomLabel(roomId);
       final roomTaskData = quoteState.roomTasks[roomId];
       
-      // Debug: Print what we're reading
       debugPrint('Room: $roomId, TaskData: $roomTaskData');
+      
+      // NEW: Check if we have calculated estimations from RoomTaskScreen
+      final existingEstimations = quoteState.roomEstimations[roomId];
+      if (existingEstimations != null && existingEstimations is List && existingEstimations.isNotEmpty) {
+        debugPrint('Found existing estimations for $roomId');
+        setState(() {
+          _expensesByRoom[roomLabel] = existingEstimations.map((e) {
+             if (e is ExpenseItem) return e;
+             // Handle potential map serialization if persistence added later
+             return e as ExpenseItem;
+          }).toList().cast<ExpenseItem>();
+        });
+        continue;
+      }
       
       if (roomTaskData == null) {
         // No tasks selected for this room, initialize with empty list
@@ -757,15 +770,22 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildNumberInput("M.O. / Hour", item.laborCost.toString(), (val) {
-                  setState(() => item.laborCost = double.tryParse(val) ?? 0);
-                }),
+                child: _buildNumberInput(
+                  "M.O. / Hour", 
+                  item.laborCost.toString(), 
+                  (val) => setState(() => item.laborCost = double.tryParse(val) ?? 0),
+                  readOnly: item.subtitle.contains('Calculé') || item.subtitle.contains('Auto'),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildNumberInput("Mat. / Unité (€)", item.materialCost.toString(), (val) {
-                  setState(() => item.materialCost = double.tryParse(val) ?? 0);
-                }, suffix: "€"),
+                child: _buildNumberInput(
+                  "Mat. / Unité (€)", 
+                  item.materialCost.toString(), 
+                  (val) => setState(() => item.materialCost = double.tryParse(val) ?? 0),
+                  suffix: "€",
+                  readOnly: item.subtitle.contains('Calculé') || item.subtitle.contains('Auto'),
+                ),
               ),
             ],
           ),
@@ -782,7 +802,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Total Calculé",
+                "Total Calculé ${item.subtitle.contains('Calculé') ? ' (Auto)' : ''}",
                 style: TextStyle(fontFamily: 'Outfit', 
                   color: AppTheme.textLight,
                   fontSize: 12,
@@ -804,23 +824,30 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
     );
   }
 
-  Widget _buildNumberInput(String label, String value, Function(String) onChanged, {String? suffix}) {
+  Widget _buildNumberInput(String label, String value, Function(String) onChanged, {String? suffix, bool readOnly = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(fontFamily: 'Outfit', 
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.darkNavy,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontFamily: 'Outfit', 
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.darkNavy,
+              ),
+            ),
+            if (readOnly)
+               const Icon(Icons.lock, size: 12, color: Colors.grey),
+          ],
         ),
         const SizedBox(height: 6),
         Container(
           height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
+            color: readOnly ? const Color(0xFFE5E7EB) : const Color(0xFFF9FAFB),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
@@ -831,9 +858,11 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                   initialValue: value,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   onChanged: onChanged,
+                  readOnly: readOnly,
+                  enabled: !readOnly, // Visually disable
                   style: TextStyle(fontFamily: 'Outfit', 
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.darkNavy,
+                    color: readOnly ? AppTheme.textLight : AppTheme.darkNavy,
                     fontSize: 14,
                   ),
                   decoration: const InputDecoration(

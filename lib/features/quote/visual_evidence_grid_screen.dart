@@ -27,11 +27,7 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
   final List<String> _selectedTags = [];
   
   final List<String> _problemTags = [
-    'Fissure',
-    'Humidité',
-    'Peinture',
-    'Elec.',
-    'Autre',
+    
   ];
 
   @override
@@ -213,10 +209,7 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
               const SizedBox(height: 32),
 
               // Tags Section
-              Text(
-                'Tags de probléme',
-                style: AppTheme.headingStyle(context).copyWith(fontSize: 18),
-              ),
+            
               const SizedBox(height: 16),
               Wrap(
                 spacing: 12,

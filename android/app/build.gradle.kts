@@ -49,12 +49,10 @@ android {
     // Configure signing configs
     signingConfigs {
         create("release") {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file("${keystoreProperties["storeFile"]}")
-                storePassword = keystoreProperties["storePassword"] as String
-            }
+            keyAlias = "koji"
+            keyPassword = "koji123"
+            storeFile = file("koji-keystore.jks")
+            storePassword = "koji123"
         }
     }
 

@@ -1,3 +1,4 @@
+
 import 'dart:io';
 import 'dart:math';
 
@@ -12,10 +13,20 @@ import 'package:koji/features/quote/product_details_screen.dart';
 import 'package:koji/features/quote/product_selection_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
+import 'package:koji/features/quote/repository/product_repository.dart';
 
 import 'package:koji/features/auth/repository/auth_repository.dart';
 import 'package:koji/features/quote/providers/quote_creation_provider.dart';
 import 'package:koji/features/quote/model/expense_item.dart';
+
+// NEW IMPORTS
+import 'package:koji/features/quote/repository/task_repository.dart';
+import 'package:koji/features/quote/model/custom_task.dart';
+import 'package:koji/features/quote/create_task_screen.dart';
+import 'package:koji/features/pricing/models/pricing_models.dart';
+import 'package:koji/features/quote/domain/pricing_engine.dart';
+import 'package:koji/features/quote/data/pricing_data.dart';
+import 'package:koji/features/pricing/repository/pricing_repository.dart';
 
 class RoomTaskScreen extends ConsumerStatefulWidget {
   final List<String> selectedRoomIds;
@@ -41,10 +52,16 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   String _selectedTrade = '';
   bool _isLoadingProfessions = true;
   
+  // Custom Tasks
+  List<CustomTask> _customTasks = [];
+  
   final TextEditingController _searchController = TextEditingController();
   
   // Logic State
   final Map<String, RoomTaskState> _taskStates = {};
+  
+  // Pricing State
+  final Map<String, RealityFactors> _roomContexts = {};
 
   @override
   void initState() {
@@ -59,6 +76,10 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   Future<void> _loadUserProfessions() async {
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
+      
+      // Load Custom Tasks concurrently
+      _loadCustomTasks();
+
       if (user != null) {
         final userData = await ref.read(userRepositoryProvider).getUser(user.id);
         
@@ -82,6 +103,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
             _selectedTrade = userTrades.first;
             _isLoadingProfessions = false;
           });
+          _fetchCustomTasksForTrade(_selectedTrade);
         }
       } else {
          // Not logged in?
@@ -90,6 +112,27 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     } catch (e) {
       debugPrint('Error loading professions: $e');
       if (mounted) setState(() { _trades = ['Peintre']; _selectedTrade = 'Peintre'; _isLoadingProfessions = false; });
+    }
+  }
+
+  Future<void> _loadCustomTasks() async {
+      try {
+        // Find current profession context if possible? Or fetch all.
+        // For now, let's just fetch all tasks for this user (RLS handles filtering by user)
+        // TaskRepository.getTasks filters by profession. Let's pass the selected trade later or just empty string if we want all?
+        // Actually, let's fetch based on _selectedTrade when it changes. 
+        // But for initState, we assume the first trade.
+        // Let's create a separate method `_refetchCustomTasks` to call when tab changes.
+      } catch(e) { debugPrint('err custom tasks: $e'); }
+  }
+  
+  // Call this when trade changes or initially
+  Future<void> _fetchCustomTasksForTrade(String trade) async {
+    try {
+       final tasks = await ref.read(taskRepositoryProvider).getTasks(trade);
+       if (mounted) setState(() => _customTasks = tasks);
+    } catch (e) {
+      debugPrint('Error load custom tasks: $e');
     }
   }
 
@@ -115,28 +158,41 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     
     setState(() {
       if (!value) {
-        // Deselecting: just checking false in UI often implies we stop tracking or remove? 
-        // For now, we'll keep logic in memory but visually it is unchecked.
-        // Actually, the requirement says "expandable task-details card... when enabled".
-        // So we just toggle expansion off or maybe remove from list?
-        // Let's assume unchecked = removed from quote.
         if (_taskStates.containsKey(key)) {
-          // We can remove it or mark it inactive. Let's remove for cleaner state.
           _taskStates.remove(key);
         }
       } else {
         // Selecting
         if (!_taskStates.containsKey(key)) {
            // Initialize state
-           final newState = RoomTaskState(taskId: taskId, label: label, isExpanded: true);
-           // initialize inputs
+           final newState = RoomTaskState(taskId: taskId, roomId: roomId, label: label, isExpanded: true);
+           
+           // Check if Standard Task inputs need init
            for(var field in getFieldsForTask(taskId)) {
              if(field.defaultValue != null) {
                newState.inputs[field.id] = field.defaultValue;
              }
            }
-           // Do NOT initialize default products anymore
+           
+           // Check if Custom Task defaults need init
+           try {
+             final custom = _customTasks.firstWhere((t) => t.id == taskId, orElse: () => CustomTask(id: '', title: '', profession: ''));
+             if (custom.id.isNotEmpty) {
+               if (custom.description != null) newState.note = custom.description!;
+               // Add images (URLs)
+               newState.photoPaths.addAll(custom.imageUrls);
+               // Add products
+               // Need to copy map
+               if (custom.defaultProducts.isNotEmpty) {
+                  newState.selectedProducts.addAll(custom.defaultProducts.map((k,v) => MapEntry(k, (v as num).toDouble())));
+               }
+             }
+           } catch(e) {/* ignore */}
+
            _taskStates[key] = newState;
+           
+           // Show reality factors dialog after selection
+           Future.microtask(() => _showRealityFactorsDialog(roomId, taskId, label));
         } else {
           // Just expand
           _taskStates[key]!.isExpanded = true;
@@ -144,6 +200,102 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       }
     });
   }
+  
+  void _showRealityFactorsDialog(String roomId, String taskId, String label) {
+    // Get current room context or default
+    RealityFactors current = _roomContexts[roomId] ?? const RealityFactors();
+    
+    int conditionIndex = 0;
+    if (current.condition == 1.20) conditionIndex = 1;
+    if (current.condition == 1.40) conditionIndex = 2;
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                'État des supports - $label',
+                style: const TextStyle(
+                  fontFamily: 'Outfit',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Sélectionnez l\'état des supports pour ce chantier',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Sain
+                  RadioListTile<int>(
+                    value: 0,
+                    groupValue: conditionIndex,
+                    onChanged: (v) => setStateDialog(() => conditionIndex = v!),
+                    title: const Text('Sain', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('×1,00 - Supports en bon état'),
+                  ),
+                  
+                  // Moyen
+                  RadioListTile<int>(
+                    value: 1,
+                    groupValue: conditionIndex,
+                    onChanged: (v) => setStateDialog(() => conditionIndex = v!),
+                    title: const Text('Moyen', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('×1,20 - Supports moyens'),
+                  ),
+                  
+                  // Dégradé
+                  RadioListTile<int>(
+                    value: 2,
+                    groupValue: conditionIndex,
+                    onChanged: (v) => setStateDialog(() => conditionIndex = v!),
+                    title: const Text('Dégradé', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('×1,40 - Supports dégradés'),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Annuler'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    double condition = 1.0;
+                    if (conditionIndex == 1) condition = 1.20;
+                    if (conditionIndex == 2) condition = 1.40;
+                    
+                    setState(() {
+                      _roomContexts[roomId] = RealityFactors(
+                        access: current.access,
+                        condition: condition,
+                        surface: current.surface,
+                      );
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Valider'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   double _calculateQuantity(Product product, Map<String, dynamic> inputs) {
     double qty = 0;
@@ -183,12 +335,10 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
         final products = _taskStates[key]!.selectedProducts.keys.toList();
         for (var prodId in products) {
            // Find product object (simulated lookup)
-           final defaultProds = getDefaultProductsForTask(taskId);
-           // We might need a better lookup if we added custom products.
-           // For simplicity, we search in default + maybe a global registry?
-           // We'll re-find it in defaults for now.
+           // Find product object from ALL products, not just defaults
+           final allProds = getAllProducts();
            try {
-             final prod = defaultProds.firstWhere((p) => p.id == prodId, orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: '')); 
+             final prod = allProds.firstWhere((p) => p.id == prodId, orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: '')); 
              if (prod.id != 'err') {
                _taskStates[key]!.selectedProducts[prodId] = _calculateQuantity(prod, _taskStates[key]!.inputs);
              }
@@ -212,11 +362,98 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     return total;
   }
 
+  List<Product> getAllProducts() {
+    return ref.read(productsProvider).valueOrNull ?? [];
+  }
+
+  void _showContextDialog(String roomId) {
+    RealityFactors current = _roomContexts[roomId] ?? const RealityFactors();
+    
+    // Convert logic for UI helpers (using index or labels)
+    // Access: 0=House(1.0), 1=Apt(1.15), 2=Constrained(1.30)
+    int accessIndex = 0;
+    if (current.access == 1.15) accessIndex = 1;
+    if (current.access == 1.30) accessIndex = 2;
+    
+    int conditionIndex = 0;
+    if (current.condition == 1.20) conditionIndex = 1;
+    if (current.condition == 1.40) conditionIndex = 2;
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+             return AlertDialog(
+               title: const Text("Paramètres du chantier"),
+               content: Column(
+                 mainAxisSize: MainAxisSize.min,
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   const Text("Accès / Logistique", style: TextStyle(fontWeight: FontWeight.bold)),
+                   DropdownButton<int>(
+                     value: accessIndex,
+                     isExpanded: true,
+                     items: const [
+                       DropdownMenuItem(value: 0, child: Text("Maison (x1.00)")),
+                       DropdownMenuItem(value: 1, child: Text("Appartement (x1.15)")),
+                       DropdownMenuItem(value: 2, child: Text("Difficile / Etage sans asc. (x1.30)")),
+                     ],
+                     onChanged: (v) => setStateDialog(() => accessIndex = v!),
+                   ),
+                   const SizedBox(height: 16),
+                   const Text("État des supports", style: TextStyle(fontWeight: FontWeight.bold)),
+                   DropdownButton<int>(
+                     value: conditionIndex,
+                     isExpanded: true,
+                     items: const [
+                       DropdownMenuItem(value: 0, child: Text("Bon état (x1.00)")),
+                       DropdownMenuItem(value: 1, child: Text("Moyen (x1.20)")),
+                       DropdownMenuItem(value: 2, child: Text("Dégradé (x1.40)")),
+                     ],
+                     onChanged: (v) => setStateDialog(() => conditionIndex = v!),
+                   ),
+                 ],
+               ),
+               actions: [
+                 TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
+                 ElevatedButton(
+                   onPressed: () {
+                     // Map back to coefficients
+                     double access = 1.0;
+                     if (accessIndex == 1) access = 1.15;
+                     if (accessIndex == 2) access = 1.30;
+                     
+                     double condition = 1.0;
+                     if (conditionIndex == 1) condition = 1.20;
+                     if (conditionIndex == 2) condition = 1.40;
+                     
+                     setState(() {
+                       _roomContexts[roomId] = RealityFactors(
+                         access: access,
+                         condition: condition,
+                         surface: 1.0, 
+                       );
+                     });
+                     Navigator.pop(context);
+                   },
+                   child: const Text("Valider"),
+                 )
+               ],
+             );
+          }
+        );
+      }
+    );
+  }
+
   // --- UI Parts ---
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingProfessions) {
+    final productsAsync = ref.watch(productsProvider);
+    
+    if (_isLoadingProfessions || productsAsync.isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFFF8F9FA),
         body: Center(child: CircularProgressIndicator()),
@@ -224,7 +461,26 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     }
 
     final currentRoom = _roomIds[_selectedRoomTab];
-    final tasksForTrade = getTasksForProfession(_selectedTrade);
+    
+    // Merge Custom Tasks AND Standard Pricing Tasks
+    var tasksForTrade = List<TaskCategory>.from(getTasksForProfession(_selectedTrade));
+    
+    // Insert Standard Tasks if Peintre (as per Prompt requirement to use Pricing Engine tasks)
+    // We wrap SmartTasks into TaskItems for UI compatibility
+    if (_selectedTrade == 'Peintre') {
+       final smartTasksAsync = ref.watch(smartTasksProvider('Peintre'));
+       final smartTasks = smartTasksAsync.valueOrNull ?? [];
+       if (smartTasks.isNotEmpty) {
+         final taskItems = smartTasks.map((t) => TaskItem(id: t.id, label: t.label)).toList();
+         tasksForTrade.add(TaskCategory(title: "TÂCHES STANDARDS (CALCULÉES)", tasks: taskItems));
+       }
+    }
+    if (_customTasks.isNotEmpty) {
+       final customItems = _customTasks.map((t) => TaskItem(id: t.id, label: t.title)).toList();
+       if (customItems.isNotEmpty) {
+          tasksForTrade.insert(0, TaskCategory(title: 'MES TÂCHES PERSONNALISÉES', tasks: customItems));
+       }
+    }
 
 
     return Scaffold(
@@ -362,7 +618,12 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                     child: ChoiceChip(
                       label: Text(trade),
                       selected: isSelected,
-                      onSelected: (val) { if(val) setState(() => _selectedTrade = trade); },
+                      onSelected: (val) { 
+                        if(val) {
+                          setState(() => _selectedTrade = trade);
+                          _fetchCustomTasksForTrade(trade);
+                        }
+                      },
                       selectedColor: const Color(0xFFE0E7FF),
                       backgroundColor: Colors.white,
                       labelStyle: TextStyle(
@@ -390,6 +651,31 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                   ),
                   const SizedBox(height: 8),
                   
+                  // Context Button
+                  InkWell(
+                     onTap: () => _showContextDialog(currentRoom),
+                     child: Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                       margin: const EdgeInsets.only(bottom: 16),
+                       decoration: BoxDecoration(
+                         color: const Color(0xFFFFF7ED), // Orange tint
+                         borderRadius: BorderRadius.circular(8),
+                         border: Border.all(color: const Color(0xFFFDBA74)),
+                       ),
+                       child: Row(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           const Icon(Icons.settings_input_component, color: Color(0xFFC2410C), size: 18),
+                           const SizedBox(width: 8),
+                           Text(
+                             "Paramètres du chantier (Coeff: ${(_roomContexts[currentRoom]?.totalCoefficient ?? 1.0).toStringAsFixed(2)})",
+                             style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF9A3412)),
+                           ),
+                         ],
+                       ),
+                     ),
+                  ),
+                  
                   // Search
                   TextField(
                      controller: _searchController,
@@ -402,6 +688,45 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                      ),
                   ),
+                  const SizedBox(height: 16),
+                  
+                  // CREATE TASK BUTTON
+                  InkWell(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (_) => CreateTaskScreen(profession: _selectedTrade))
+                      );
+                      if (result == true) {
+                         _fetchCustomTasksForTrade(_selectedTrade);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF1D74FF).withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.add_circle_outline, color: Color(0xFF1D74FF)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Créer une nouvelle tâche',
+                            style: TextStyle(
+                              fontFamily: 'Outfit', 
+                              color: Color(0xFF1D74FF),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 24),
                   
                   // Grouped Tasks
@@ -437,29 +762,22 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     );
   }
 
-  void _onContinue() {
+  void _onContinue() async {
     // 1. Group tasks by room
     final tasksByRoom = <String, List<RoomTaskState>>{};
     
     // Group active tasks
     _taskStates.forEach((key, state) {
-      // Key format is roomId_taskId
-      // We need to parse roomId. 
-      // Option: Iterate _taskStates and match prefix? 
-      // Or store roomId in State? Yes, RoomTaskState doesn't have roomId, only taskId.
-      // But we constructed the key as "${roomId}_${taskId}".
-      // Let's rely on splitting key.
-      final parts = key.split('_');
-      if (parts.length >= 2) {
-         final roomId = parts[0]; 
-         // Handles cases where roomId might contain underscores if any, 
-         // but our room IDs are simple 'salon', 'cuisine' etc.
-         tasksByRoom.putIfAbsent(roomId, () => []).add(state);
-      }
+       // Use safe roomId from state
+       tasksByRoom.putIfAbsent(state.roomId, () => []).add(state);
     });
 
        // 2. Process each room
-    tasksByRoom.forEach((roomId, tasks) {
+    // 2. Process each room
+    for (var entry in tasksByRoom.entries) {
+       final roomId = entry.key;
+       final tasks = entry.value;
+
        final expenseItems = <ExpenseItem>[];
        final taskDetails = <String, dynamic>{}; // Store full details
 
@@ -482,25 +800,87 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
              quantity = (taskState.inputs['surface'] as num).toDouble();
           }
 
-          // Calculate Unit Material Cost
-          // If quantity is 10 m2, and total product cost is 100€
-          // Material Cost per unit = 10€
-          double materialUnitCost = quantity > 0 ? totalProductCost / quantity : totalProductCost;
+          // Determine Labor Cost & Material Cost via Pricing Engine
+          double laborUnitCost = 0.0;
+          double materialUnitCost = 0.0;
           
-          // Determine Labor Cost (Mock for now, or 0)
-          // User asked for product money mainly.
-          double laborUnitCost = 0.0; 
+          // Try to find SmartTask from cached provider data
+          final smartTasksAsync = ref.read(smartTasksProvider(_selectedTrade));
+          final smartTasks = smartTasksAsync.valueOrNull ?? [];
+          final smartTask = smartTasks.cast<SmartTask?>().firstWhere(
+            (t) => t?.id == taskState.taskId, 
+            orElse: () => null
+          );
+          
+          // Get pricing from USER's business profile (not backend admin)
+          final user = ref.read(authRepositoryProvider).currentUser;
+          double dailyRate = 350.0; // Default fallback
+          double hoursPerDay = 7.0; //Default fallback
+          
+          if (user != null) {
+            final userData = await ref.read(userRepositoryProvider).getUser(user.id);
+            final businessInfo = userData?['business_info'] as Map<String, dynamic>?;
+            
+            if (businessInfo != null) {
+              dailyRate = (businessInfo['dailyRate'] as num?)?.toDouble() ?? 350.0;
+              hoursPerDay = (businessInfo['hoursPerDay'] as num?)?.toDouble() ?? 7.0;
+            }
+          }
+          
+          // Create pricing profile from user's business info
+          final pricingProfile = PricingProfile(
+            id: 'user-profile',
+            profession: _selectedTrade,
+            dailyRateHT: dailyRate,
+            hoursPerDay: hoursPerDay,
+          );
+          
+          if (smartTask != null) {
+             // Calculate using Engine
+             final selectedProdsList = taskState.selectedProducts.keys.map((id) {
+                return getAllProducts().firstWhere((p) => p.id == id, orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: '', category: ''));
+             }).where((p) => p.id != 'err').toList();
+             
+             final breakdown = PricingEngine.calculateTaskPrice(
+               task: smartTask,
+               quantity: quantity,
+               realityFactors: _roomContexts[roomId] ?? const RealityFactors(),
+               pricingProfile: pricingProfile,
+               selectedProducts: selectedProdsList,
+             );
+             
+             // Convert total costs to Unit costs for ExpenseItem storage
+             // ExpenseItem total = (labor + material) * quantity
+             // So Unit Labor = Total Labor / Quantity
+             if (quantity > 0) {
+                laborUnitCost = breakdown.laborCost / quantity;
+                materialUnitCost = breakdown.materialCost / quantity;
+             }
+          } else {
+             // Fallback for custom tasks or non-smart tasks
+             // Keep existing logic: materialUnitCost derived from products, labor 0
+             if (quantity > 0) {
+               materialUnitCost = totalProductCost / quantity;
+             } else {
+               materialUnitCost = totalProductCost;
+             }
+          }
 
           expenseItems.add(ExpenseItem(
              id: taskState.taskId,
              title: taskState.label,
-             subtitle: totalProductCost > 0 ? 'Fournitures incluses' : 'Main d\'oeuvre',
+             subtitle: smartTask != null ? 'Calculé automatiquement' : (totalProductCost > 0 ? 'Fournitures incluses' : 'Main d\'oeuvre'),
              quantity: quantity,
              laborCost: laborUnitCost,
              materialCost: materialUnitCost,
              icon: _getRoomIcon(roomId), // Or task specific icon
              tax: 20.0, // Default tax
           ));
+          
+          // Update Provider with context
+          if (_roomContexts.containsKey(roomId)) {
+             ref.read(quoteCreationProvider.notifier).updateRoomContext(roomId, _roomContexts[roomId]!);
+          }
           
           // Serialize Task State for persistence
            taskDetails[taskState.taskId] = {
@@ -516,7 +896,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
        // Update Provider
        ref.read(quoteCreationProvider.notifier).updateRoomEstimation(roomId, expenseItems);
        ref.read(quoteCreationProvider.notifier).updateRoomTasks(roomId, taskDetails);
-    });
+    }
 
     // 3. Save User Profession if selected
     if (_selectedTrade.isNotEmpty) {
@@ -698,10 +1078,12 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                            return Stack(
                              clipBehavior: Clip.none,
                              children: [
-                               ClipRRect(
-                                 borderRadius: BorderRadius.circular(8),
-                                 child: Image.file(File(state.photoPaths[index]), width: 60, height: 60, fit: BoxFit.cover),
-                               ),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: state.photoPaths[index].startsWith('http') 
+                                     ? Image.network(state.photoPaths[index], width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.error)) 
+                                     : Image.file(File(state.photoPaths[index]), width: 60, height: 60, fit: BoxFit.cover),
+                                ),
                                Positioned(
                                  top: -4, right: -4,
                                  child: GestureDetector(
@@ -941,10 +1323,22 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   
 
   Future<void> _showAddProductModal(String roomId, String taskId) async {
+    // Determine category filter from SmartTask if available
+    String? categoryFilter;
+    final smartTask = PricingData.getTaskById(taskId);
+    if (smartTask != null && smartTask.materialRequirements.isNotEmpty) {
+       // Ideally we might let user choose if multiple, but for now pick the first primary one
+       categoryFilter = smartTask.materialRequirements.first.productCategory;
+    }
+  
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ProductSelectionScreen(roomId: roomId, taskId: taskId),
+        builder: (_) => ProductSelectionScreen(
+          roomId: roomId, 
+          taskId: taskId,
+          categoryFilter: categoryFilter,
+        ),
       ),
     );
 
@@ -956,7 +1350,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       setState(() {
         if (!_taskStates.containsKey(key)) {
            // Should ideally be initialized by task selection but if somehow not:
-           _taskStates[key] = RoomTaskState(taskId: taskId, label: '', selectedProducts: {});
+           _taskStates[key] = RoomTaskState(taskId: taskId, roomId: roomId, label: '', selectedProducts: {});
         }
         
         // Add or Update product

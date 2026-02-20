@@ -112,6 +112,8 @@ class UserRepository {
     required String address,
     required String tva,
     String? logoUrl,
+    double? dailyRate,
+    double? hoursPerDay,
   }) async {
     _logger.i('💼 [UserRepository] Updating business info for UID: $uid');
     try {
@@ -124,6 +126,8 @@ class UserRepository {
           'phone': phone,
           'address': address,
           'tva': tva,
+          if (dailyRate != null) 'dailyRate': dailyRate,
+          if (hoursPerDay != null) 'hoursPerDay': hoursPerDay,
         },
         'is_business_info_complete': true,
       };

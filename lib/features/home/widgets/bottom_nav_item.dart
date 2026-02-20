@@ -7,18 +7,20 @@ class BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
+  final Color? activeColor;
 
   const BottomNavItem({
     super.key,
     required this.icon,
     required this.label,
     required this.isActive,
+    this.activeColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? Colors.white : AppTheme.darkNavy;
+    final effectiveActiveColor = activeColor ?? (isDark ? Colors.white : AppTheme.darkNavy);
     final inactiveColor = isDark ? Colors.grey[600] : AppTheme.textLight;
 
     return Column(
@@ -26,16 +28,17 @@ class BottomNavItem extends StatelessWidget {
       children: [
         Icon(
           icon,
-          color: isActive ? activeColor : inactiveColor,
+          color: isActive ? effectiveActiveColor : inactiveColor,
           size: 26,
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontFamily: 'Outfit', 
+          style: TextStyle(
+            fontFamily: 'Outfit',
             fontSize: 10,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-            color: isActive ? activeColor : inactiveColor,
+            color: isActive ? effectiveActiveColor : inactiveColor,
           ),
         ),
         if (isActive)
@@ -44,7 +47,7 @@ class BottomNavItem extends StatelessWidget {
             width: 4,
             height: 4,
             decoration: BoxDecoration(
-              color: activeColor,
+              color: effectiveActiveColor,
               shape: BoxShape.circle,
             ),
           ),

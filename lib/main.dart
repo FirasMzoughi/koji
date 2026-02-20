@@ -5,12 +5,16 @@ import 'package:koji/core/theme.dart';
 import 'package:koji/core/theme_provider.dart';
 
 import 'package:koji/core/supabase_config.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Supabase
+  // Initialize Supabasew
   await SupabaseConfig.initialize();
+
+  // Initialize Date Formatting
+  await initializeDateFormatting();
   
   runApp(
     const ProviderScope(

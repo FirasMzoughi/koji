@@ -1,3 +1,4 @@
+import 'package:koji/features/pricing/models/pricing_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class QuoteCreationState {
@@ -7,6 +8,7 @@ class QuoteCreationState {
   final Map<String, dynamic> roomEstimations; // Map<roomId, List<ExpenseItem>>
   final Map<String, dynamic> roomTasks;
   final String? userProfession; // Store user's profession
+  final Map<String, RealityFactors> roomContexts; // NEW: Store context per room
 
   QuoteCreationState({
     this.clientInfo = const {},
@@ -15,6 +17,7 @@ class QuoteCreationState {
     this.roomEstimations = const {},
     this.roomTasks = const {},
     this.userProfession,
+    this.roomContexts = const {},
   });
 
   QuoteCreationState copyWith({
@@ -24,6 +27,7 @@ class QuoteCreationState {
     Map<String, dynamic>? roomEstimations,
     Map<String, dynamic>? roomTasks,
     String? userProfession,
+    Map<String, RealityFactors>? roomContexts,
   }) {
     return QuoteCreationState(
       clientInfo: clientInfo ?? this.clientInfo,
@@ -32,6 +36,7 @@ class QuoteCreationState {
       roomEstimations: roomEstimations ?? this.roomEstimations,
       roomTasks: roomTasks ?? this.roomTasks,
       userProfession: userProfession ?? this.userProfession,
+      roomContexts: roomContexts ?? this.roomContexts,
     );
   }
   
@@ -43,6 +48,7 @@ class QuoteCreationState {
       'expenses': roomEstimations,
       'tasks': roomTasks,
       'profession': userProfession,
+      // serialize context if needed, or reconstruct
     };
   }
 }
@@ -80,6 +86,12 @@ class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
 
   void setProfession(String profession) {
     state = state.copyWith(userProfession: profession);
+  }
+
+  void updateRoomContext(String roomId, RealityFactors context) {
+    final newContexts = Map<String, RealityFactors>.from(state.roomContexts);
+    newContexts[roomId] = context;
+    state = state.copyWith(roomContexts: newContexts);
   }
 
   void reset() {

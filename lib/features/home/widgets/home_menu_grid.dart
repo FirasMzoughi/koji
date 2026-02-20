@@ -22,7 +22,7 @@ class HomeMenuGrid extends StatelessWidget {
         
         _buildItem(context, "Signature", Icons.draw_outlined, const Color(0xFF1D74FF), onTap: () => context.push('/signature')),
         _buildItem(context, "Calendrier", Icons.calendar_today, const Color(0xFF1D74FF)),
-        _buildItem(context, "Synchronisation", Icons.group_outlined, const Color(0xFF1D74FF)),
+        _buildItem(context, "Synchronisation", Icons.group_outlined, const Color(0xFF1D74FF), onTap: () => context.push('/synchronization')),
       ],
     );
   }

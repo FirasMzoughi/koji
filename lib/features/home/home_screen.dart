@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/quote/quote_list_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koji/features/quote/providers/quote_creation_provider.dart';
 
-// Import extracted widgets
-import 'package:koji/features/home/widgets/stat_card.dart';
+
+// Import widgets
 import 'package:koji/features/home/widgets/bottom_nav_item.dart';
 import 'package:koji/features/home/widgets/home_header.dart';
-import 'package:koji/features/home/widgets/home_menu_grid.dart';
+import 'package:koji/features/home/widgets/dashboard_section.dart';
+import 'package:koji/features/home/widgets/create_project_button.dart';
+import 'package:koji/features/home/widgets/app_drawer.dart';
 
 /// Main home screen - STATEFUL for tab management
-/// All child widgets are STATELESS for performance
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,25 +22,34 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _onItemTapped(int index) {
+    if (index == 3) {
+      // Handle "Plus" or "Menu" tab
+      // For now we can show a bottom sheet or navigate to a settings page
+      // context.push('/settings'); 
+      // Or just switch to it if we have a view for it
+    }
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  void _onCreateQuote() {
-    ref.read(quoteCreationProvider.notifier).reset();
-    context.push('/quote/client-details');
+  void _onCreateProject() {
+     // TODO: Navigate to create project flow
+     // context.push('/create-project');
   }
 
   @override
   Widget build(BuildContext context) {
     final responsive = context.responsive;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      key: _scaffoldKey,
+      backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
       body: Stack(
         children: [
           // Content Layer
@@ -50,12 +59,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Home Tab (Index 0)
               _buildHomeContent(responsive),
               
-              // Quotes List Tab (Index 1)
+              // Devis Tab (Index 1)
               const QuoteListScreen(),
               
-              // Placeholders for other tabs
-              const Center(child: Text("Discussion (Coming Soon)")),
+              // Chantier Tab (Index 2) - Placeholder
               const Center(child: Text("Chantiers (Coming Soon)")),
+              
+              // Plus/Menu Tab (Index 3) - Placeholder
+              const Center(child: Text("Menu (Updates coming)")),
             ],
           ),
           
@@ -67,7 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.only(top: 16, bottom: 24),
               decoration: BoxDecoration(
-                color: Theme.of(context).bottomAppBarTheme.color ?? (isDark ? const Color(0xFF1E1E1E) : Colors.white),
+                color: const Color(0xFFF8F9FA), // Light greyish background for nav bar area
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -85,6 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.home_filled,
                       label: 'Accueil',
                       isActive: _selectedIndex == 0,
+                      activeColor: const Color(0xFF0F172A),
                     ),
                   ),
                   GestureDetector(
@@ -93,57 +105,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.description_outlined,
                       label: 'Devis',
                       isActive: _selectedIndex == 1,
+                      activeColor: const Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(width: 56), // Space for FAB
                   GestureDetector(
                     onTap: () => _onItemTapped(2),
                     child: BottomNavItem(
-                      icon: Icons.chat_bubble_outline,
-                      label: 'Discussion',
+                      icon: Icons.handyman_outlined,
+                      label: 'Chantier',
                       isActive: _selectedIndex == 2,
+                      activeColor: const Color(0xFF0F172A),
                     ),
                   ),
                   GestureDetector(
                     onTap: () => _onItemTapped(3),
                     child: BottomNavItem(
-                      icon: Icons.handyman_outlined, // Chantier icon
-                      label: 'Chantier',
+                      icon: Icons.more_horiz, // Three dots
+                      label: 'Plus',
                       isActive: _selectedIndex == 3,
+                       activeColor: const Color(0xFF0F172A),
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          
-          // Floating Action Button (Camera)
-          Positioned(
-            bottom: 30,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1D74FF), // Bright Blue
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1D74FF).withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                  border: Border.all(color: isDark ? const Color(0xFF1E1E1E) : Colors.white, width: 4),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
-                  onPressed: () {
-                    // Camera action
-                  },
-                ),
               ),
             ),
           ),
@@ -153,126 +136,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHomeContent(ResponsiveHelper responsive) {
-    // Get primary color based on active theme
-    
-    return Stack(
+    return Column(
       children: [
-        // Background Header
-        Container(
-          height: 300,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF0F3995), // Deep Blue Top
-                Color(0xFF1652C9), // Slightly lighter Blue Bottom
-              ],
-            ),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(32),
-              bottomRight: Radius.circular(32),
-            ),
-          ),
-        ),
-        
-        SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header (extracted widget)
-              const HomeHeader(),
+        // Header
+        HomeHeader(onMenuTap: () => _scaffoldKey.currentState?.openDrawer()),
 
-              const SizedBox(height: 24), 
+        // Scrollable Body
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Create Project Button
+                CreateProjectButton(onTap: _onCreateProject),
 
-              // Main Content (Scrollable)
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: responsive.paddingSymmetric(horizontalPercent: 5),
+                const SizedBox(height: 32),
+
+                // A faire maintenant
+                const DashboardSection(
+                  title: 'A faire maintenant',
+                  child: DashboardEmptyState(
+                    title: 'Aucune action pour le moment',
+                    subtitle: 'Commencez par créer un chantier',
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Devis en cours
+                const DashboardSection(
+                  title: 'Devis en cours',
+                  child: DashboardEmptyState(
+                    title: 'Aucun devis en cours',
+                    subtitle: 'Les devis non envoyés apparaîtront ici',
+                  ),
+                ),
+
+                 const SizedBox(height: 24),
+
+                // Chiffre d'affaires
+                const DashboardSection(
+                  title: 'Chiffre d\'affaires',
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // New Devis Button
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF1D74FF).withOpacity(0.1), 
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _onCreateQuote,
-                            borderRadius: BorderRadius.circular(16),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF0F3995), // Dark Blue Icon Bg
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.add, color: Colors.white, size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Nouveau Devis',
-                                    style: TextStyle(fontFamily: 'Outfit', 
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF0F3995), // Dark Blue Text
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                      DashboardStatRow(
+                        label: 'Facturé',
+                        value: '0 €',
+                        isBold: true,
                       ),
-
-                      const SizedBox(height: 32),
-
-                      // Grid Menu
-                      const HomeMenuGrid(),
-
-                      const SizedBox(height: 32),
-                      
-                      // Stats
-                      const Row(
-                        children: [
-                          Expanded(
-                            child: StatCard(
-                              icon: Icons.person,
-                              number: '3',
-                              label: 'Nombre des Cha...',
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: StatCard(
-                              icon: Icons.note_add_outlined, // Document icon
-                              number: '2',
-                              label: 'RDV Aujourd\'hui',
-                            ),
-                          ),
-                        ],
+                      SizedBox(height: 16),
+                      DashboardStatRow(
+                        label: 'En attente (de signature)',
+                        value: '0 €',
+                        isBold: true,
                       ),
-                      
-                      const SizedBox(height: 120), // Bottom padding for Nav Bar
                     ],
                   ),
                 ),
-              ),
-            ],
+                
+                const SizedBox(height: 100), // Bottom padding for Nav Bar
+              ],
+            ),
           ),
         ),
       ],

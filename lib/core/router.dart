@@ -19,11 +19,25 @@ import 'package:koji/features/quote/quote_summary_screen.dart';
 import 'package:koji/features/quote/quote_detail_screen.dart';
 import 'package:koji/features/quote/quote_success_screen.dart';
 import 'package:koji/features/quote/client_details_screen.dart';
-import 'package:koji/features/fournitures/fournitures_project_screen.dart';
-import 'package:koji/features/fournitures/fournitures_detail_screen.dart';
+import 'package:koji/features/quote/product_selection_screen.dart';
 import 'package:koji/features/signature/signature_list_screen.dart';
 import 'package:koji/features/signature/signature_screen.dart';
 import 'package:koji/features/signature/signature_success_screen.dart';
+import 'package:koji/features/synchronization/synchronization_screen.dart';
+import 'package:koji/features/synchronization/pointage_heures_screen.dart';
+import 'package:koji/features/synchronization/worker_list_screen.dart';
+import 'package:koji/features/synchronization/create_worker_screen.dart';
+import 'package:koji/features/synchronization/worker_success_screen.dart';
+import 'package:koji/features/synchronization/worker_detail_screen.dart'; // Will implement next
+import 'package:koji/features/synchronization/data/worker_model.dart';
+import 'package:koji/features/synchronization/project_selection_screen.dart';
+import 'package:koji/features/synchronization/project_detail_screen.dart';
+import 'package:koji/features/synchronization/worker_assignment_screen.dart';
+import 'package:koji/features/synchronization/assignment_success_screen.dart';
+import 'package:koji/features/synchronization/data/project_model.dart';
+import 'package:koji/features/planning/planning_screen.dart';
+import 'package:koji/features/settings/pricing_settings_screen.dart';
+import 'package:koji/features/profile/company_profile_screen.dart';
 
 // Custom page transition for faster navigation - OPTIMIZED
 Page<dynamic> _buildPageWithTransition(
@@ -235,19 +249,8 @@ final router = GoRouter(
       pageBuilder: (context, state) => _buildPageWithTransition(
         context,
         state,
-        const FournituresProjectScreen(),
+        const ProductSelectionScreen(),
       ),
-    ),
-    GoRoute(
-      path: '/fournitures/detail',
-      pageBuilder: (context, state) {
-        final quoteData = state.extra as Map<String, dynamic>? ?? {};
-        return _buildPageWithTransition(
-          context,
-          state,
-          FournituresDetailScreen(quote: quoteData),
-        );
-      },
     ),
     // Signature Routes
     GoRoute(
@@ -275,6 +278,131 @@ final router = GoRouter(
         context,
         state,
         const SignatureSuccessScreen(),
+      ),
+    ),
+    // Synchronization Routes
+    GoRoute(
+      path: '/synchronization',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const SynchronizationScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/synchronization/pointage',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const PointageHeuresScreen(),
+      ),
+    ),
+    // Worker Routes
+    GoRoute(
+      path: '/workers',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const WorkerListScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/workers/create',
+      pageBuilder: (context, state) {
+        final worker = state.extra as Worker?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          CreateWorkerScreen(worker: worker),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/workers/success',
+      pageBuilder: (context, state) {
+        final worker = state.extra as Worker?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          WorkerSuccessScreen(worker: worker),
+        );
+      },
+    ),
+     GoRoute(
+      path: '/workers/detail',
+      pageBuilder: (context, state) {
+        final worker = state.extra as Worker;
+        return _buildPageWithTransition(
+          context,
+          state,
+           WorkerDetailScreen(worker: worker),
+        );
+      },
+    ),
+    // Project Assignment Routes
+    GoRoute(
+      path: '/projects',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const ProjectSelectionScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/projects/detail/:projectId',
+      pageBuilder: (context, state) {
+        final projectId = state.pathParameters['projectId']!;
+        final project = state.extra as Project?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          ProjectDetailScreen(projectId: projectId, project: project),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/projects/assign/:projectId',
+      pageBuilder: (context, state) {
+        final project = state.extra as Project;
+        return _buildPageWithTransition(
+          context,
+          state,
+          WorkerAssignmentScreen(project: project),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/projects/success',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const AssignmentSuccessScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/planning',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const PlanningScreen(),
+      ),
+    ),
+    // Settings Routes
+    GoRoute(
+      path: '/settings/pricing',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const PricingSettingsScreen(),
+      ),
+    ),
+    // Profile Routes
+    GoRoute(
+      path: '/profile/company',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const CompanyProfileScreen(),
       ),
     ),
   ],

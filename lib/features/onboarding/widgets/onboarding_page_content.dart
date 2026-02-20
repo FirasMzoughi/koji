@@ -63,13 +63,13 @@ class OnboardingPageContent extends StatelessWidget {
                   SizedBox(height: responsive.height(2.5)),
                   Text(
                     title,
-                    style: AppTheme.headingStyle(context),
+                    style: AppTheme.headingStyle(context).copyWith(color: const Color(0xFF111827)), // Force darkNavy
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: responsive.height(2)),
                   Text(
                     description,
-                    style: AppTheme.bodyStyle(context),
+                    style: AppTheme.bodyStyle(context).copyWith(color: const Color(0xFF6B7280)), // Force textLight
                     textAlign: TextAlign.center,
                   ),
                 ],
