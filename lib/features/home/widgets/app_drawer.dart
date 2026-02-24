@@ -33,37 +33,46 @@ class AppDrawer extends StatelessWidget {
 
           // Navigation items
           _DrawerItem(
-            icon: Icons.grid_view_rounded,
-            label: 'Dashboard',
-            isActive: true,
+            icon: Icons.build_outlined,
+            label: 'Fournitures',
             onTap: () {
               Navigator.of(context).pop();
-              context.go('/home');
+              context.go('/fournitures');
             },
           ),
           _DrawerItem(
-            icon: Icons.handyman_outlined,
-            label: 'Chantiers',
+            icon: Icons.archive_outlined,
+            label: 'Archives',
             onTap: () {
               Navigator.of(context).pop();
-              context.go('/projects');
             },
           ),
           _DrawerItem(
-            icon: Icons.description_outlined,
-            label: 'Devis',
+            icon: Icons.group_outlined,
+            label: 'Synchronisation',
             onTap: () {
               Navigator.of(context).pop();
-              context.go('/home');
+              context.go('/synchronization');
             },
           ),
           _DrawerItem(
-            icon: Icons.people_alt_outlined,
-            label: 'Clients',
+            icon: Icons.edit_outlined,
+            label: 'Signature',
             onTap: () {
               Navigator.of(context).pop();
+              context.go('/signature');
             },
           ),
+          _DrawerItem(
+            icon: Icons.calendar_month_outlined,
+            label: 'Calendrier',
+            onTap: () {
+              Navigator.of(context).pop();
+              context.go('/planning');
+            },
+          ),
+          
+          
 
           const Spacer(),
 

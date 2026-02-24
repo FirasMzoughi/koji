@@ -54,7 +54,7 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
     if (name.isNotEmpty) {
        // Logic to add custom room, for now just clear text or add to selection if we were treating it dynamic
        ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Custom room "$name" added (logic placeholder)')),
+        SnackBar(content: Text('Pièce personnalisée "$name" ajoutée')),
       );
       _customRoomController.clear();
     }

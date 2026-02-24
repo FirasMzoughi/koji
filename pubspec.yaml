@@ -28,6 +28,7 @@ dependencies:
   shared_preferences: ^2.5.3
   share_plus: ^10.1.2
   url_launcher: ^6.2.0
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -41,16 +42,7 @@ flutter:
     - assets/images/
     - assets/icons/
 
-  # Local fonts to reduce APK size (replaces google_fonts package)
-  fonts:
-    - family: Outfit
-      fonts:
-        - asset: assets/fonts/Outfit-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Outfit-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Outfit-Bold.ttf
-          weight: 700
+  # Removed local fonts - using google_fonts package instead
 
 flutter_launcher_icons:
   android: true

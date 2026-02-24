@@ -206,3 +206,235 @@ List<Product> getDefaultProductsForTask(String taskId, List<Product> allProducts
   // Fallback: return a few random ones
   return allProducts.take(2).toList();
 }
+
+// --- Chantier (Project) Models ---
+
+/// Represents a project/chantier address
+class ChantierAddress {
+  final String street;
+  final String? complement;
+  final String postalCode;
+  final String city;
+  final String? country;
+
+  const ChantierAddress({
+    required this.street,
+    this.complement,
+    required this.postalCode,
+    required this.city,
+    this.country = 'France',
+  });
+
+  factory ChantierAddress.fromJson(Map<String, dynamic> json) {
+    return ChantierAddress(
+      street: json['street'] as String,
+      complement: json['complement'] as String?,
+      postalCode: json['postal_code'] as String,
+      city: json['city'] as String,
+      country: json['country'] as String? ?? 'France',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'street': street,
+      'complement': complement,
+      'postal_code': postalCode,
+      'city': city,
+      'country': country,
+    };
+  }
+
+  String get fullAddress {
+    final complementPart = complement != null && complement!.isNotEmpty ? '${complement!}, ' : '';
+    return '$complementPart$street, $postalCode $city';
+  }
+}
+
+/// Represents a client contact for the chantier
+class ChantierContact {
+  final String firstName;
+  final String lastName;
+  final String? email;
+  final String? phone;
+  final String? company;
+
+  const ChantierContact({
+    required this.firstName,
+    required this.lastName,
+    this.email,
+    this.phone,
+    this.company,
+  });
+
+  factory ChantierContact.fromJson(Map<String, dynamic> json) {
+    return ChantierContact(
+      firstName: json['first_name'] as String,
+      lastName: json['last_name'] as String,
+      email: json['email'] as String?,
+      phone: json['phone'] as String?,
+      company: json['company'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'phone': phone,
+      'company': company,
+    };
+  }
+
+  String get fullName => '$firstName $lastName';
+}
+
+/// Main Chantier (Project) model
+class Chantier {
+  final String id;
+  final String title;
+  final String? description;
+  final ChantierAddress address;
+  final ChantierContact contact;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String status; // 'draft', 'in_progress', 'completed', 'cancelled'
+  final double? estimatedBudget;
+  final String? notes;
+  final List<String> photoPaths;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+
+  const Chantier({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.address,
+    required this.contact,
+    this.startDate,
+    this.endDate,
+    this.status = 'draft',
+    this.estimatedBudget,
+    this.notes,
+    List<String>? photoPaths,
+    required this.createdAt,
+    this.updatedAt,
+  }) : photoPaths = photoPaths ?? const [];
+
+  factory Chantier.fromJson(Map<String, dynamic> json) {
+    return Chantier(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      address: ChantierAddress.fromJson(json['address'] as Map<String, dynamic>),
+      contact: ChantierContact.fromJson(json['contact'] as Map<String, dynamic>),
+      startDate: json['start_date'] != null ? DateTime.parse(json['start_date'] as String) : null,
+      endDate: json['end_date'] != null ? DateTime.parse(json['end_date'] as String) : null,
+      status: json['status'] as String? ?? 'draft',
+      estimatedBudget: (json['estimated_budget'] as num?)?.toDouble(),
+      notes: json['notes'] as String?,
+      photoPaths: (json['photo_paths'] as List<dynamic>?)?.cast<String>() ?? const [],
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'address': address.toJson(),
+      'contact': contact.toJson(),
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+      'status': status,
+      'estimated_budget': estimatedBudget,
+      'notes': notes,
+      'photo_paths': photoPaths,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+
+  Chantier copyWith({
+    String? title,
+    String? description,
+    ChantierAddress? address,
+    ChantierContact? contact,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? status,
+    double? estimatedBudget,
+    String? notes,
+    List<String>? photoPaths,
+    DateTime? updatedAt,
+  }) {
+    return Chantier(
+      id: this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      address: address ?? this.address,
+      contact: contact ?? this.contact,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      status: status ?? this.status,
+      estimatedBudget: estimatedBudget ?? this.estimatedBudget,
+      notes: notes ?? this.notes,
+      photoPaths: photoPaths ?? this.photoPaths,
+      createdAt: this.createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
+    );
+  }
+}
+
+/// Helper class for creating a new chantier
+class ChantierCreationData {
+  String title;
+  String? description;
+  ChantierAddress? address;
+  ChantierContact? contact;
+  DateTime? startDate;
+  DateTime? endDate;
+  double? estimatedBudget;
+  String? notes;
+
+  ChantierCreationData({
+    this.title = '',
+    this.description,
+    this.address,
+    this.contact,
+    this.startDate,
+    this.endDate,
+    this.estimatedBudget,
+    this.notes,
+  });
+
+  bool get isValid {
+    return title.isNotEmpty && 
+           address != null && 
+           contact != null &&
+           contact!.firstName.isNotEmpty &&
+           contact!.lastName.isNotEmpty;
+  }
+
+  Chantier toChantier() {
+    if (!isValid) {
+      throw StateError('Cannot create Chantier from invalid data');
+    }
+    
+    return Chantier(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      description: description,
+      address: address!,
+      contact: contact!,
+      startDate: startDate,
+      endDate: endDate,
+      estimatedBudget: estimatedBudget,
+      notes: notes,
+      createdAt: DateTime.now(),
+    );
+  }
+}

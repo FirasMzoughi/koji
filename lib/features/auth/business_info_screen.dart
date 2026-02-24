@@ -56,8 +56,8 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
     
     try {
       final userData = await ref.read(userRepositoryProvider).getUser(user.id);
-      if (userData != null && userData['businessInfo'] != null) {
-        final info = userData['businessInfo'] as Map<String, dynamic>;
+      if (userData != null && userData['business_info'] != null) {
+        final info = userData['business_info'] as Map<String, dynamic>;
         
         setState(() {
           _raisonSocialeController.text = info['raisonSociale'] ?? '';
@@ -368,7 +368,7 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Créer mon compt',
+                        'Créer mon compte',
                         style: TextStyle(fontFamily: 'Outfit', 
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

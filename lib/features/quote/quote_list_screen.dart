@@ -73,7 +73,7 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: "Rechercher de Devis...",
+                    hintText: "Rechercher un devis...",
                     hintStyle: TextStyle(fontFamily: 'Outfit', color: Colors.grey),
                     prefixIcon: const SizedBox.shrink(), // No prefix icon used in design, search icon is suffix
                     suffixIcon: const Icon(Icons.search, color: Color(0xFF798AD4)),

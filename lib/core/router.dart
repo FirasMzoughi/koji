@@ -38,6 +38,15 @@ import 'package:koji/features/synchronization/data/project_model.dart';
 import 'package:koji/features/planning/planning_screen.dart';
 import 'package:koji/features/settings/pricing_settings_screen.dart';
 import 'package:koji/features/profile/company_profile_screen.dart';
+import 'package:koji/features/quote/chantier_creation_screen.dart';
+import 'package:koji/features/quote/chantier_dashboard_screen.dart';
+import 'package:koji/features/quote/chantier_info_screen.dart';
+import 'package:koji/features/quote/chantier_afaire_screen.dart';
+import 'package:koji/features/quote/chantier_budget_screen.dart';
+import 'package:koji/features/quote/chantier_devis_screen.dart';
+import 'package:koji/features/quote/chantier_rdv_screen.dart';
+import 'package:koji/features/quote/chantier_add_task_screen.dart';
+import 'package:koji/features/quote/chantier_documents_screen.dart';
 
 // Custom page transition for faster navigation - OPTIMIZED
 Page<dynamic> _buildPageWithTransition(
@@ -132,6 +141,102 @@ final router = GoRouter(
         state,
         const HomeScreen(),
       ),
+    ),
+    GoRoute(
+      path: '/chantier/create',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const ChantierCreationScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/chantier/dashboard',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierDashboardScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/info',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierInfoScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/afaire',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierAFaireScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/budget',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierBudgetScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/devis',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierDevisScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/rdv',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierRdvScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/add-task',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierAddTaskScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/documents',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierDocumentsScreen(data: data),
+        );
+      },
     ),
     GoRoute(
       path: '/quote/client-details',

@@ -1,16 +1,44 @@
-# koji
+# Kôji - Devis de Rénovation
 
-A new Flutter project.
+Application Flutter pour la création de devis de rénovation immobilière.
 
-## Getting Started
+## Configuration
 
-This project is a starting point for a Flutter application.
+### Variables d'environnement
 
-A few resources to get you started if this is your first Flutter project:
+L'application utilise `dart-define` pour la configuration sécurisée de Supabase :
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+# Développement (avec clé par défaut)
+flutter run
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# Production (avec votre clé Supabase)
+flutter run --dart-define=SUPABASE_ANON_KEY=votre_clé_anon_supabase
+```
+
+### Configuration Supabase
+
+1. Créez un projet sur [Supabase](https://supabase.com)
+2. Obtenez votre clé anon depuis les paramètres du projet
+3. Utilisez la commande avec `--dart-define` pour spécifier la clé
+
+## Développement
+
+### Prérequis
+
+- Flutter SDK >= 3.2.0
+- Dart SDK >= 3.2.0
+
+### Installation
+
+```bash
+flutter pub get
+flutter run
+```
+
+## Fonctionnalités
+
+- Création de profils d'entreprise
+- Estimation de devis par pièces
+- Calcul automatique des ratios MO/Matériaux
+- Export PDF des devis

@@ -1,0 +1,277 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+class ChantierBudgetScreen extends StatefulWidget {
+  final Map<String, dynamic> data;
+  const ChantierBudgetScreen({super.key, required this.data});
+
+  @override
+  State<ChantierBudgetScreen> createState() => _ChantierBudgetScreenState();
+}
+
+class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
+  static const _kDark = Color(0xFF0F172A);
+
+  late double _mainOeuvreReal;
+  late double _mainOeuvreEst;
+  late double _fournitureReal;
+  late double _fournitureEst;
+
+  @override
+  void initState() {
+    super.initState();
+    _mainOeuvreReal = (widget.data['mainOeuvreReal'] as num?)?.toDouble() ?? 0;
+    _mainOeuvreEst = (widget.data['mainOeuvreEstimated'] as num?)?.toDouble() ?? 0;
+    _fournitureReal = (widget.data['fournitureReal'] as num?)?.toDouble() ?? 0;
+    _fournitureEst = (widget.data['fournitureEstimated'] as num?)?.toDouble() ?? 0;
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F0EB),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildAppBar(context),
+            Expanded(
+              child: SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: _buildBudgetCard(
+                  mainOeuvreReal: _mainOeuvreReal,
+                  mainOeuvreEst: _mainOeuvreEst,
+                  fournitureReal: _fournitureReal,
+                  fournitureEst: _fournitureEst,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF5F0EB),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () => context.pop(),
+              child: const Icon(Icons.chevron_left_rounded,
+                  color: _kDark, size: 30),
+            ),
+          ),
+          const Text(
+            'Budget',
+            style: TextStyle(
+              fontFamily: 'Outfit',
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: _kDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetCard({
+    required double mainOeuvreReal,
+    required double mainOeuvreEst,
+    required double fournitureReal,
+    required double fournitureEst,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Budget',
+            style: TextStyle(
+              fontFamily: 'Outfit',
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: _kDark,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildBudgetRow(
+            label: "Main d'œuvre",
+            real: mainOeuvreReal,
+            estimated: mainOeuvreEst,
+          ),
+          const SizedBox(height: 20),
+          _buildBudgetRow(
+            label: 'Fourniture',
+            real: fournitureReal,
+            estimated: fournitureEst,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetRow({
+    required String label,
+    required double real,
+    required double estimated,
+  }) {
+    final bool overBudget = real > estimated;
+    final double progress =
+        estimated > 0 ? (real / estimated).clamp(0.0, 1.0) : 0.0;
+    final Color barColor =
+        overBudget ? const Color(0xFFEF4444) : _kDark;
+
+    final String realStr = _fmt(real);
+    final String estStr = _fmt(estimated);
+
+    return GestureDetector(
+      onTap: () {
+        if (label == "Main d'œuvre") {
+          _editBudget(label, 'mainOeuvreReal', 'mainOeuvreEstimated', real, estimated);
+        } else {
+          _editBudget(label, 'fournitureReal', 'fournitureEstimated', real, estimated);
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Outfit',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: _kDark,
+              ),
+            ),
+            Text(
+              '$realStr / $estStr €',
+              style: TextStyle(
+                fontFamily: 'Outfit',
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: overBudget ? const Color(0xFFEF4444) : _kDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 6,
+            backgroundColor: const Color(0xFFE2E8F0),
+            valueColor: AlwaysStoppedAnimation<Color>(barColor),
+          ),
+        ),
+      ],
+      ),
+    );
+  }
+
+  void _editBudget(String title, String dataKeyReal, String dataKeyEst, double currentReal, double currentEst) {
+    final realCtrl = TextEditingController(text: currentReal.toStringAsFixed(0));
+    final estCtrl = TextEditingController(text: currentEst.toStringAsFixed(0));
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Modifier $title',
+          style: const TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: _kDark),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: estCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Budget Estimé (€)',
+                labelStyle: TextStyle(fontFamily: 'Outfit'),
+              ),
+              style: const TextStyle(fontFamily: 'Outfit'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: realCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Coût Réel (€)',
+                labelStyle: TextStyle(fontFamily: 'Outfit'),
+              ),
+              style: const TextStyle(fontFamily: 'Outfit'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler', style: TextStyle(fontFamily: 'Outfit', color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newReal = double.tryParse(realCtrl.text) ?? 0;
+              final newEst = double.tryParse(estCtrl.text) ?? 0;
+              setState(() {
+                if (dataKeyReal == 'mainOeuvreReal') {
+                  _mainOeuvreReal = newReal;
+                  _mainOeuvreEst = newEst;
+                } else {
+                  _fournitureReal = newReal;
+                  _fournitureEst = newEst;
+                }
+                widget.data[dataKeyReal] = newReal;
+                widget.data[dataKeyEst] = newEst;
+              });
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: const Text('Enregistrer', style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _fmt(double v) {
+    // e.g. 2400 → "2 400"
+    return v
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d)(?=(\d{3})+$)'),
+          (m) => '${m[1]} ',
+        );
+  }
+}

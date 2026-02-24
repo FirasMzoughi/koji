@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/quote/quote_list_screen.dart';
+import 'package:koji/features/quote/chantier_list_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 
 // Import widgets
@@ -26,10 +28,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _onItemTapped(int index) {
     if (index == 3) {
-      // Handle "Plus" or "Menu" tab
-      // For now we can show a bottom sheet or navigate to a settings page
-      // context.push('/settings'); 
-      // Or just switch to it if we have a view for it
+      _showToolsSheet();
+      return;
     }
     setState(() {
       _selectedIndex = index;
@@ -37,8 +37,129 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onCreateProject() {
-     // TODO: Navigate to create project flow
-     // context.push('/create-project');
+    context.push('/chantier/create');
+  }
+
+  void _showToolsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Spacer(),
+                    const Spacer(),
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: const Icon(Icons.close, size: 18),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildPlusActionItem(
+                      label: 'Photo',
+                      icon: Icons.photo_camera,
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/quote/visual-proofs');
+                      },
+                    ),
+                    _buildPlusActionItem(
+                      label: 'Tâche',
+                      icon: Icons.fact_check,
+                      onTap: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Tâches bientôt disponibles')),
+                        );
+                      },
+                    ),
+                    _buildPlusActionItem(
+                      label: 'Dépense',
+                      icon: Icons.payments,
+                      onTap: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Dépenses bientôt disponibles')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlusActionItem({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(icon, size: 30, color: const Color(0xFF0F3995)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Outfit',
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F3995),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -62,8 +183,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Devis Tab (Index 1)
               const QuoteListScreen(),
               
-              // Chantier Tab (Index 2) - Placeholder
-              const Center(child: Text("Chantiers (Coming Soon)")),
+              // Chantier Tab (Index 2)
+              const ChantierListScreen(),
               
               // Plus/Menu Tab (Index 3) - Placeholder
               const Center(child: Text("Menu (Updates coming)")),

@@ -54,6 +54,31 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
     return items.fold(0.0, (sum, item) => sum + item.total);
   }
 
+  Map<String, double> _calculateRoomRatio(String roomId) {
+    final items = _localEstimations[roomId] ?? [];
+    if (items.isEmpty) {
+      return {'labor': 0.0, 'material': 0.0};
+    }
+
+    double totalLabor = 0.0;
+    double totalMaterial = 0.0;
+
+    for (final item in items) {
+      totalLabor += item.laborCost * item.quantity * (1 + item.tax / 100);
+      totalMaterial += item.materialCost * item.quantity * (1 + item.tax / 100);
+    }
+
+    final total = totalLabor + totalMaterial;
+    if (total == 0.0) {
+      return {'labor': 0.0, 'material': 0.0};
+    }
+
+    return {
+      'labor': (totalLabor / total) * 100,
+      'material': (totalMaterial / total) * 100,
+    };
+  }
+
   void _updateItem(String roomId, int index, ExpenseItem newItem) {
     setState(() {
       _localEstimations[roomId]?[index] = newItem;
@@ -75,6 +100,33 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
 
     // Navigate
     context.push('/quote/detail', extra: ref.read(quoteCreationProvider).toMap());
+  }
+
+  void _navigateToRoom(String roomId) {
+    // Save current room data before switching
+    _localEstimations.forEach((roomId, items) {
+      ref.read(quoteCreationProvider.notifier).updateRoomEstimation(roomId, items);
+    });
+    
+    setState(() {
+      _selectedRoomId = roomId;
+    });
+  }
+
+  void _nextRoom() {
+    final roomIds = ref.read(quoteCreationProvider).selectedRoomIds;
+    final currentIndex = roomIds.indexOf(_selectedRoomId);
+    if (currentIndex < roomIds.length - 1) {
+      _navigateToRoom(roomIds[currentIndex + 1]);
+    }
+  }
+
+  void _previousRoom() {
+    final roomIds = ref.read(quoteCreationProvider).selectedRoomIds;
+    final currentIndex = roomIds.indexOf(_selectedRoomId);
+    if (currentIndex > 0) {
+      _navigateToRoom(roomIds[currentIndex - 1]);
+    }
   }
 
   @override
@@ -237,6 +289,10 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
   }
 
   Widget _buildTotalCard(double total) {
+    final ratio = _calculateRoomRatio(_selectedRoomId);
+    final laborPercentage = ratio['labor']!.toStringAsFixed(0);
+    final materialPercentage = ratio['material']!.toStringAsFixed(0);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -259,13 +315,13 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
             style: const TextStyle(fontFamily: 'Outfit', color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          // Simple MO/Mat ratio visualization (mock for now because dynamic calc per item is heavy)
+          // Real MO/Mat ratio visualization
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendDot(const Color(0xFF1D74FF), "MO: 60%"), // TODO: Calc real %
+              _buildLegendDot(const Color(0xFF1D74FF), "MO: $laborPercentage%"),
               const SizedBox(width: 16),
-              _buildLegendDot(Colors.white, "Mat: 40%"),
+              _buildLegendDot(Colors.white, "Mat: $materialPercentage%"),
             ],
           )
         ],
@@ -473,15 +529,78 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -4))],
       ),
-      child: ElevatedButton(
-        onPressed: _saveAndContinue,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.darkNavy,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        child: const Text('Valider le Devis', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+      child: Column(
+        children: [
+          // Room Navigation
+          if (ref.read(quoteCreationProvider).selectedRoomIds.length > 1) ...[
+            Row(
+              children: [
+                IconButton(
+                  onPressed: _previousRoom,
+                  icon: const Icon(Icons.arrow_back_ios, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.grey[100],
+                    foregroundColor: AppTheme.darkNavy,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${ref.read(quoteCreationProvider).selectedRoomIds.indexOf(_selectedRoomId) + 1} / ${ref.read(quoteCreationProvider).selectedRoomIds.length}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.darkNavy,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  onPressed: _nextRoom,
+                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.grey[100],
+                    foregroundColor: AppTheme.darkNavy,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+          
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.go('/rooms'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.darkNavy,
+                    side: const BorderSide(color: AppTheme.darkNavy),
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Créer un projet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: _saveAndContinue,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.darkNavy,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Valider le Devis', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

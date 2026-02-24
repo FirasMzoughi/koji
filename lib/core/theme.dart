@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:koji/core/responsive_helper.dart';
 
 class AppTheme {
@@ -18,14 +19,17 @@ class AppTheme {
   static const Color backgroundDark = Color(0xFF121212); // Standard dark bg
   static const Color surfaceDark = Color(0xFF1E1E1E); // Slightly lighter for cards in dark mode
 
-  // Outfit font family constant
-  static const String fontFamily = 'Outfit';
+  // Google Fonts - Outfit
+  static TextStyle outfitTextStyle({FontWeight? fontWeight}) {
+    return GoogleFonts.outfit(
+      fontWeight: fontWeight ?? FontWeight.normal,
+    );
+  }
 
   // Text Styles - Responsive
   static TextStyle headingStyle(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return TextStyle(
-      fontFamily: fontFamily,
+    return GoogleFonts.outfit(
       fontSize: context.responsive.fontSize(28),
       fontWeight: FontWeight.bold,
       color: isDark ? Colors.white : darkNavy,
@@ -35,16 +39,14 @@ class AppTheme {
 
   static TextStyle bodyStyle(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return TextStyle(
-      fontFamily: fontFamily,
+    return GoogleFonts.outfit(
       fontSize: context.responsive.fontSize(16),
       color: isDark ? Colors.grey[400] : textLight,
       height: 1.5,
     );
   }
 
-  static TextStyle buttonTextStyle(BuildContext context) => TextStyle(
-    fontFamily: fontFamily,
+  static TextStyle buttonTextStyle(BuildContext context) => GoogleFonts.outfit(
     fontSize: context.responsive.fontSize(16),
     fontWeight: FontWeight.w600,
     color: Colors.white,
@@ -53,24 +55,19 @@ class AppTheme {
   // Light Theme
   static ThemeData lightThemeData(BuildContext context) {
     final responsive = context.responsive;
+    final textTheme = GoogleFonts.outfitTextTheme(Theme.of(context).textTheme);
     
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: backgroundLight,
       primaryColor: primaryBlueLight,
-      fontFamily: fontFamily,
+      textTheme: textTheme,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryBlueLight,
         primary: primaryBlueLight,
         surface: backgroundLight,
         brightness: Brightness.light,
-      ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(fontFamily: fontFamily),
-        bodyMedium: TextStyle(fontFamily: fontFamily),
-      ).apply(
-        fontFamily: fontFamily,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -92,27 +89,23 @@ class AppTheme {
   // Dark Theme
   static ThemeData darkThemeData(BuildContext context) {
     final responsive = context.responsive;
+    final textTheme = GoogleFonts.outfitTextTheme(Theme.of(context).textTheme).apply(
+      bodyColor: Colors.white,
+      displayColor: Colors.white,
+    );
     
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: backgroundDark,
       primaryColor: primaryBlueDark,
-      fontFamily: TextStyle(fontFamily: 'Outfit', ).fontFamily,
+      textTheme: textTheme,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryBlueDark,
         primary: primaryBlueDark,
         surface: surfaceDark,
         brightness: Brightness.dark,
         onSurface: Colors.white,
-      ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(fontFamily: fontFamily),
-        bodyMedium: TextStyle(fontFamily: fontFamily),
-      ).apply(
-        fontFamily: fontFamily,
-        bodyColor: Colors.white,
-        displayColor: Colors.white,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

@@ -50,7 +50,7 @@ class OnboardingNavigationControls extends StatelessWidget {
                 child: Container(
                   padding: EdgeInsets.all(responsive.width(4.3)),
                   decoration: const BoxDecoration(
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.primaryBlueDark,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -77,7 +77,7 @@ class OnboardingNavigationControls extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Outfit', 
                       fontSize: responsive.fontSize(16),
-                      color: const Color(0xFF7CA7F4), // Light blueish per screenshot, or use primaryBlueLight
+                      color:  AppTheme.primaryBlueDark, // Light blueish per screenshot, or use primaryBlueLight
                       fontWeight: FontWeight.w600,
                     ),
                   ),

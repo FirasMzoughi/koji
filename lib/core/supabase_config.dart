@@ -2,7 +2,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseConfig {
   static const String supabaseUrl = 'https://hbgqbpyufaajqmedxodg.supabase.co';
-  static const String supabaseAnonKey = 'sb_publishable_nD_mz7oSnwq_4hYpg8wRSQ_PCxHFdMU'; // TODO: Replace with actual anon key
+  
+  // Use dart-define for secure configuration
+  static String get supabaseAnonKey {
+    return const String.fromEnvironment('SUPABASE_ANON_KEY', 
+      defaultValue: 'sb_publishable_nD_mz7oSnwq_4hYpg8wRSQ_PCxHFdMU'); // Fallback for development
+  }
   
   static SupabaseClient get client => Supabase.instance.client;
   

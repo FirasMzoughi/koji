@@ -1,0 +1,403 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+class ChantierCreationScreen extends ConsumerStatefulWidget {
+  const ChantierCreationScreen({super.key});
+
+  @override
+  ConsumerState<ChantierCreationScreen> createState() =>
+      _ChantierCreationScreenState();
+}
+
+class _ChantierCreationScreenState
+    extends ConsumerState<ChantierCreationScreen> {
+  final _referenceController = TextEditingController();
+  final _streetController = TextEditingController();
+  final _postalCodeController = TextEditingController();
+  final _cityController = TextEditingController();
+
+  String _selectedPropertyType = 'Maison';
+  bool _dropdownOpen = false;
+
+  final List<String> _propertyTypes = [
+    'Appartement',
+    'Maison',
+    'Local',
+    'Autre',
+  ];
+
+  @override
+  void dispose() {
+    _referenceController.dispose();
+    _streetController.dispose();
+    _postalCodeController.dispose();
+    _cityController.dispose();
+    super.dispose();
+  }
+
+  void _onNext() {
+    if (_referenceController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez renseigner la référence du chantier'),
+          backgroundColor: Color(0xFF0F172A),
+        ),
+      );
+      return;
+    }
+    context.push('/chantier/dashboard', extra: <String, dynamic>{
+      'reference': _referenceController.text.trim(),
+      'street': _streetController.text.trim(),
+      'postalCode': _postalCodeController.text.trim(),
+      'city': _cityController.text.trim(),
+      'propertyType': _selectedPropertyType,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF5EDE3), Colors.white],
+            stops: [0.0, 0.45],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // App Bar
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE8E8E8)),
+                        ),
+                        child: const Icon(
+                          Icons.chevron_left_rounded,
+                          color: Color(0xFF0F172A),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Nouveau chantier',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 36), // balance
+                  ],
+                ),
+              ),
+
+              // Scrollable form
+              Expanded(
+                child: SingleChildScrollView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+
+                      // Référence du chantier
+                      _buildLabel('Référence  du chantier'),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _referenceController,
+                        hint: 'Loft Durand - Cuisine ...',
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Numéro / Rue
+                      _buildLabel('Numéro /Rue'),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _streetController,
+                        hint: 'Rajouter votre texte...',
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Code postale
+                      _buildLabel('Code postale'),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _postalCodeController,
+                        hint: 'Rajouter votre texte...',
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Ville
+                      _buildLabel('Ville'),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _cityController,
+                        hint: 'Rajouter votre texte...',
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Type du bien
+                      _buildLabel('Type du bien'),
+                      const SizedBox(height: 8),
+                      _buildPropertyTypeDropdown(),
+
+                      const SizedBox(height: 120),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Sticky bottom button
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                color: Colors.white,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _onNext,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F172A),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(32),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Suivant',
+                              style: TextStyle(
+                                fontFamily: 'Outfit',
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              '→',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        context.push('/chantier/dashboard', extra: <String, dynamic>{
+                          'reference': 'Chantier',
+                          'street': '',
+                          'postalCode': '',
+                          'city': '',
+                          'propertyType': _selectedPropertyType,
+                        });
+                      },
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                      ),
+                      child: const Text(
+                        'Passer',
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontFamily: 'Outfit',
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF0F172A),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: const TextStyle(
+        fontFamily: 'Outfit',
+        fontSize: 15,
+        color: Color(0xFF0F172A),
+      ),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(
+          fontFamily: 'Outfit',
+          fontSize: 15,
+          color: const Color(0xFF0F172A).withOpacity(0.35),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF0F172A), width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPropertyTypeDropdown() {
+    return Column(
+      children: [
+        // Main dropdown button
+        GestureDetector(
+          onTap: () => setState(() => _dropdownOpen = !_dropdownOpen),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: _dropdownOpen
+                  ? const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    )
+                  : BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _selectedPropertyType,
+                  style: const TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: _dropdownOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Dropdown options
+        if (_dropdownOpen)
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              border: const Border(
+                left: BorderSide(color: Color(0xFFE2E8F0)),
+                right: BorderSide(color: Color(0xFFE2E8F0)),
+                bottom: BorderSide(color: Color(0xFFE2E8F0)),
+              ),
+            ),
+            child: Column(
+              children: _propertyTypes.map((type) {
+                final isSelected = type == _selectedPropertyType;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedPropertyType = type;
+                      _dropdownOpen = false;
+                    });
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFFF8F8F8)
+                          : Colors.transparent,
+                    ),
+                    child: Text(
+                      type,
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        fontSize: 15,
+                        color: isSelected
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFF475569),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+}

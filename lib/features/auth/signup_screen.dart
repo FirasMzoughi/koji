@@ -186,7 +186,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 // First Name
                 _buildTextField(
                   controller: _firstNameController,
-                  label: 'Saif',
+                  label: 'Prénom',
                   onChanged: (_) => setState(() {}),
                 ),
                 
@@ -195,7 +195,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 // Last Name
                 _buildTextField(
                   controller: _lastNameController,
-                  label: 'Smida',
+                  label: 'Nom',
                   onChanged: (_) => setState(() {}),
                 ),
                 
@@ -204,7 +204,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 // Email
                 _buildTextField(
                   controller: _emailController,
-                  label: 'Client123@example.abc',
+                  label: 'votre@email.com',
                   keyboardType: TextInputType.emailAddress,
                   onChanged: (_) => setState(() {}),
                 ),
@@ -214,7 +214,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 // Password
                 _buildTextField(
                   controller: _passwordController,
-                  label: '**********',
+                  label: 'Mot de passe (min. 8 caractères)',
                   obscureText: _obscurePassword,
                   onChanged: (_) => setState(() {}),
                   suffixIcon: IconButton(

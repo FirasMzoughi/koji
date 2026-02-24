@@ -71,8 +71,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final user = authState.value;
 
     if (user == null) {
-      // No account - go to onboarding
-      if (mounted) context.go('/onboarding');
+      // No account - go directly to welcome skipping onboarding
+      if (mounted) context.go('/welcome');
     } else {
       // Has account - Check for logo in Supabase
       try {
