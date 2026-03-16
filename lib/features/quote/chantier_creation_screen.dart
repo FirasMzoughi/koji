@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/features/quote/repositories/chantier_repository.dart';
 
 class ChantierCreationScreen extends ConsumerStatefulWidget {
   const ChantierCreationScreen({super.key});
@@ -36,7 +37,9 @@ class _ChantierCreationScreenState
     super.dispose();
   }
 
-  void _onNext() {
+  bool _isLoading = false;
+
+  Future<void> _onNext() async {
     if (_referenceController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -46,13 +49,40 @@ class _ChantierCreationScreenState
       );
       return;
     }
-    context.push('/chantier/dashboard', extra: <String, dynamic>{
-      'reference': _referenceController.text.trim(),
-      'street': _streetController.text.trim(),
-      'postalCode': _postalCodeController.text.trim(),
-      'city': _cityController.text.trim(),
-      'propertyType': _selectedPropertyType,
-    });
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repository = ChantierRepository();
+
+      final data = {
+        'reference': _referenceController.text.trim(),
+        'street': _streetController.text.trim(),
+        'postalCode': _postalCodeController.text.trim(),
+        'city': _cityController.text.trim(),
+        'propertyType': _selectedPropertyType,
+      };
+
+      final chantierId = await repository.createChantier(data);
+      data['id'] = chantierId; // Inject ID for the dashboard
+
+      if (mounted) {
+        context.push('/chantier/dashboard', extra: data);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -78,7 +108,13 @@ class _ChantierCreationScreenState
                 child: Row(
                   children: [
                     GestureDetector(
-                      onTap: () => context.pop(),
+                      onTap: () {
+                        if (Navigator.canPop(context)) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
+                      },
                       child: Container(
                         width: 36,
                         height: 36,
@@ -180,7 +216,7 @@ class _ChantierCreationScreenState
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _onNext,
+                        onPressed: _isLoading ? null : _onNext,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0F172A),
                           shape: RoundedRectangleBorder(
@@ -188,55 +224,37 @@ class _ChantierCreationScreenState
                           ),
                           elevation: 0,
                         ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Suivant',
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Suivant',
+                                    style: TextStyle(
+                                      fontFamily: 'Outfit',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    '→',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              '→',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () {
-                        context.push('/chantier/dashboard', extra: <String, dynamic>{
-                          'reference': 'Chantier',
-                          'street': '',
-                          'postalCode': '',
-                          'city': '',
-                          'propertyType': _selectedPropertyType,
-                        });
-                      },
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
-                        ),
-                      ),
-                      child: const Text(
-                        'Passer',
-                        style: TextStyle(
-                          fontFamily: 'Outfit',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF64748B),
-                        ),
                       ),
                     ),
                   ],
@@ -279,7 +297,7 @@ class _ChantierCreationScreenState
         hintStyle: TextStyle(
           fontFamily: 'Outfit',
           fontSize: 15,
-          color: const Color(0xFF0F172A).withOpacity(0.35),
+          color: const Color(0xFF0F172A).withValues(alpha: 0.35),
         ),
         filled: true,
         fillColor: Colors.white,
@@ -387,9 +405,8 @@ class _ChantierCreationScreenState
                         color: isSelected
                             ? const Color(0xFF0F172A)
                             : const Color(0xFF475569),
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ),

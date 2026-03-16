@@ -33,14 +33,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   static const List<OnboardingPageData> _pages = [
     OnboardingPageData(
       title: 'Pilotez vos chantiers simplement',
-      description:
-          'Du premier rendez-vous client jusqu\'à la fin des travaux',
+      description: 'Du premier rendez-vous client jusqu\'à la fin des travaux',
       imagePath: 'assets/images/onboarding_1.png',
     ),
     OnboardingPageData(
       title: 'Suivez le chantier au quotidien',
-      description:
-          'Photos, notes et avancement centralisés au même endroit',
+      description: 'Photos, notes et avancement centralisés au même endroit',
       imagePath: 'assets/images/onboarding_2.png',
     ),
     OnboardingPageData(

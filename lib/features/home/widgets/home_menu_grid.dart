@@ -13,21 +13,30 @@ class HomeMenuGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: 0.9, 
+      childAspectRatio: 0.9,
       padding: EdgeInsets.zero,
       children: [
-        _buildItem(context, "Mes Chantiers", Icons.home_filled, const Color(0xFF1D74FF)),
-        _buildItem(context, "Fournitures", Icons.build, const Color(0xFF1D74FF), onTap: () => context.push('/fournitures')),
-        _buildItem(context, "Historique", Icons.map_outlined, const Color(0xFF1D74FF)),
-        
-        _buildItem(context, "Signature", Icons.draw_outlined, const Color(0xFF1D74FF), onTap: () => context.push('/signature')),
-        _buildItem(context, "Calendrier", Icons.calendar_today, const Color(0xFF1D74FF)),
-        _buildItem(context, "Synchronisation", Icons.group_outlined, const Color(0xFF1D74FF), onTap: () => context.push('/synchronization')),
+        _buildItem(context, "Mes Chantiers", Icons.home_filled,
+            const Color(0xFF1D74FF)),
+        _buildItem(context, "Fournitures", Icons.build, const Color(0xFF1D74FF),
+            onTap: () => context.push('/fournitures')),
+        _buildItem(
+            context, "Historique", Icons.map_outlined, const Color(0xFF1D74FF)),
+        _buildItem(
+            context, "Signature", Icons.draw_outlined, const Color(0xFF1D74FF),
+            onTap: () => context.push('/signature')),
+        _buildItem(context, "Calendrier", Icons.calendar_today,
+            const Color(0xFF1D74FF)),
+        _buildItem(context, "Synchronisation", Icons.group_outlined,
+            const Color(0xFF1D74FF),
+            onTap: () => context.push('/synchronization')),
       ],
     );
   }
 
-  Widget _buildItem(BuildContext context, String title, IconData icon, Color mainColor, {VoidCallback? onTap}) {
+  Widget _buildItem(
+      BuildContext context, String title, IconData icon, Color mainColor,
+      {VoidCallback? onTap}) {
     return HomeGridItem(
       title: title,
       icon: icon,
@@ -63,7 +72,7 @@ class HomeGridItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -82,24 +91,27 @@ class HomeGridItem extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: mainColor.withOpacity(0.05), // Very subtle
+                      color: mainColor.withValues(alpha: 0.05), // Very subtle
                     ),
                   ),
                 // Icon with subtle depth
-                Icon(icon, 
-                  color: isDark ? Colors.white : const Color(0xFF0F3995), // Deep Blue Icon
-                  size: 32
-                ),
+                Icon(icon,
+                    color: isDark
+                        ? Colors.white
+                        : const Color(0xFF0F3995), // Deep Blue Icon
+                    size: 32),
                 // Add a small "gloss" or secondary icon if needed for specific items (like "Calendrier" having a date)
                 if (title == "Calendrier")
-                   Padding(
-                     padding: const EdgeInsets.only(top: 6),
-                     child: Text("31", style: TextStyle(
-                       fontSize: 10, 
-                       fontWeight: FontWeight.bold,
-                       color: isDark ? Colors.white : const Color(0xFF0F3995)
-                     )),
-                   )
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text("31",
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F3995))),
+                  )
               ],
             ),
             const SizedBox(height: 12),
@@ -110,10 +122,13 @@ class HomeGridItem extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Outfit', 
+                style: TextStyle(
+                  fontFamily: 'Outfit',
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white.withOpacity(0.9) : const Color(0xFF0F3995),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : const Color(0xFF0F3995),
                 ),
               ),
             ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:koji/features/pricing/models/pricing_models.dart';
@@ -24,7 +25,7 @@ class PricingRepository {
       if (response == null) return null;
       return PricingProfile.fromJson(response);
     } catch (e) {
-      print('Error fetching pricing profile: $e');
+      debugPrint('Error fetching pricing profile: $e');
       return null;
     }
   }
@@ -32,16 +33,14 @@ class PricingRepository {
   // Fetch all pricing profiles (for admin settings)
   Future<List<PricingProfile>> getAllProfiles() async {
     try {
-      final response = await _supabase
-          .from('pricing_profiles')
-          .select()
-          .order('profession');
+      final response =
+          await _supabase.from('pricing_profiles').select().order('profession');
 
       return (response as List)
           .map((json) => PricingProfile.fromJson(json))
           .toList();
     } catch (e) {
-      print('Error fetching pricing profiles: $e');
+      debugPrint('Error fetching pricing profiles: $e');
       return [];
     }
   }
@@ -54,7 +53,7 @@ class PricingRepository {
           .update(profile.toJson())
           .eq('id', profile.id);
     } catch (e) {
-      print('Error updating pricing profile: $e');
+      debugPrint('Error updating pricing profile: $e');
       rethrow;
     }
   }
@@ -72,7 +71,7 @@ class PricingRepository {
 
       // Fetch material requirements for all tasks
       final taskIds = tasks.map((t) => t['id'] as String).toList();
-      
+
       final List<MaterialRequirement> allRequirements = [];
       if (taskIds.isNotEmpty) {
         final reqResponse = await _supabase
@@ -80,22 +79,22 @@ class PricingRepository {
             .select()
             .inFilter('task_id', taskIds);
 
-        allRequirements.addAll(
-          (reqResponse as List).map((json) => MaterialRequirement.fromJson(json)).toList()
-        );
+        allRequirements.addAll((reqResponse as List)
+            .map((json) => MaterialRequirement.fromJson(json))
+            .toList());
       }
 
-      // Map requirements to tasks
+      // Map requirements to tasks using the strongly-typed taskId field directly
+      // (avoids the bug where req.toJson()['task_id'] was undefined)
       return tasks.map((taskJson) {
         final taskId = taskJson['id'] as String;
-        final requirements = allRequirements
-            .where((req) => (req.toJson()['task_id'] ?? '') == taskId)
-            .toList();
-        
+        final requirements =
+            allRequirements.where((req) => req.taskId == taskId).toList();
+
         return SmartTask.fromJson(taskJson, requirements: requirements);
       }).toList();
     } catch (e) {
-      print('Error fetching smart tasks: $e');
+      debugPrint('Error fetching smart tasks: $e');
       return [];
     }
   }
@@ -122,19 +121,21 @@ class PricingRepository {
 
       return SmartTask.fromJson(taskResponse, requirements: requirements);
     } catch (e) {
-      print('Error fetching task by ID: $e');
+      debugPrint('Error fetching task by ID: $e');
       return null;
     }
   }
 }
 
 // Providers for accessing pricing data
-final pricingProfileProvider = FutureProvider.family<PricingProfile?, String>((ref, profession) async {
+final pricingProfileProvider =
+    FutureProvider.family<PricingProfile?, String>((ref, profession) async {
   final repo = ref.read(pricingRepositoryProvider);
   return await repo.getProfileForProfession(profession);
 });
 
-final smartTasksProvider = FutureProvider.family<List<SmartTask>, String>((ref, profession) async {
+final smartTasksProvider =
+    FutureProvider.family<List<SmartTask>, String>((ref, profession) async {
   final repo = ref.read(pricingRepositoryProvider);
   return await repo.getTasksForProfession(profession);
 });

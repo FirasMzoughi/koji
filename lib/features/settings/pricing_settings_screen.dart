@@ -8,11 +8,11 @@ class PricingSettingsScreen extends ConsumerStatefulWidget {
   const PricingSettingsScreen({super.key});
 
   @override
-  ConsumerState<PricingSettingsScreen> createState() => _PricingSettingsScreenState();
+  ConsumerState<PricingSettingsScreen> createState() =>
+      _PricingSettingsScreenState();
 }
 
 class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
-  
   // Refresh trigger
   int _refreshKey = 0;
 
@@ -26,7 +26,7 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
   Widget build(BuildContext context) {
     // Fetch all pricing profiles
     final repo = ref.read(pricingRepositoryProvider);
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -120,7 +120,7 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Daily Rate
               _buildInfoRow(
                 'Tarif journalier',
@@ -128,7 +128,7 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                 Icons.euro,
               ),
               const SizedBox(height: 8),
-              
+
               // Hours per day
               _buildInfoRow(
                 'Heures par jour',
@@ -136,7 +136,7 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                 Icons.access_time,
               ),
               const SizedBox(height: 8),
-              
+
               // Calculated hourly rate
               _buildInfoRow(
                 'Coût horaire',
@@ -151,7 +151,8 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, IconData icon, {bool isHighlighted = false}) {
+  Widget _buildInfoRow(String label, String value, IconData icon,
+      {bool isHighlighted = false}) {
     return Row(
       children: [
         Icon(icon, size: 18, color: Colors.grey[600]),
@@ -168,7 +169,9 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isHighlighted ? const Color(0xFF1E3A8A).withOpacity(0.1) : Colors.grey[100],
+            color: isHighlighted
+                ? const Color(0xFF1E3A8A).withValues(alpha: 0.1)
+                : Colors.grey[100],
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -219,8 +222,10 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
   }
 
   void _showEditDialog(PricingProfile profile) {
-    final dailyRateController = TextEditingController(text: profile.dailyRateHT.toStringAsFixed(0));
-    final hoursController = TextEditingController(text: profile.hoursPerDay.toStringAsFixed(1));
+    final dailyRateController =
+        TextEditingController(text: profile.dailyRateHT.toStringAsFixed(0));
+    final hoursController =
+        TextEditingController(text: profile.hoursPerDay.toStringAsFixed(1));
 
     showDialog(
       context: context,
@@ -229,12 +234,14 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
           builder: (context, setDialogState) {
             double? dailyRate = double.tryParse(dailyRateController.text);
             double? hours = double.tryParse(hoursController.text);
-            double? hourlyRate = (dailyRate != null && hours != null && hours > 0)
-                ? dailyRate / hours
-                : null;
+            double? hourlyRate =
+                (dailyRate != null && hours != null && hours > 0)
+                    ? dailyRate / hours
+                    : null;
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: Row(
                 children: [
                   _getProfessionIcon(profile.profession),
@@ -261,32 +268,37 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                       decoration: InputDecoration(
                         labelText: 'Tarif journalier (€ HT)',
                         prefixIcon: const Icon(Icons.euro),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       onChanged: (_) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Hours per day Input
                     TextField(
                       controller: hoursController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Heures par jour',
                         prefixIcon: const Icon(Icons.access_time),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       onChanged: (_) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Calculated Hourly Rate Display
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E3A8A).withOpacity(0.1),
+                        color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF1E3A8A).withOpacity(0.3)),
+                        border: Border.all(
+                            color:
+                                const Color(0xFF1E3A8A).withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -330,13 +342,16 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E3A8A),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                   ),
                   onPressed: dailyRate != null && hours != null && hours > 0
                       ? () => _saveProfile(profile, dailyRate, hours)
                       : null,
-                  child: const Text('Enregistrer', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Enregistrer',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             );
@@ -346,7 +361,8 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
     );
   }
 
-  Future<void> _saveProfile(PricingProfile profile, double newDailyRate, double newHours) async {
+  Future<void> _saveProfile(
+      PricingProfile profile, double newDailyRate, double newHours) async {
     try {
       final repo = ref.read(pricingRepositoryProvider);
       final updatedProfile = PricingProfile(

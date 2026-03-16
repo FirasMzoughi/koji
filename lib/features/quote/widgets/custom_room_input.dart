@@ -22,7 +22,7 @@ class CustomRoomInput extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -35,8 +35,9 @@ class CustomRoomInput extends StatelessWidget {
               const Icon(Icons.input, size: 20, color: AppTheme.darkNavy),
               const SizedBox(width: 12),
               Text(
-                "Ajouter une pièce personnalisée",
-                style: TextStyle(fontFamily: 'Outfit', 
+                "Ajouter une pièce",
+                style: TextStyle(
+                  fontFamily: 'Outfit',
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                   color: AppTheme.darkNavy,
@@ -52,11 +53,13 @@ class CustomRoomInput extends StatelessWidget {
                   controller: controller,
                   decoration: InputDecoration(
                     hintText: 'Ex: Buanderie, Garage...',
-                    hintStyle: TextStyle(fontFamily: 'Outfit', 
+                    hintStyle: TextStyle(
+                      fontFamily: 'Outfit',
                       color: const Color(0xFF9CA3AF),
                       fontSize: 14,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: Color(0xFFD1D5DB)),

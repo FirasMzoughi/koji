@@ -1,194 +1,250 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koji/features/synchronization/data/worker_model.dart';
-import 'package:koji/features/synchronization/worker_list_screen.dart'; // To reuse logic if needed, or simple nav
 
 class WorkerSuccessScreen extends StatelessWidget {
-  final Worker? worker; // Optional, to show details
+  final Worker? worker;
 
   const WorkerSuccessScreen({super.key, this.worker});
 
   @override
   Widget build(BuildContext context) {
-    // Defines context specific colors
-    final darkBlue = const Color(0xFF0F3995);
-    final primaryBlue = const Color(0xFF1D74FF);
-    final scaffoldBg = const Color(0xFFF5F8FF);
+    const darkNavy = Color(0xFF0A1227);
+    const appBg = Color(0xFFFBFBFC);
 
     return Scaffold(
-      backgroundColor: scaffoldBg,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Spacer(),
-              
-              // Success Icon
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE3F2FD),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Container(
-                    padding: EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: primaryBlue,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                         BoxShadow(
-                          color: primaryBlue.withOpacity(0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ]
-                    ),
-                    child: const Icon(Icons.check, color: Colors.white, size: 40),
-                  ),
+      backgroundColor: appBg,
+      body: Stack(
+        children: [
+          // Background Gradient
+          Positioned(
+            top: -50,
+            right: -100,
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFBE4D2).withValues(alpha: 0.6),
+                    const Color(0xFFFBE4D2).withValues(alpha: 0.0),
+                  ],
                 ),
               ),
-              
-              const SizedBox(height: 32),
-              
-              Text(
-                "Profil Créé avec Succès!",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: darkBlue,
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              Text(
-                "Le nouveau collaborateur a été ajouté à votre base de données",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontSize: 16,
-                  color: Colors.grey[500],
-                  height: 1.5,
-                ),
-              ),
-              
-              const SizedBox(height: 48),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Column(
+                children: [
+                  const Spacer(flex: 2),
 
-              // Worker Card Preview (Static for now or using passed worker)
-              if (worker != null)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                       Container(
-                        width: 50,
-                        height: 50,
+                  // Green checkmark
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 72,
+                        height: 72,
                         decoration: BoxDecoration(
-                          color: Colors.amber[100],
-                          borderRadius: BorderRadius.circular(8),
-                          // image: ...
+                          color: const Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981)
+                                  .withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
-                         child: const Icon(Icons.person, color: Colors.brown),
+                        child: const Icon(Icons.check,
+                            color: Colors.white, size: 36),
                       ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "${worker!.firstName} ${worker!.lastName}",
-                            style: TextStyle(
-                              fontFamily: 'Outfit',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: darkBlue,
-                            ),
-                          ),
-                          Text(
-                            "${worker!.profession} - ${worker!.status}",
-                            style: TextStyle(
-                               fontFamily: 'Outfit',
-                              fontSize: 12,
-                              color: Colors.grey[400],
-                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Title
+                  const Text(
+                    "Profil Créé avec Succès!",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: darkNavy,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    "Le nouveau collaborateur a été ajouté\nà votre base de données",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 14,
+                      color: Colors.grey[400],
+                      height: 1.5,
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Worker card
+                  if (worker != null)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      const Spacer(),
-                      Icon(Icons.chevron_right, color: Colors.grey[300]),
-                    ],
-                  ),
-                ),
+                      child: Row(
+                        children: [
+                          // Avatar
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD93D)
+                                  .withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.person,
+                                color: Color(0xFFFFD93D), size: 28),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "${worker!.firstName} ${worker!.lastName}",
+                                  style: const TextStyle(
+                                    fontFamily: 'Outfit',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: darkNavy,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF10B981),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      "${worker!.profession} - ${worker!.status}",
+                                      style: TextStyle(
+                                        fontFamily: 'Outfit',
+                                        fontSize: 12,
+                                        color: Colors.grey[400],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.chevron_right,
+                              color: Colors.grey[300], size: 22),
+                        ],
+                      ),
+                    ),
 
-              const Spacer(),
-              
-              // Action Buttons
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                     // Navigate to assign project (Placeholder)
-                     // context.go('/projects/assign', extra: worker);
-                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Affectation - Coming Soon")));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: darkBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const Spacer(flex: 3),
+
+                  // Affecter à un chantier Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.go('/projects');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: darkNavy,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Affecter à un chantier",
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(Icons.arrow_forward,
+                              color: Colors.white, size: 20),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Affecter à un chantier", style: TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 20, color: Colors.white)
-                    ],
+
+                  const SizedBox(height: 14),
+
+                  // Voir la liste button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton(
+                      onPressed: () => context.go('/workers'),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        elevation: 1,
+                        shadowColor:
+                            Colors.black.withValues(alpha: 0.06),
+                      ),
+                      child: const Text(
+                        "Voir la liste des ouvriers",
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: darkNavy,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+
+                  const SizedBox(height: 32),
+                ],
               ),
-              
-              const SizedBox(height: 16),
-              
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: OutlinedButton(
-                   onPressed: () {
-                     // Go back to list, clearing stack up to home or list
-                     context.go('/workers');
-                   },
-                   style: OutlinedButton.styleFrom(
-                     backgroundColor: Colors.white,
-                     side: BorderSide.none,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 2,
-                      shadowColor: Colors.black.withOpacity(0.05),
-                   ),
-                   child: Text("Voir la liste des ouvriers", style: TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: darkBlue)),
-                ),
-              ),
-              
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

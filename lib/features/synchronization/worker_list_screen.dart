@@ -11,11 +11,12 @@ class WorkerListScreen extends StatefulWidget {
 }
 
 class _WorkerListScreenState extends State<WorkerListScreen> {
-  final _repository = WorkerRepository();
-  final _searchController = TextEditingController();
-  List<Worker> _workers = [];
+  final WorkerRepository _workerRepo = WorkerRepository();
+  List<Worker> _allWorkers = [];
   bool _isLoading = true;
   String _searchQuery = '';
+  int _selectedTab = 0; // 0 = Ouvriers, 1 = Sous-traitants
+  final Set<String> _selectedWorkerIds = {};
 
   @override
   void initState() {
@@ -24,253 +25,460 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
   }
 
   Future<void> _loadWorkers() async {
-    setState(() => _isLoading = true);
     try {
-      final workers = await _repository.getWorkers(query: _searchQuery);
-      setState(() {
-        _workers = workers;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      // Handle error cleanly
+      final workers = await _workerRepo.getWorkers();
       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du chargement: $e')),
-        );
+        setState(() {
+          _allWorkers = workers;
+          _isLoading = false;
+        });
       }
+    } catch (e) {
+      debugPrint('Error loading workers: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _onSearch(String query) {
+  void _toggleSelection(String workerId) {
     setState(() {
-      _searchQuery = query;
+      if (_selectedWorkerIds.contains(workerId)) {
+        _selectedWorkerIds.remove(workerId);
+      } else {
+        _selectedWorkerIds.add(workerId);
+      }
     });
-    // Debouce could be added here
-    _loadWorkers();
+  }
+
+  List<Worker> get _filteredWorkers {
+    return _allWorkers.where((w) {
+      final name = "${w.firstName} ${w.lastName}".toLowerCase();
+      final matchesSearch = name.contains(_searchQuery.toLowerCase());
+      final matchesTab = _selectedTab == 0
+          ? w.contactType == 'Ouvrier'
+          : w.contactType == 'Sous-traitant';
+      return matchesSearch && matchesTab;
+    }).toList();
+  }
+
+  // Simulated favorites — first 2 workers (in real app this would be a DB field)
+  List<Worker> get _favoriteWorkers {
+    final filtered = _filteredWorkers;
+    return filtered.length >= 2 ? filtered.sublist(0, 2) : filtered;
+  }
+
+  List<Worker> get _otherWorkers {
+    final filtered = _filteredWorkers;
+    return filtered.length > 2 ? filtered.sublist(2) : [];
   }
 
   @override
   Widget build(BuildContext context) {
-    // Colors from design
-    final darkBlue = const Color(0xFF0F3995);
-    final scaffoldBg = const Color(0xFFF5F8FF); 
-    
+    const darkNavy = Color(0xFF0A1227);
+    const appBg = Color(0xFFF6F7FB);
+    const accentBlue = Color(0xFF1B2E58);
+
     return Scaffold(
-      backgroundColor: scaffoldBg,
+      backgroundColor: appBg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(context, darkBlue),
-              
-              const SizedBox(height: 24),
-              
-              // Search Bar
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                  border: Border.all(color: Colors.blue.withOpacity(0.1)),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onSearch,
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher un ouvrier...',
-                    hintStyle: TextStyle(
-                      fontFamily: 'Outfit',
-                      color: Colors.grey[400],
-                    ),
-                    prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // List
-              Expanded(
-                child: _isLoading 
-                ? const Center(child: CircularProgressIndicator())
-                : _workers.isEmpty 
-                  ? Center(child: Text("Aucun ouvrier trouvé", style: TextStyle(fontFamily: 'Outfit', color: Colors.grey[500])))
-                  : ListView.separated(
-                      itemCount: _workers.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        return _buildWorkerCard(context, _workers[index]);
-                      },
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/workers/create'), // Route to be added
-        backgroundColor: const Color(0xFF1D74FF),
-        child: const Icon(Icons.person_add, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, Color darkBlue) {
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: () => context.pop(),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(Icons.chevron_left, color: darkBlue, size: 24),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Text(
-          "Liste des Ouvriers",
-          style: TextStyle(
-            fontFamily: 'Outfit',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: darkBlue,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWorkerCard(BuildContext context, Worker worker) {
-    final bool isAvailable = worker.status == 'Disponible';
-    
-    return GestureDetector(
-      onTap: () => context.push('/workers/detail', extra: worker),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
+        child: Column(
           children: [
-            // Avatar with Status Indicator
-            Stack(
-              children: [
-                 Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.amber[100], // Fallback/Placeholder background
-                    borderRadius: BorderRadius.circular(12),
-                    image: worker.profilePictureUrl != null 
-                    ? DecorationImage(
-                        image: NetworkImage(worker.profilePictureUrl!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
+            // ── Header ──
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Back button
+                  GestureDetector(
+                    onTap: () {
+                      if (Navigator.canPop(context)) {
+                        context.pop();
+                      } else {
+                        context.go('/home');
+                      }
+                    },
+                    child: const Icon(Icons.chevron_left,
+                        color: darkNavy, size: 30),
                   ),
-                  child: worker.profilePictureUrl == null 
-                  ? Icon(Icons.person, color: Colors.brown[700], size: 30) // Placeholder
-                  : null, 
-                ),
-                Positioned(
-                  right: -2,
-                  bottom: -2,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: isAvailable ? const Color(0xFF00C853) : const Color(0xFFFFAB00), // Green or Amber
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                  const SizedBox(width: 10),
+                  // Title
+                  Expanded(
+                    child: Text(
+                      "Sélectionner des\nparticipants",
+                      style: const TextStyle(
+                        fontFamily: 'Outfit',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: darkNavy,
+                        height: 1.25,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 16),
-            
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "${worker.firstName} ${worker.lastName}",
-                        style: const TextStyle(
+                  // Valider button
+                  GestureDetector(
+                    onTap: () {
+                      // Return selected worker IDs
+                      final selectedWorkers = _allWorkers
+                          .where((w) => _selectedWorkerIds.contains(w.id))
+                          .toList();
+                      context.pop(selectedWorkers);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: accentBlue,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        "Valider",
+                        style: TextStyle(
                           fontFamily: 'Outfit',
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F3995),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
-                      // Status Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isAvailable ? const Color(0xFFE8F5E9) : const Color(0xFFE3F2FD),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          worker.status,
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: isAvailable ? const Color(0xFF2E7D32) : const Color(0xFF1976D2),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "${worker.profession} - ${worker.status}", // Or detailed status description
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontSize: 13,
-                      color: Colors.grey[400],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: Colors.grey[300]),
+
+            // ── Search Bar ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE8ECF2)),
+                ),
+                child: TextField(
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  style: const TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: darkNavy,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "Rechercher un participant...",
+                    hintStyle: TextStyle(
+                      fontFamily: 'Outfit',
+                      color: Colors.grey[400],
+                      fontWeight: FontWeight.w400,
+                      fontSize: 15,
+                    ),
+                    border: InputBorder.none,
+                    icon: Icon(Icons.search, color: Colors.grey[400], size: 22),
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            // ── Tab Pills ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF1F5),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    _buildTabPill("Ouvriers", 0, darkNavy),
+                    _buildTabPill("Sous-traitants", 1, darkNavy),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // ── Worker List ──
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          color: Color(0xFF2E65F3)))
+                  : _filteredWorkers.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.person_search,
+                                  size: 64, color: Colors.grey[300]),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Aucun participant trouvé",
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontSize: 16,
+                                  color: Colors.grey[400],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          children: [
+                            // Favoris section
+                            if (_favoriteWorkers.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _buildSectionHeader("Favoris"),
+                              const SizedBox(height: 8),
+                              ..._favoriteWorkers.map(
+                                  (w) => _buildWorkerRow(w)),
+                            ],
+                            // Tous Les Ouvriers section
+                            if (_otherWorkers.isNotEmpty) ...[
+                              const SizedBox(height: 20),
+                              _buildSectionHeader(_selectedTab == 0
+                                  ? "Tous Les Ouvriers"
+                                  : "Tous Les Sous-traitants"),
+                              const SizedBox(height: 8),
+                              ..._otherWorkers
+                                  .map((w) => _buildWorkerRow(w)),
+                            ],
+                            // If less than 3 workers, show all together without sections
+                            if (_favoriteWorkers.isNotEmpty &&
+                                _otherWorkers.isEmpty &&
+                                _filteredWorkers.length <= 2) ...[
+                              // Already shown in favorites section
+                            ],
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+            ),
+
+            // ── Bottom Ajouter Button ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await context.push('/workers/create');
+                    _loadWorkers();
+                  },
+                  icon: const Icon(Icons.person_add_alt_1,
+                      color: Colors.white, size: 22),
+                  label: const Text(
+                    "Ajouter",
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  // ── Tab Pill Widget ──
+  Widget _buildTabPill(String label, int index, Color darkNavy) {
+    final isSelected = _selectedTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTab = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? darkNavy : Colors.transparent,
+            borderRadius: BorderRadius.circular(26),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Outfit',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : const Color(0xFF8B95A5),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Section Header ──
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontFamily: 'Outfit',
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF8B95A5),
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  // ── Worker Row ──
+  Widget _buildWorkerRow(Worker worker) {
+    const darkNavy = Color(0xFF0A1227);
+    final isSelected = _selectedWorkerIds.contains(worker.id);
+
+    return GestureDetector(
+      onTap: () => _toggleSelection(worker.id),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10.0),
+        child: Row(
+          children: [
+            // ── Circular Avatar with online dot ──
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFE8ECF2),
+                  ),
+                  child: worker.profilePictureUrl != null
+                      ? ClipOval(
+                          child: Image.network(
+                            worker.profilePictureUrl!,
+                            width: 52,
+                            height: 52,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                _getInitials(worker),
+                                style: const TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF5A6478),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            _getInitials(worker),
+                            style: const TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF5A6478),
+                            ),
+                          ),
+                        ),
+                ),
+                // Green online dot
+                Positioned(
+                  left: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: const Color(0xFFF6F7FB), width: 2.5),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(width: 14),
+
+            // ── Name + profession ──
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${worker.firstName} ${worker.lastName}",
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: darkNavy,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    worker.profession,
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF8B95A5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Circular Checkbox ──
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected
+                    ? const Color(0xFF1B2E58)
+                    : Colors.transparent,
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFF1B2E58)
+                      : const Color(0xFFD0D5DD),
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check,
+                      color: Colors.white, size: 16)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getInitials(Worker worker) {
+    final first =
+        worker.firstName.isNotEmpty ? worker.firstName[0].toUpperCase() : '';
+    final last =
+        worker.lastName.isNotEmpty ? worker.lastName[0].toUpperCase() : '';
+    return '$first$last';
   }
 }

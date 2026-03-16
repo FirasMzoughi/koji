@@ -212,7 +212,7 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
             ),
             
             // Edit Icon
-            Icon(Icons.edit_calendar, color: darkBlue.withOpacity(0.5)),
+            Icon(Icons.edit_calendar, color: darkBlue.withAlpha((0.5 * 255).round())),
           ],
         ),
       ),
@@ -238,11 +238,13 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
       debugPrint("Error fetching workers: $e");
     }
 
+    if (!mounted) return;
+
     await showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
+          builder: (dialogContext, setStateDialog) {
             final dateFormat = DateFormat('dd/MM/yyyy');
             
             return AlertDialog(
@@ -262,7 +264,7 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                           trailing: const Icon(Icons.calendar_today, color: Color(0xFF0F3995)),
                           onTap: () async {
                             final picked = await showDateRangePicker(
-                              context: context,
+                              context: dialogContext,
                               firstDate: DateTime(2023),
                               lastDate: DateTime(2030),
                               initialDateRange: DateTimeRange(start: startDate, end: endDate),
@@ -285,9 +287,9 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                               child: ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: const Text("Début"),
-                                subtitle: Text(startTime.format(context)),
+                                subtitle: Text(startTime.format(dialogContext)),
                                 onTap: () async {
-                                  final picked = await showTimePicker(context: context, initialTime: startTime);
+                                  final picked = await showTimePicker(context: dialogContext, initialTime: startTime);
                                   if (picked != null) setStateDialog(() => startTime = picked);
                                 },
                               ),
@@ -296,9 +298,9 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                               child: ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: const Text("Fin"),
-                                subtitle: Text(endTime.format(context)),
+                                subtitle: Text(endTime.format(dialogContext)),
                                 onTap: () async {
-                                  final picked = await showTimePicker(context: context, initialTime: endTime);
+                                  final picked = await showTimePicker(context: dialogContext, initialTime: endTime);
                                   if (picked != null) setStateDialog(() => endTime = picked);
                                 },
                               ),
@@ -347,13 +349,14 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                          workerId: selectedWorkerId,
                        );
                        
-                       if (mounted) {
-                         Navigator.pop(context);
-                         _refreshTasks(); // Refresh the list
-                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mission planifiée avec succès")));
-                       }
+                       if (!dialogContext.mounted) return;
+                       Navigator.pop(dialogContext);
+                       if (!mounted) return;
+                       _refreshTasks();
+                       ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text("Mission planifiée avec succès")));
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erreur: $e")));
+                      if (!dialogContext.mounted) return;
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text("Erreur: $e")));
                     }
                   },
                   style: ElevatedButton.styleFrom(

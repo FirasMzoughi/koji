@@ -30,7 +30,7 @@ class RoomCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )
@@ -51,7 +51,8 @@ class RoomCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   label,
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     color: isSelected ? Colors.white : AppTheme.darkNavy,
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
@@ -67,11 +68,10 @@ class RoomCard extends StatelessWidget {
                   width: 24,
                   height: 24,
                   decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle
-                  ),
+                      color: Colors.white, shape: BoxShape.circle),
                   child: const Center(
-                    child: Icon(Icons.check, size: 16, color: AppTheme.darkNavy),
+                    child:
+                        Icon(Icons.check, size: 16, color: AppTheme.darkNavy),
                   ),
                 ),
               ),

@@ -4,6 +4,7 @@ class Worker {
   final String lastName;
   final String profession;
   final String status;
+  final String contactType;
   final String? profilePictureUrl;
   final String? socialSecurityNumber;
   final String? address;
@@ -19,6 +20,7 @@ class Worker {
     required this.lastName,
     required this.profession,
     this.status = 'Disponible',
+    this.contactType = 'Ouvrier',
     this.profilePictureUrl,
     this.socialSecurityNumber,
     this.address,
@@ -36,14 +38,19 @@ class Worker {
       lastName: json['last_name'] as String,
       profession: json['profession'] as String,
       status: json['status'] as String? ?? 'Disponible',
+      contactType: json['contact_type'] as String? ?? 'Ouvrier',
       profilePictureUrl: json['profile_picture_url'] as String?,
       socialSecurityNumber: json['social_security_number'] as String?,
       address: json['address'] as String?,
       idCardUrl: json['id_card_url'] as String?,
       phoneNumber: json['phone_number'] as String?,
       email: json['email'] as String?,
-      hourlyRate: json['hourly_rate'] != null ? (json['hourly_rate'] as num).toDouble() : null,
-      hireDate: json['hire_date'] != null ? DateTime.parse(json['hire_date'] as String) : null,
+      hourlyRate: json['hourly_rate'] != null
+          ? (json['hourly_rate'] as num).toDouble()
+          : null,
+      hireDate: json['hire_date'] != null
+          ? DateTime.parse(json['hire_date'] as String)
+          : null,
     );
   }
 
@@ -53,6 +60,7 @@ class Worker {
       'last_name': lastName,
       'profession': profession,
       'status': status,
+      'contact_type': contactType,
       'profile_picture_url': profilePictureUrl,
       'social_security_number': socialSecurityNumber,
       'address': address,

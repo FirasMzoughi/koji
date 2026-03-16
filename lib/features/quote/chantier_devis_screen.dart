@@ -32,9 +32,8 @@ class _ChantierDevisScreenState extends State<ChantierDevisScreen> {
           children: [
             _buildAppBar(context),
             Expanded(
-              child: _devisList.isEmpty
-                  ? _buildEmptyState()
-                  : _buildDevisList(),
+              child:
+                  _devisList.isEmpty ? _buildEmptyState() : _buildDevisList(),
             ),
           ],
         ),
@@ -85,7 +84,7 @@ class _ChantierDevisScreenState extends State<ChantierDevisScreen> {
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -107,14 +106,13 @@ class _ChantierDevisScreenState extends State<ChantierDevisScreen> {
           GestureDetector(
             onTap: _createDevis,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -175,7 +173,7 @@ class _ChantierDevisScreenState extends State<ChantierDevisScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -190,8 +188,8 @@ class _ChantierDevisScreenState extends State<ChantierDevisScreen> {
               color: const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.description_outlined,
-                color: _kDark, size: 22),
+            child:
+                const Icon(Icons.description_outlined, color: _kDark, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -254,9 +252,7 @@ class _ChantierDevisScreenState extends State<ChantierDevisScreen> {
   }
 
   String _fmt(double v) {
-    return v
-        .toStringAsFixed(0)
-        .replaceAllMapped(
+    return v.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d)(?=(\d{3})+$)'),
           (m) => '${m[1]} ',
         );

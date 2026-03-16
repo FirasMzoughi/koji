@@ -19,7 +19,7 @@ class ToggleButton extends StatelessWidget {
     final bg = isSelected ? const Color(0xFF0F172A) : Colors.white;
     final fg = isSelected ? Colors.white : const Color(0xFF9CA3AF);
     final border = isSelected ? Colors.transparent : const Color(0xFFD1D5DB);
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -33,10 +33,9 @@ class ToggleButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (isSelected) 
+              if (isSelected)
                 const Icon(Icons.check, size: 16, color: Colors.white),
-              if (isSelected) 
-                const SizedBox(width: 8),
+              if (isSelected) const SizedBox(width: 8),
               if (!isSelected)
                 Container(
                   width: 16,
@@ -49,7 +48,8 @@ class ToggleButton extends StatelessWidget {
                 ),
               Text(
                 label,
-                style: TextStyle(fontFamily: 'Outfit', 
+                style: TextStyle(
+                  fontFamily: 'Outfit',
                   color: fg,
                   fontWeight: FontWeight.w600,
                 ),

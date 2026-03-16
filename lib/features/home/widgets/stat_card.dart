@@ -28,7 +28,7 @@ class StatCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04), // Softer shadow
+              color: Colors.black.withValues(alpha: 0.04), // Softer shadow
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -42,21 +42,25 @@ class StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1D74FF).withOpacity(0.2) : const Color(0xFFE0E7FF), // varying opacity
+                color: isDark
+                    ? const Color(0xFF1D74FF).withValues(alpha: 0.2)
+                    : const Color(0xFFE0E7FF), // varying opacity
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, 
-                color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1D74FF), 
-                size: 24
-              ),
+              child: Icon(icon,
+                  color: isDark
+                      ? const Color(0xFF60A5FA)
+                      : const Color(0xFF1D74FF),
+                  size: 24),
             ),
-            
+
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   number,
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -68,7 +72,8 @@ class StatCard extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: isDark ? Colors.grey[400] : const Color(0xFF64748B),

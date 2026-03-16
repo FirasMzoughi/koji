@@ -6,8 +6,6 @@ import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/auth/provider/auth_provider.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
 
-
-
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -20,7 +18,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _scaleAnimation;
-  
+
   bool _isAnimationDone = false;
   bool _hasNavigated = false;
 
@@ -43,7 +41,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
 
     _controller.forward();
-    
+
     // Reduced minimum duration from 2 seconds to 1 second
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
@@ -79,7 +77,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         final userRepository = ref.read(userRepositoryProvider);
         final userData = await userRepository.getUser(user.id);
         final logoUrl = userData?['logo_url'] as String?;
-        
+
         if (logoUrl == null || logoUrl.isEmpty) {
           // No logo found - go to business info to upload it
           if (mounted) context.go('/business-info');

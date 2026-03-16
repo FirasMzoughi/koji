@@ -19,7 +19,7 @@ class OnboardingPageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responsive = context.responsive;
-    
+
     // RepaintBoundary to prevent unnecessary repaints during page transitions
     return RepaintBoundary(
       child: Padding(
@@ -41,7 +41,8 @@ class OnboardingPageContent extends StatelessWidget {
                       height: responsive.width(80),
                       decoration: BoxDecoration(
                         color: AppTheme.cream,
-                        borderRadius: BorderRadius.circular(responsive.borderRadius(20)),
+                        borderRadius:
+                            BorderRadius.circular(responsive.borderRadius(20)),
                       ),
                       child: Icon(
                         Icons.image_outlined,
@@ -53,7 +54,7 @@ class OnboardingPageContent extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             // Text content
             Expanded(
               flex: 2,
@@ -63,13 +64,15 @@ class OnboardingPageContent extends StatelessWidget {
                   SizedBox(height: responsive.height(2.5)),
                   Text(
                     title,
-                    style: AppTheme.headingStyle(context).copyWith(color: const Color(0xFF111827)), // Force darkNavy
+                    style: AppTheme.headingStyle(context).copyWith(
+                        color: const Color(0xFF111827)), // Force darkNavy
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: responsive.height(2)),
                   Text(
                     description,
-                    style: AppTheme.bodyStyle(context).copyWith(color: const Color(0xFF6B7280)), // Force textLight
+                    style: AppTheme.bodyStyle(context).copyWith(
+                        color: const Color(0xFF6B7280)), // Force textLight
                     textAlign: TextAlign.center,
                   ),
                 ],

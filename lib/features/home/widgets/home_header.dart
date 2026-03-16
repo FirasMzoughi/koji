@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-
 class HomeHeader extends StatelessWidget {
   final VoidCallback? onMenuTap;
 
@@ -60,7 +59,8 @@ class HomeHeader extends StatelessWidget {
           SvgPicture.asset(
             'assets/icons/LOGO.svg',
             height: 60,
-            colorFilter: const ColorFilter.mode(Color(0xFFEAD8B1), BlendMode.srcIn),
+            colorFilter:
+                const ColorFilter.mode(Color(0xFFEAD8B1), BlendMode.srcIn),
           ),
         ],
       ),

@@ -74,6 +74,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
       }
     } catch (e) {
       debugPrint('Error saving task: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
     } finally {
       if (mounted) setState(() => _isSaving = false);

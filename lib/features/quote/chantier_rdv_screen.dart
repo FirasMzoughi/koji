@@ -35,13 +35,14 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
               child: GestureDetector(
                 onTap: _addRdv,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   decoration: BoxDecoration(
                     color: _kDark,
                     borderRadius: BorderRadius.circular(32),
                     boxShadow: [
                       BoxShadow(
-                        color: _kDark.withOpacity(0.15),
+                        color: _kDark.withValues(alpha: 0.15),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -67,9 +68,7 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
               ),
             ),
             Expanded(
-              child: _rdvList.isEmpty
-                  ? _buildEmpty()
-                  : _buildList(),
+              child: _rdvList.isEmpty ? _buildEmpty() : _buildList(),
             ),
           ],
         ),
@@ -87,7 +86,13 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: () => context.pop(),
+              onTap: () {
+                if (Navigator.canPop(context)) {
+                  context.pop();
+                } else {
+                  context.go('/home');
+                }
+              },
               child: const Icon(Icons.chevron_left_rounded,
                   color: _kDark, size: 30),
             ),
@@ -117,7 +122,7 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -160,7 +165,7 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -294,8 +299,8 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                   if (picked != null) setDs(() => selectedDate = picked);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                     borderRadius: BorderRadius.circular(10),
@@ -308,9 +313,7 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                       Text(
                         '${selectedDate.day} / ${selectedDate.month} / ${selectedDate.year}',
                         style: const TextStyle(
-                            fontFamily: 'Outfit',
-                            fontSize: 14,
-                            color: _kDark),
+                            fontFamily: 'Outfit', fontSize: 14, color: _kDark),
                       ),
                     ],
                   ),
@@ -327,22 +330,38 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (titleCtrl.text.trim().isNotEmpty) {
+                final title = titleCtrl.text.trim();
+                final person = personCtrl.text.trim();
+                if (title.isNotEmpty) {
                   final months = [
-                    'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-                    'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+                    'Jan',
+                    'Fév',
+                    'Mar',
+                    'Avr',
+                    'Mai',
+                    'Jun',
+                    'Jul',
+                    'Aoû',
+                    'Sep',
+                    'Oct',
+                    'Nov',
+                    'Déc'
                   ];
-                  setState(() {
-                    _rdvList.add({
-                      'day': '${selectedDate.day}',
-                      'month': months[selectedDate.month - 1],
-                      'time': '10:00',
-                      'title': titleCtrl.text.trim(),
-                      'person': personCtrl.text.trim(),
+                  final newRdv = {
+                    'day': '${selectedDate.day}',
+                    'month': months[selectedDate.month - 1],
+                    'time': '10:00',
+                    'title': title,
+                    'person': person,
+                  };
+                  // Close dialog first
+                  Navigator.of(ctx, rootNavigator: true).pop();
+                  // Then update the parent screen's state
+                  if (mounted) {
+                    setState(() {
+                      _rdvList.add(newRdv);
                     });
-                    widget.data['rdv'] = _rdvList;
-                  });
-                  Navigator.pop(ctx);
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -352,8 +371,7 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                 elevation: 0,
               ),
               child: const Text('Ajouter',
-                  style:
-                      TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+                  style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
             ),
           ],
         ),

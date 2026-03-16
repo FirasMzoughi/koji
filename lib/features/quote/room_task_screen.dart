@@ -475,14 +475,12 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
          tasksForTrade.add(TaskCategory(title: "TÂCHES STANDARDS (CALCULÉES)", tasks: taskItems));
        }
     }
+    
+    // Insert Custom Tasks from Supabase
     if (_customTasks.isNotEmpty) {
-       final customItems = _customTasks.map((t) => TaskItem(id: t.id, label: t.title)).toList();
-       if (customItems.isNotEmpty) {
-          tasksForTrade.insert(0, TaskCategory(title: 'MES TÂCHES PERSONNALISÉES', tasks: customItems));
-       }
+      final customTaskItems = _customTasks.map((t) => TaskItem(id: t.id, label: t.title)).toList();
+      tasksForTrade.add(TaskCategory(title: "TÂCHES PERSONNALISÉES", tasks: customTaskItems));
     }
-
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -508,21 +506,11 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'Détails de la Pièce(s)',
+                          'Créer vos postes de travail',
                           style: AppTheme.headingStyle(context).copyWith(
                             color: const Color(0xFF0F2648),
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Etape 4/6',
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            color: Color(0xFF94A3B8),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -575,24 +563,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                                  fontSize: 14,
                                )
                              ),
-                             if (isSelected) ...[
-                               const SizedBox(width: 8),
-                               Container(
-                                 padding: const EdgeInsets.all(4),
-                                 decoration: const BoxDecoration(
-                                   color: Colors.white,
-                                   shape: BoxShape.circle,
-                                 ),
-                                 child: Text(
-                                   '${index + 4}', // Mock badge number
-                                   style: const TextStyle(
-                                     color: Color(0xFF1D74FF),
-                                     fontSize: 10,
-                                     fontWeight: FontWeight.bold,
-                                   ),
-                                 ),
-                               ),
-                             ]
                            ],
                          ),
                        ),
@@ -904,6 +874,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     }
     
     // 4. Navigate
+    if (!mounted) return;
     context.push('/quote/summary');
   }
 

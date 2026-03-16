@@ -33,7 +33,8 @@ class PhotoActionButton extends StatelessWidget {
         icon: Icon(icon, size: 24),
         label: Text(
           label,
-          style: TextStyle(fontFamily: 'Outfit', 
+          style:TextStyle(
+            fontFamily: 'Outfit',
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -43,7 +44,7 @@ class PhotoActionButton extends StatelessWidget {
       return OutlinedButton.icon(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: const Color(0xFFE5E7EB).withOpacity(0.5),
+          backgroundColor: const Color(0xFFE5E7EB).withValues(alpha: 0.5),
           foregroundColor: AppTheme.darkNavy,
           side: BorderSide.none,
           padding: const EdgeInsets.symmetric(vertical: 20),
@@ -54,7 +55,8 @@ class PhotoActionButton extends StatelessWidget {
         icon: Icon(icon, size: 24),
         label: Text(
           label,
-          style: TextStyle(fontFamily: 'Outfit', 
+          style: TextStyle(
+            fontFamily: 'Outfit',
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),

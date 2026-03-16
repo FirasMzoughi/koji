@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/features/quote/providers/chantier_provider.dart';
+import 'package:koji/features/quote/repositories/chantier_repository.dart';
 
-class ChantierAddTaskScreen extends StatefulWidget {
+class ChantierAddTaskScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
   const ChantierAddTaskScreen({super.key, required this.data});
 
   @override
-  State<ChantierAddTaskScreen> createState() => _ChantierAddTaskScreenState();
+  ConsumerState<ChantierAddTaskScreen> createState() => _ChantierAddTaskScreenState();
 }
 
-class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
+class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
+  final _repository = ChantierRepository();
   static const _kDark = Color(0xFF0F172A);
   static const _kBg = Color(0xFFF5F0EB);
   static const _kBorder = Color(0xFFE2E8F0);
 
-  late List<Map<String, dynamic>> _tasks;
   bool _showForm = false;
+  bool _isLoading = false;
 
   // Form state
   final _titleCtrl = TextEditingController();
@@ -35,9 +39,6 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
   @override
   void initState() {
     super.initState();
-    _tasks = List<Map<String, dynamic>>.from(
-      (widget.data['afaire'] as List?)?.cast<Map<String, dynamic>>() ?? [],
-    );
   }
 
   @override
@@ -50,6 +51,15 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final chantierId = widget.data['id'] as String?;
+    
+    // Fallback if no ID is provided
+    if (chantierId == null) {
+      return const Scaffold(body: Center(child: Text("ID Chantier manquant")));
+    }
+
+    final tasksAsync = ref.watch(chantierTasksProvider(chantierId));
+
     return Scaffold(
       backgroundColor: _kBg,
       body: SafeArea(
@@ -62,13 +72,14 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
                 child: GestureDetector(
                   onTap: () => setState(() => _showForm = true),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 14),
                     decoration: BoxDecoration(
                       color: _kDark,
                       borderRadius: BorderRadius.circular(32),
                       boxShadow: [
                         BoxShadow(
-                          color: _kDark.withOpacity(0.15),
+                          color: _kDark.withValues(alpha: 0.15),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -96,7 +107,16 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
             Expanded(
               child: _showForm
                   ? _buildForm()
-                  : (_tasks.isEmpty ? _buildEmpty() : _buildTaskList()),
+                  : tasksAsync.when(
+                      loading: () => const Center(child: CircularProgressIndicator(color: _kDark)),
+                      error: (err, stack) => Center(child: Text('Erreur: $err')),
+                      data: (tasks) {
+                        if (tasks.isEmpty) {
+                          return _buildEmpty();
+                        }
+                        return _buildTaskList(tasks);
+                      },
+                    ),
             ),
           ],
         ),
@@ -151,7 +171,7 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -172,20 +192,19 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
   }
 
   // ── Task list ──
-  Widget _buildTaskList() {
+  Widget _buildTaskList(List<Map<String, dynamic>> tasks) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-      itemCount: _tasks.length,
+      itemCount: tasks.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _buildTaskTile(i),
+      itemBuilder: (_, i) => _buildTaskTile(tasks[i]),
     );
   }
 
-  Widget _buildTaskTile(int i) {
-    final task = _tasks[i];
-    final bool done = task['done'] as bool? ?? false;
-    final String title = task['title'] as String? ?? '';
-    final String subtitle = task['subtitle'] as String? ?? '';
+  Widget _buildTaskTile(Map<String, dynamic> task) {
+    final bool isDone = task['is_done'] == true;
+    final String title = task['label'] as String? ?? '';
+    final String subtitle = task['note'] as String? ?? ''; // Simplified subtitle logic
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -194,7 +213,7 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -204,20 +223,26 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
         children: [
           // Circle checkbox
           GestureDetector(
-            onTap: () => setState(() => _tasks[i]['done'] = !done),
+            onTap: () async {
+              try {
+                await _repository.updateTaskStatus(task['id'], !isDone);
+              } catch (e) {
+                debugPrint('Error toggling task: $e');
+              }
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               width: 24,
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: done ? _kDark : Colors.white,
+                color: isDone ? _kDark : Colors.white,
                 border: Border.all(
-                  color: done ? _kDark : const Color(0xFFCBD5E1),
+                  color: isDone ? _kDark : const Color(0xFFCBD5E1),
                   width: 1.8,
                 ),
               ),
-              child: done
+              child: isDone
                   ? const Icon(Icons.check_rounded,
                       size: 14, color: Colors.white)
                   : null,
@@ -237,7 +262,7 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
                     fontWeight: FontWeight.w600,
                     color: _kDark,
                     decoration:
-                        done ? TextDecoration.lineThrough : TextDecoration.none,
+                        isDone ? TextDecoration.lineThrough : TextDecoration.none,
                   ),
                 ),
                 if (subtitle.isNotEmpty)
@@ -280,8 +305,7 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
             onTap: _pickDate,
             child: Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -404,14 +428,16 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: _saveTask,
+              onPressed: _isLoading ? null : _saveTask,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kDark,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
-              child: const Text(
+              child: _isLoading 
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text(
                 'Enregistrer',
                 style: TextStyle(
                   fontFamily: 'Outfit',
@@ -475,8 +501,8 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
           hintStyle: const TextStyle(
               fontFamily: 'Outfit', fontSize: 14, color: Color(0xFF94A3B8)),
         ),
-        style: const TextStyle(
-            fontFamily: 'Outfit', fontSize: 14, color: _kDark),
+        style:
+            const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: _kDark),
       ),
     );
   }
@@ -491,47 +517,44 @@ class _ChantierAddTaskScreenState extends State<ChantierAddTaskScreen> {
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
-  void _saveTask() {
+  Future<void> _saveTask() async {
     if (_titleCtrl.text.trim().isEmpty) return;
 
-    final now = DateTime.now();
-    final date = _selectedDate ?? now;
-    final isToday = date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
-    final isTomorrow =
-        date.difference(DateTime(now.year, now.month, now.day)).inDays == 1;
+    final chantierId = widget.data['id'] as String?;
+    if (chantierId == null) return;
 
-    String subtitle;
-    if (isToday) {
-      subtitle = "Aujourd'hui";
-    } else if (isTomorrow) {
-      subtitle = 'Demain';
-    } else {
-      final months = [
-        'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-        'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
-      ];
-      subtitle = '${date.day} ${months[date.month - 1]}';
+    setState(() => _isLoading = true);
+    
+    try {
+      // NOTE: In the future, the chantier_tasks schema can be expanded 
+      // to include columns like 'note', 'person', 'date', 'lierA'
+      // For now, mapping label -> titleCtrl.text.trim()
+      await _repository.addTask(chantierId, _titleCtrl.text.trim());
+
+      if (mounted) {
+        setState(() {
+          // Reset form
+          _titleCtrl.clear();
+          _personCtrl.clear();
+          _noteCtrl.clear();
+          _selectedDate = null;
+          _lierA = 'Aucun';
+          _showForm = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error inserting task: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur Supabase: $e', style: const TextStyle(fontFamily: 'Outfit')),
+            backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    setState(() {
-      _tasks.add({
-        'title': _titleCtrl.text.trim(),
-        'subtitle': subtitle,
-        'done': false,
-        'lierA': _lierA,
-        'person': _personCtrl.text.trim(),
-        'note': _noteCtrl.text.trim(),
-      });
-      widget.data['afaire'] = _tasks;
-      // Reset form
-      _titleCtrl.clear();
-      _personCtrl.clear();
-      _noteCtrl.clear();
-      _selectedDate = null;
-      _lierA = 'Aucun';
-      _showForm = false;
-    });
   }
 }

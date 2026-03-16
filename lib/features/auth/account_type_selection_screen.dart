@@ -9,10 +9,12 @@ class AccountTypeSelectionScreen extends ConsumerStatefulWidget {
   const AccountTypeSelectionScreen({super.key});
 
   @override
-  ConsumerState<AccountTypeSelectionScreen> createState() => _AccountTypeSelectionScreenState();
+  ConsumerState<AccountTypeSelectionScreen> createState() =>
+      _AccountTypeSelectionScreenState();
 }
 
-class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectionScreen> {
+class _AccountTypeSelectionScreenState
+    extends ConsumerState<AccountTypeSelectionScreen> {
   String? _selectedType; // 'entreprise' or 'particulier'
 
   @override
@@ -29,10 +31,11 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
               child: Container(
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: const AssetImage('assets/images/construction_bg.jpg'),
+                    image:
+                        const AssetImage('assets/images/construction_bg.jpg'),
                     fit: BoxFit.cover,
                     colorFilter: ColorFilter.mode(
-                      AppTheme.darkNavy.withOpacity(0.7),
+                      AppTheme.darkNavy.withValues(alpha: 0.7),
                       BlendMode.darken,
                     ),
                   ),
@@ -61,11 +64,12 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                       SizedBox(height: responsive.height(2)),
                       Text(
                         'Bienvenue sur Kôji !',
-                        style: TextStyle(fontFamily: 'Outfit', 
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
                           fontSize: responsive.fontSize(28),
                           fontWeight: FontWeight.bold,
-                          color: _selectedType == 'entreprise' 
-                              ? Colors.white 
+                          color: _selectedType == 'entreprise'
+                              ? Colors.white
                               : AppTheme.darkNavy,
                         ),
                         textAlign: TextAlign.center,
@@ -73,10 +77,11 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                       SizedBox(height: responsive.height(1.5)),
                       Text(
                         'Choisissez votre type de compte pour\ncommencer l\'expérience',
-                        style: TextStyle(fontFamily: 'Outfit', 
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
                           fontSize: responsive.fontSize(15),
                           color: _selectedType == 'entreprise'
-                              ? Colors.white.withOpacity(0.9)
+                              ? Colors.white.withValues(alpha: 0.9)
                               : const Color(0xFF9CA3AF),
                         ),
                         textAlign: TextAlign.center,
@@ -96,7 +101,8 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                       _buildAccountTypeCard(
                         type: 'entreprise',
                         title: 'Profil Entreprise',
-                        subtitle: 'Pour les artisans et entreprises du\nbâtiment',
+                        subtitle:
+                            'Pour les artisans et entreprises du\nbâtiment',
                         tagline: 'Gérez devis, factures & clients',
                         icon: Icons.business,
                         isSelected: _selectedType == 'entreprise',
@@ -109,7 +115,8 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                       _buildAccountTypeCard(
                         type: 'particulier',
                         title: 'Profil Particulier',
-                        subtitle: 'Pour les clients cherchant des artisans\nqualifiés.',
+                        subtitle:
+                            'Pour les clients cherchant des artisans\nqualifiés.',
                         tagline: 'Suivez vos travaux & devis',
                         icon: Icons.person,
                         isSelected: _selectedType == 'particulier',
@@ -130,15 +137,16 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                   child: ElevatedButton(
                     onPressed: hasSelection ? _handleContinue : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: hasSelection 
-                          ? AppTheme.primaryBlue 
+                      backgroundColor: hasSelection
+                          ? AppTheme.primaryBlue
                           : const Color(0xFFD1D5DB),
                       foregroundColor: Colors.white,
                       padding: EdgeInsets.symmetric(
                         vertical: responsive.height(2.25),
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(responsive.borderRadius(12)),
+                        borderRadius:
+                            BorderRadius.circular(responsive.borderRadius(12)),
                       ),
                       minimumSize: Size(double.infinity, responsive.height(7)),
                     ),
@@ -147,7 +155,8 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                       children: [
                         Text(
                           'Suivant',
-                          style: TextStyle(fontFamily: 'Outfit', 
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
                             fontSize: responsive.fontSize(16),
                             fontWeight: FontWeight.w600,
                           ),
@@ -178,9 +187,6 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
     required bool isSelected,
     required ResponsiveHelper responsive,
   }) {
-    final bool isEntreprise = type == 'entreprise';
-    final bool showWhiteText = isSelected && isEntreprise;
-
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -192,27 +198,23 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
         curve: Curves.easeInOut,
         padding: EdgeInsets.all(responsive.width(5)),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryBlue
-              : Colors.white,
+          color: isSelected ? AppTheme.primaryBlue : Colors.white,
           borderRadius: BorderRadius.circular(responsive.borderRadius(16)),
           border: Border.all(
-            color: isSelected 
-                ? AppTheme.primaryBlue 
-                : const Color(0xFFE5E7EB),
+            color: isSelected ? AppTheme.primaryBlue : const Color(0xFFE5E7EB),
             width: 2,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppTheme.primaryBlue.withOpacity(0.3),
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -224,16 +226,13 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
             Container(
               padding: EdgeInsets.all(responsive.width(3.5)),
               decoration: BoxDecoration(
-                color: isSelected 
-                    ? Colors.white 
-                    : AppTheme.darkNavy,
-                borderRadius: BorderRadius.circular(responsive.borderRadius(12)),
+                color: isSelected ? Colors.white : AppTheme.darkNavy,
+                borderRadius:
+                    BorderRadius.circular(responsive.borderRadius(12)),
               ),
               child: Icon(
                 icon,
-                color: isSelected 
-                    ? AppTheme.primaryBlue 
-                    : Colors.white,
+                color: isSelected ? AppTheme.primaryBlue : Colors.white,
                 size: responsive.iconSize(28),
               ),
             ),
@@ -247,7 +246,8 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                 children: [
                   Text(
                     title,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(18),
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : AppTheme.darkNavy,
@@ -256,10 +256,11 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                   SizedBox(height: responsive.height(0.5)),
                   Text(
                     subtitle,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(13),
-                      color: isSelected 
-                          ? Colors.white.withOpacity(0.9) 
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.9)
                           : const Color(0xFF6B7280),
                       height: 1.4,
                     ),
@@ -267,12 +268,11 @@ class _AccountTypeSelectionScreenState extends ConsumerState<AccountTypeSelectio
                   SizedBox(height: responsive.height(1)),
                   Text(
                     tagline,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(12),
                       fontWeight: FontWeight.w600,
-                      color: isSelected 
-                          ? Colors.white 
-                          : AppTheme.primaryBlue,
+                      color: isSelected ? Colors.white : AppTheme.primaryBlue,
                     ),
                   ),
                 ],

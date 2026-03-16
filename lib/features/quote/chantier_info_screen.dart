@@ -38,8 +38,8 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
             // Body
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   children: [
                     // Client card
@@ -546,7 +546,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -558,8 +558,18 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
-      'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+      'Jan',
+      'Fév',
+      'Mar',
+      'Avr',
+      'Mai',
+      'Juin',
+      'Juil',
+      'Aoû',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Déc'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -605,8 +615,8 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler',
-                style: TextStyle(
-                    fontFamily: 'Outfit', color: Color(0xFF64748B))),
+                style:
+                    TextStyle(fontFamily: 'Outfit', color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -629,8 +639,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
               elevation: 0,
             ),
             child: const Text('Ajouter',
-                style:
-                    TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+                style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
           ),
         ],
       ),

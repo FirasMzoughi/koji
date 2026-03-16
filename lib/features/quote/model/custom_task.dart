@@ -1,4 +1,3 @@
-
 class CustomTask {
   final String id;
   final String title;

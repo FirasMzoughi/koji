@@ -626,11 +626,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                ref.read(quoteCreationProvider.notifier).updateRoomEstimation(entry.key, entry.value);
              }
              
-             context.push('/quote/summary', extra: {
-               'roomIds': widget.selectedRoomIds,
-               'expenses': _expensesByRoom,
-               'images': widget.images,
-             });
+             context.push('/quote/summary');
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.darkNavy,

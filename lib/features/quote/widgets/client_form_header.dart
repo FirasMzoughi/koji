@@ -34,26 +34,28 @@ class ClientFormHeader extends StatelessWidget {
             ),
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Title
         Text(
           title,
-          style: TextStyle(fontFamily: 'Outfit', 
+          style: TextStyle(
+            fontFamily: 'Outfit',
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1E3A8A),
           ),
           textAlign: TextAlign.center,
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // Description
         Text(
           description,
-          style: TextStyle(fontFamily: 'Outfit', 
+          style: TextStyle(
+            fontFamily: 'Outfit',
             fontSize: 14,
             color: const Color(0xFF6B7280),
           ),

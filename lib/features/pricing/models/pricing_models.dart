@@ -57,7 +57,8 @@ class SmartTask {
     this.materialRequirements = const [],
   });
 
-  factory SmartTask.fromJson(Map<String, dynamic> json, {List<MaterialRequirement>? requirements}) {
+  factory SmartTask.fromJson(Map<String, dynamic> json,
+      {List<MaterialRequirement>? requirements}) {
     return SmartTask(
       id: json['id'] as String,
       label: json['label'] as String,
@@ -82,12 +83,14 @@ class SmartTask {
 }
 
 class MaterialRequirement {
+  final String taskId; // Fixed: now stored as a typed field for direct lookup
   final String productCategory;
   final double yield;
   final double defaultPricePerUnit;
   final bool isFixedQuantity;
 
   const MaterialRequirement({
+    required this.taskId,
     required this.productCategory,
     required this.yield,
     required this.defaultPricePerUnit,
@@ -96,6 +99,7 @@ class MaterialRequirement {
 
   factory MaterialRequirement.fromJson(Map<String, dynamic> json) {
     return MaterialRequirement(
+      taskId: json['task_id'] as String? ?? '',
       productCategory: json['product_category'] as String,
       yield: (json['yield'] as num).toDouble(),
       defaultPricePerUnit: (json['default_price_per_unit'] as num).toDouble(),
@@ -105,6 +109,7 @@ class MaterialRequirement {
 
   Map<String, dynamic> toJson() {
     return {
+      'task_id': taskId,
       'product_category': productCategory,
       'yield': yield,
       'default_price_per_unit': defaultPricePerUnit,

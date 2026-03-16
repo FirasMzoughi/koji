@@ -22,7 +22,7 @@ class ContinueButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppTheme.darkNavy,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: AppTheme.darkNavy.withOpacity(0.5),
+        disabledBackgroundColor: AppTheme.darkNavy.withValues(alpha: 0.5),
         padding: const EdgeInsets.symmetric(vertical: 20),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -34,7 +34,8 @@ class ContinueButton extends StatelessWidget {
         children: [
           Text(
             '$label ($count sélectionnés)',
-            style: TextStyle(fontFamily: 'Outfit', 
+            style: TextStyle(
+              fontFamily: 'Outfit',
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),

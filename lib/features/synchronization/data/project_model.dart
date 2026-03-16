@@ -27,8 +27,11 @@ class Project {
       address: json['address'] as String?,
       status: json['status'] as String? ?? 'En Cours',
       imageUrl: json['image_url'] as String?,
-      startDate: json['start_date'] != null ? DateTime.parse(json['start_date']) : null,
-      endDate: json['end_date'] != null ? DateTime.parse(json['end_date']) : null,
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'])
+          : null,
+      endDate:
+          json['end_date'] != null ? DateTime.parse(json['end_date']) : null,
     );
   }
 
@@ -88,11 +91,11 @@ class TaskItem {
   final String roomName;
   final String status; // 'À Faire', 'En Cours', 'Terminé'
   final Map<String, dynamic>? details;
-  final DateTime? scheduledDate; 
+  final DateTime? scheduledDate;
   final DateTime? startDate;
   final DateTime? endDate;
   final String? startTime; // e.g. "08:30"
-  final String? endTime;   // e.g. "17:00"
+  final String? endTime; // e.g. "17:00"
   final String? duration; // e.g. "2h30" (legacy or calculated)
   final String? workerId;
 
@@ -115,11 +118,11 @@ class TaskItem {
 
   factory TaskItem.fromJson(Map<String, dynamic> json) {
     final details = json['details'] as Map<String, dynamic>?;
-    
+
     // Attempt parse date
     DateTime? parsedDate;
     if (json['scheduled_date'] != null) {
-        parsedDate = DateTime.tryParse(json['scheduled_date']);
+      parsedDate = DateTime.tryParse(json['scheduled_date']);
     }
 
     return TaskItem(
@@ -131,9 +134,12 @@ class TaskItem {
       status: json['status'] as String,
       details: details,
       scheduledDate: parsedDate,
-      startDate: json['start_date'] != null ? DateTime.tryParse(json['start_date']) : null,
-      endDate: json['end_date'] != null ? DateTime.tryParse(json['end_date']) : null,
-      startTime: json['start_time'] ?? details?['start_time'], 
+      startDate: json['start_date'] != null
+          ? DateTime.tryParse(json['start_date'])
+          : null,
+      endDate:
+          json['end_date'] != null ? DateTime.tryParse(json['end_date']) : null,
+      startTime: json['start_time'] ?? details?['start_time'],
       endTime: json['end_time'],
       duration: details?['duration'],
       workerId: json['worker_id'],

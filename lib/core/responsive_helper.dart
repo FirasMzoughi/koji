@@ -8,56 +8,56 @@ class ResponsiveHelper {
   final double _screenHeight;
   final double _widthScaleFactor;
   final double _avgScaleFactor;
-  
+
   ResponsiveHelper._(this._screenWidth, this._screenHeight)
       : _widthScaleFactor = _screenWidth / 375,
         _avgScaleFactor = ((_screenWidth + _screenHeight) / 2) / 375;
-  
+
   factory ResponsiveHelper(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     return ResponsiveHelper._(size.width, size.height);
   }
-  
+
   /// Get screen width (cached)
   double get screenWidth => _screenWidth;
-  
+
   /// Get screen height (cached)
   double get screenHeight => _screenHeight;
-  
+
   /// Calculate width as percentage of screen width
   /// Example: width(5) returns 5% of screen width
   double width(double percentage) {
     return _screenWidth * (percentage / 100);
   }
-  
+
   /// Calculate height as percentage of screen height
   /// Example: height(10) returns 10% of screen height
   double height(double percentage) {
     return _screenHeight * (percentage / 100);
   }
-  
+
   /// Calculate responsive font size based on screen width
   /// Base size is for a 375px wide screen (iPhone SE/standard)
   double fontSize(double baseSize) {
     return baseSize * _widthScaleFactor;
   }
-  
+
   /// Calculate responsive spacing based on screen dimensions
   /// Uses average of width and height for balanced scaling
   double spacing(double baseSize) {
     return baseSize * _avgScaleFactor;
   }
-  
+
   /// Calculate responsive border radius
   double borderRadius(double baseSize) {
     return baseSize * _widthScaleFactor;
   }
-  
+
   /// Calculate responsive icon size
   double iconSize(double baseSize) {
     return baseSize * _widthScaleFactor;
   }
-  
+
   /// Get responsive padding - horizontal as % of width, vertical as % of height
   EdgeInsets paddingSymmetric({
     double horizontalPercent = 0,
@@ -68,12 +68,12 @@ class ResponsiveHelper {
       vertical: height(verticalPercent),
     );
   }
-  
+
   /// Get responsive padding - all sides as % of width
   EdgeInsets paddingAll(double percentage) {
     return EdgeInsets.all(width(percentage));
   }
-  
+
   /// Get responsive padding with individual percentages
   EdgeInsets paddingOnly({
     double left = 0,

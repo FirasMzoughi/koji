@@ -5,10 +5,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:koji/core/supabase_config.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  // Pass via --dart-define=GOOGLE_WEB_CLIENT_ID=...
+  const googleWebClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
   return AuthRepository(
     SupabaseConfig.client,
     GoogleSignIn(
-      serverClientId: '516208620302-kb9m01pqo39t8h6ps9qfcaq7s88i561s.apps.googleusercontent.com',
+      serverClientId: googleWebClientId.isNotEmpty ? googleWebClientId : null,
     ),
   );
 });
@@ -28,7 +30,7 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    _logger.i('🔑 [AuthRepository] Calling Supabase signInWithPassword for: $email');
+    _logger.i('🔑 [AuthRepository] Calling Supabase signInWithPassword');
     try {
       final result = await _supabase.auth.signInWithPassword(
         email: email,
@@ -37,7 +39,8 @@ class AuthRepository {
       _logger.i('✅ [AuthRepository] Supabase signInWithPassword successful');
       return result;
     } catch (e) {
-      _logger.e('❌ [AuthRepository] Supabase signInWithPassword failed', error: e);
+      _logger.e('❌ [AuthRepository] Supabase signInWithPassword failed',
+          error: e);
       rethrow;
     }
   }
@@ -46,13 +49,13 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    _logger.i('📝 [AuthRepository] Calling Supabase signUp for: $email');
+    _logger.i('📝 [AuthRepository] Calling Supabase signUp');
     try {
       final result = await _supabase.auth.signUp(
         email: email,
         password: password,
       );
-      _logger.i('✅ [AuthRepository] Supabase signUp successful - UID: ${result.user?.id}');
+      _logger.i('✅ [AuthRepository] Supabase signUp successful');
       return result;
     } catch (e) {
       _logger.e('❌ [AuthRepository] Supabase signUp failed', error: e);
@@ -69,8 +72,9 @@ class AuthRepository {
         return null;
       }
 
-      _logger.i('✅ [AuthRepository] Google account selected: ${googleUser.email}');
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      _logger.i('✅ [AuthRepository] Google account selected');
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       _logger.i('🔑 [AuthRepository] Got Google authentication tokens');
 
       final String? accessToken = googleAuth.accessToken;

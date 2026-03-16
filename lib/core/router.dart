@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/core/route_args.dart';
 import 'package:koji/features/splash/splash_screen.dart';
 import 'package:koji/features/onboarding/onboarding_screen.dart';
 import 'package:koji/features/welcome/welcome_screen.dart';
@@ -16,19 +17,23 @@ import 'package:koji/features/quote/room_selection_screen.dart';
 import 'package:koji/features/quote/room_task_screen.dart';
 import 'package:koji/features/quote/room_estimation_screen.dart';
 import 'package:koji/features/quote/quote_summary_screen.dart';
+import 'package:koji/features/quote/quote_fourniture_list_screen.dart';
 import 'package:koji/features/quote/quote_detail_screen.dart';
 import 'package:koji/features/quote/quote_success_screen.dart';
 import 'package:koji/features/quote/client_details_screen.dart';
-import 'package:koji/features/quote/product_selection_screen.dart';
+
 import 'package:koji/features/signature/signature_list_screen.dart';
 import 'package:koji/features/signature/signature_screen.dart';
+import 'package:koji/features/profile/my_signature_screen.dart';
 import 'package:koji/features/signature/signature_success_screen.dart';
 import 'package:koji/features/synchronization/synchronization_screen.dart';
 import 'package:koji/features/synchronization/pointage_heures_screen.dart';
+import 'package:koji/features/synchronization/nouveau_contact_screen.dart';
+import 'package:koji/features/synchronization/ajouter_rdv_screen.dart';
 import 'package:koji/features/synchronization/worker_list_screen.dart';
 import 'package:koji/features/synchronization/create_worker_screen.dart';
 import 'package:koji/features/synchronization/worker_success_screen.dart';
-import 'package:koji/features/synchronization/worker_detail_screen.dart'; // Will implement next
+import 'package:koji/features/synchronization/worker_detail_screen.dart';
 import 'package:koji/features/synchronization/data/worker_model.dart';
 import 'package:koji/features/synchronization/project_selection_screen.dart';
 import 'package:koji/features/synchronization/project_detail_screen.dart';
@@ -38,6 +43,7 @@ import 'package:koji/features/synchronization/data/project_model.dart';
 import 'package:koji/features/planning/planning_screen.dart';
 import 'package:koji/features/settings/pricing_settings_screen.dart';
 import 'package:koji/features/profile/company_profile_screen.dart';
+import 'package:koji/features/fournitures/fournitures_screen.dart';
 import 'package:koji/features/quote/chantier_creation_screen.dart';
 import 'package:koji/features/quote/chantier_dashboard_screen.dart';
 import 'package:koji/features/quote/chantier_info_screen.dart';
@@ -279,9 +285,18 @@ final router = GoRouter(
     GoRoute(
       path: '/quote/room-details',
       pageBuilder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>? ?? {};
-        final roomIds = extra['roomIds'] as List<String>? ?? [];
-        final images = extra['images'] as List<String>? ?? [];
+        // Accept either the typed QuoteRoomArgs or a legacy Map for backwards-compat
+        final extra = state.extra;
+        late List<String> roomIds;
+        late List<String> images;
+        if (extra is QuoteRoomArgs) {
+          roomIds = extra.roomIds;
+          images = extra.images;
+        } else {
+          final map = extra as Map<String, dynamic>? ?? {};
+          roomIds = map['roomIds'] as List<String>? ?? [];
+          images = map['images'] as List<String>? ?? [];
+        }
         return _buildPageWithTransition(
           context,
           state,
@@ -292,26 +307,39 @@ final router = GoRouter(
     GoRoute(
       path: '/quote/room-estimation',
       pageBuilder: (context, state) {
-         final extra = state.extra as Map<String, dynamic>? ?? {};
-         final roomIds = extra['roomIds'] as List<String>? ?? [];
-         final images = extra['images'] as List<String>? ?? [];
-         return _buildPageWithTransition(
-           context,
-           state,
-           RoomEstimationScreen(selectedRoomIds: roomIds, images: images),
-         );
+        final extra = state.extra;
+        late List<String> roomIds;
+        late List<String> images;
+        if (extra is QuoteRoomArgs) {
+          roomIds = extra.roomIds;
+          images = extra.images;
+        } else {
+          final map = extra as Map<String, dynamic>? ?? {};
+          roomIds = map['roomIds'] as List<String>? ?? [];
+          images = map['images'] as List<String>? ?? [];
+        }
+        return _buildPageWithTransition(
+          context,
+          state,
+          RoomEstimationScreen(selectedRoomIds: roomIds, images: images),
+        );
       },
     ),
     GoRoute(
       path: '/quote/summary',
-      pageBuilder: (context, state) {
-        final data = state.extra as Map<String, dynamic>? ?? {};
-        return _buildPageWithTransition(
-          context,
-          state,
-          QuoteSummaryScreen(data: data),
-        );
-      },
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const QuoteSummaryScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/quote/fourniture-summary',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const QuoteFournitureListScreen(),
+      ),
     ),
     GoRoute(
       path: '/quote/photo-preview',
@@ -327,7 +355,10 @@ final router = GoRouter(
     GoRoute(
       path: '/quote/detail',
       pageBuilder: (context, state) {
-        final data = state.extra as Map<String, dynamic>? ?? {};
+        final extra = state.extra;
+        final data = extra is QuoteDetailArgs
+            ? extra.data
+            : extra as Map<String, dynamic>? ?? {};
         return _buildPageWithTransition(
           context,
           state,
@@ -338,13 +369,23 @@ final router = GoRouter(
     GoRoute(
       path: '/quote/success',
       pageBuilder: (context, state) {
-        final data = state.extra as Map<String, dynamic>? ?? {};
+        final extra = state.extra;
+        late String quoteId;
+        late Map<String, dynamic> quoteData;
+        if (extra is QuoteSuccessArgs) {
+          quoteId = extra.quoteId;
+          quoteData = extra.quoteData;
+        } else {
+          final map = extra as Map<String, dynamic>? ?? {};
+          quoteId = map['quoteId'] as String? ?? '';
+          quoteData = map['quoteData'] as Map<String, dynamic>? ?? {};
+        }
         return _buildPageWithTransition(
           context,
           state,
           QuoteSuccessScreen(
-            quoteId: data['quoteId'] ?? '',
-            quoteData: data['quoteData'] as Map<String, dynamic>? ?? {},
+            quoteId: quoteId,
+            quoteData: quoteData,
           ),
         );
       },
@@ -354,12 +395,20 @@ final router = GoRouter(
       pageBuilder: (context, state) => _buildPageWithTransition(
         context,
         state,
-        const ProductSelectionScreen(),
+        const FournituresScreen(),
       ),
     ),
     // Signature Routes
     GoRoute(
       path: '/signature',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const MySignatureScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/signature/list',
       pageBuilder: (context, state) => _buildPageWithTransition(
         context,
         state,
@@ -369,7 +418,10 @@ final router = GoRouter(
     GoRoute(
       path: '/signature/sign',
       pageBuilder: (context, state) {
-        final quoteData = state.extra as Map<String, dynamic>? ?? {};
+        final extra = state.extra;
+        final quoteData = extra is SignatureArgs
+            ? extra.quote
+            : extra as Map<String, dynamic>? ?? {};
         return _buildPageWithTransition(
           context,
           state,
@@ -394,6 +446,7 @@ final router = GoRouter(
         const SynchronizationScreen(),
       ),
     ),
+
     GoRoute(
       path: '/synchronization/pointage',
       pageBuilder: (context, state) => _buildPageWithTransition(
@@ -401,6 +454,25 @@ final router = GoRouter(
         state,
         const PointageHeuresScreen(),
       ),
+    ),
+    GoRoute(
+      path: '/synchronization/pointage/new-contact',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const NouveauContactScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/synchronization/pointage/rdv',
+      pageBuilder: (context, state) {
+        final worker = state.extra as Worker?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          AjouterRdvScreen(worker: worker),
+        );
+      },
     ),
     // Worker Routes
     GoRoute(
@@ -436,11 +508,24 @@ final router = GoRouter(
      GoRoute(
       path: '/workers/detail',
       pageBuilder: (context, state) {
-        final worker = state.extra as Worker;
+        // SAFETY FIX: the old code did `state.extra as Worker` (non-nullable).
+        // If the caller forgot to pass a Worker, this would throw a ClassCastException
+        // at runtime with no helpful error. We now do a safe nullable cast and log a
+        // warning instead of crashing.
+        final worker = state.extra as Worker?;
+        assert(worker != null, '/workers/detail was pushed without a Worker argument');
+        if (worker == null) {
+          // Graceful fallback: pop back instead of crashing.
+          return _buildPageWithTransition(
+            context,
+            state,
+            const SizedBox.shrink(),
+          );
+        }
         return _buildPageWithTransition(
           context,
           state,
-           WorkerDetailScreen(worker: worker),
+          WorkerDetailScreen(worker: worker),
         );
       },
     ),
@@ -468,7 +553,15 @@ final router = GoRouter(
     GoRoute(
       path: '/projects/assign/:projectId',
       pageBuilder: (context, state) {
-        final project = state.extra as Project;
+        final extra = state.extra;
+        if (extra is! Project) {
+          return _buildPageWithTransition(
+            context,
+            state,
+            const ProjectSelectionScreen(),
+          );
+        }
+        final project = extra;
         return _buildPageWithTransition(
           context,
           state,

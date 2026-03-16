@@ -36,29 +36,29 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
       });
     }
   }
-  
+
   @override
   void initState() {
     super.initState();
     _loadBusinessInfo();
   }
-  
+
   Future<void> _loadBusinessInfo() async {
     final user = ref.read(authProvider).value;
     if (user == null) return;
-    
+
     // Check if we need to load data (only if all fields are empty)
     if (_raisonSocialeController.text.isNotEmpty) return;
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final userData = await ref.read(userRepositoryProvider).getUser(user.id);
       if (userData != null && userData['business_info'] != null) {
         final info = userData['business_info'] as Map<String, dynamic>;
-        
+
         setState(() {
           _raisonSocialeController.text = info['raisonSociale'] ?? '';
           _formeJuridiqueController.text = info['formeJuridique'] ?? '';
@@ -122,23 +122,23 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
       String? logoUrl;
       if (_imageFile != null) {
         logoUrl = await ref.read(userRepositoryProvider).uploadBusinessLogo(
-          user.id,
-          _imageFile!.path,
-        );
+              user.id,
+              _imageFile!.path,
+            );
       }
 
       // Update business info with logo URL
       await ref.read(userRepositoryProvider).updateBusinessInfo(
-        uid: user.id,
-        raisonSociale: _raisonSocialeController.text.trim(),
-        formeJuridique: _formeJuridiqueController.text.trim(),
-        siret: _siretController.text.trim(),
-        emailPro: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        address: _addressController.text.trim(),
-        tva: _tvaController.text.trim(),
-        logoUrl: logoUrl,
-      );
+            uid: user.id,
+            raisonSociale: _raisonSocialeController.text.trim(),
+            formeJuridique: _formeJuridiqueController.text.trim(),
+            siret: _siretController.text.trim(),
+            emailPro: _emailController.text.trim(),
+            phone: _phoneController.text.trim(),
+            address: _addressController.text.trim(),
+            tva: _tvaController.text.trim(),
+            logoUrl: logoUrl,
+          );
 
       if (mounted) {
         context.go('/profession-selection');
@@ -181,12 +181,13 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 8),
-                
+
                 // Logo
                 Center(
                   child: Text(
                     'K Ô J I',
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 6,
@@ -194,18 +195,12 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Title
-                Text(
-                  'Inscrivez-vous pour simplifier votre activité',
-                  style: AppTheme.headingStyle(context).copyWith(fontSize: 24),
-                  textAlign: TextAlign.left,
-                ),
-                
-                const SizedBox(height: 32),
-                
+              
+
                 // Photo Upload Circle
                 Center(
                   child: GestureDetector(
@@ -247,7 +242,8 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                               decoration: BoxDecoration(
                                 color: AppTheme.darkNavy,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
                               ),
                               child: const Icon(
                                 Icons.add,
@@ -260,27 +256,27 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Raison sociale
                 _buildTextField(
                   controller: _raisonSocialeController,
                   label: 'Raison sociale',
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Forme juridique
                 _buildTextField(
                   controller: _formeJuridiqueController,
                   label: 'Forme juridique',
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Numéro SIRET
                 _buildTextField(
                   controller: _siretController,
@@ -288,9 +284,9 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Email professionnel
                 _buildTextField(
                   controller: _emailController,
@@ -298,9 +294,9 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                   keyboardType: TextInputType.emailAddress,
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Numéro de téléphone
                 _buildTextField(
                   controller: _phoneController,
@@ -308,27 +304,27 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                   keyboardType: TextInputType.phone,
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Adresse
                 _buildTextField(
                   controller: _addressController,
                   label: 'Adresse',
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // TVA
                 _buildTextField(
                   controller: _tvaController,
                   label: 'TVA',
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Progress Indicator
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -340,16 +336,16 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                     _buildDot(false),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Submit Button
                 ElevatedButton(
-                  onPressed: _isFormValid && !_isLoading
-                      ? _handleSubmit
-                      : null,
+                  onPressed: _isFormValid && !_isLoading ? _handleSubmit : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isFormValid ? AppTheme.darkNavy : const Color(0xFFE5E7EB),
+                    backgroundColor: _isFormValid
+                        ? AppTheme.darkNavy
+                        : const Color(0xFFE5E7EB),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
@@ -359,38 +355,40 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                     disabledForegroundColor: Colors.white,
                   ),
                   child: _isLoading
-                    ? const SizedBox(
-                        height: 20, 
-                        width: 20, 
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                      )
-                    : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Créer mon compte',
-                        style: TextStyle(fontFamily: 'Outfit', 
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Créer mon compte',
+                              style: TextStyle(
+                                fontFamily: 'Outfit',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_isFormValid) ...[
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward, size: 20),
+                            ],
+                          ],
                         ),
-                      ),
-                      if (_isFormValid) ...[
-                        const SizedBox(width: 8),
-                        const Icon(Icons.arrow_forward, size: 20),
-                      ],
-                    ],
-                  ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Login Link
                 Center(
                   child: GestureDetector(
                     onTap: () => context.go('/login'),
                     child: RichText(
                       text: TextSpan(
-                        style: TextStyle(fontFamily: 'Outfit', 
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
                           fontSize: 14,
                           color: AppTheme.textLight,
                         ),
@@ -408,7 +406,7 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
               ],
             ),
@@ -434,18 +432,21 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
         controller: controller,
         keyboardType: keyboardType,
         onChanged: onChanged,
-        style: TextStyle(fontFamily: 'Outfit', 
+        style: TextStyle(
+          fontFamily: 'Outfit',
           fontSize: 16,
           color: AppTheme.darkNavy,
         ),
         decoration: InputDecoration(
           hintText: label,
-          hintStyle: TextStyle(fontFamily: 'Outfit', 
+          hintStyle: TextStyle(
+            fontFamily: 'Outfit',
             fontSize: 16,
             color: AppTheme.textLight,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );

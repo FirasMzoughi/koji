@@ -1,27 +1,64 @@
 import 'package:koji/features/pricing/models/pricing_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Strongly-typed client information for the quote creation flow.
+/// Replaces the previous Map<String, dynamic> clientInfo.
+class ClientInfo {
+  final String name;
+  final String email;
+  final String phone;
+  final String address;
+
+  const ClientInfo({
+    this.name = '',
+    this.email = '',
+    this.phone = '',
+    this.address = '',
+  });
+
+  /// Build from a legacy Map for backwards-compatibility.
+  factory ClientInfo.fromMap(Map<String, dynamic> map) {
+    return ClientInfo(
+      name: map['name'] as String? ?? '',
+      email: map['email'] as String? ?? '',
+      phone: map['phone'] as String? ?? '',
+      address: map['address'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'address': address,
+      };
+
+  bool get isEmpty =>
+      name.isEmpty && email.isEmpty && phone.isEmpty && address.isEmpty;
+  bool get isNotEmpty => !isEmpty;
+}
+
 class QuoteCreationState {
-  final Map<String, dynamic> clientInfo;
+  final ClientInfo clientInfo;
   final List<String> visualEvidenceImages;
   final List<String> selectedRoomIds;
   final Map<String, dynamic> roomEstimations; // Map<roomId, List<ExpenseItem>>
   final Map<String, dynamic> roomTasks;
-  final String? userProfession; // Store user's profession
-  final Map<String, RealityFactors> roomContexts; // NEW: Store context per room
+  final String? userProfession;
+  final Map<String, RealityFactors> roomContexts;
 
   QuoteCreationState({
-    this.clientInfo = const {},
+    ClientInfo? clientInfo,
     this.visualEvidenceImages = const [],
     this.selectedRoomIds = const [],
     this.roomEstimations = const {},
     this.roomTasks = const {},
     this.userProfession,
     this.roomContexts = const {},
-  });
+  }) : clientInfo = clientInfo ?? const ClientInfo();
 
   QuoteCreationState copyWith({
-    Map<String, dynamic>? clientInfo,
+    ClientInfo? clientInfo,
     List<String>? visualEvidenceImages,
     List<String>? selectedRoomIds,
     Map<String, dynamic>? roomEstimations,
@@ -39,16 +76,15 @@ class QuoteCreationState {
       roomContexts: roomContexts ?? this.roomContexts,
     );
   }
-  
+
   Map<String, dynamic> toMap() {
     return {
-      'client': clientInfo,
+      'client': clientInfo.toMap(),
       'images': visualEvidenceImages,
       'roomIds': selectedRoomIds,
       'expenses': roomEstimations,
       'tasks': roomTasks,
       'profession': userProfession,
-      // serialize context if needed, or reconstruct
     };
   }
 }
@@ -56,18 +92,19 @@ class QuoteCreationState {
 class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
   QuoteCreationNotifier() : super(QuoteCreationState());
 
-  void updateClientInfo(Map<String, dynamic> info) {
+  void updateClientInfo(ClientInfo info) {
     state = state.copyWith(clientInfo: info);
   }
 
   void addVisualEvidence(String path) {
-    state = state.copyWith(visualEvidenceImages: [...state.visualEvidenceImages, path]);
+    state = state
+        .copyWith(visualEvidenceImages: [...state.visualEvidenceImages, path]);
   }
-  
+
   void setVisualEvidence(List<String> paths) {
     state = state.copyWith(visualEvidenceImages: paths);
   }
-  
+
   void setSelectedRooms(List<String> roomIds) {
     state = state.copyWith(selectedRoomIds: roomIds);
   }
@@ -99,6 +136,7 @@ class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
   }
 }
 
-final quoteCreationProvider = StateNotifierProvider<QuoteCreationNotifier, QuoteCreationState>((ref) {
+final quoteCreationProvider =
+    StateNotifierProvider<QuoteCreationNotifier, QuoteCreationState>((ref) {
   return QuoteCreationNotifier();
 });

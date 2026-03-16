@@ -21,7 +21,7 @@ class ExpenseItem {
     this.tax = 0.0,
   });
 
-  double get total => (laborCost + materialCost) * quantity * (1 + tax/100);
+  double get total => (laborCost + materialCost) * quantity * (1 + tax / 100);
 
   Map<String, dynamic> toMap() {
     return {
@@ -32,8 +32,8 @@ class ExpenseItem {
       'laborCost': laborCost,
       'materialCost': materialCost,
       'tax': tax,
-      // IconData is not serializable directly for JSON/Firestore usually, 
-      // but assuming we rebuild it or store code point. 
+      // IconData is not serializable directly for JSON/Firestore usually,
+      // but assuming we rebuild it or store code point.
       // For now we might skip icon in DB or store generic name.
     };
   }

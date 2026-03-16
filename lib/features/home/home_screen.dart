@@ -6,7 +6,6 @@ import 'package:koji/features/quote/chantier_list_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-
 // Import widgets
 import 'package:koji/features/home/widgets/bottom_nav_item.dart';
 import 'package:koji/features/home/widgets/home_header.dart';
@@ -104,7 +103,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onTap: () {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tâches bientôt disponibles')),
+                          const SnackBar(
+                              content: Text('Tâches bientôt disponibles')),
                         );
                       },
                     ),
@@ -114,7 +114,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onTap: () {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Dépenses bientôt disponibles')),
+                          const SnackBar(
+                              content: Text('Dépenses bientôt disponibles')),
                         );
                       },
                     ),
@@ -179,18 +180,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               // Home Tab (Index 0)
               _buildHomeContent(responsive),
-              
+
               // Devis Tab (Index 1)
               const QuoteListScreen(),
-              
+
               // Chantier Tab (Index 2)
               const ChantierListScreen(),
-              
+
               // Plus/Menu Tab (Index 3) - Placeholder
               const Center(child: Text("Menu (Updates coming)")),
             ],
           ),
-          
+
           // Bottom Navigation Bar
           Positioned(
             left: 0,
@@ -199,10 +200,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.only(top: 16, bottom: 24),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA), // Light greyish background for nav bar area
+                color: const Color(
+                    0xFFF8F9FA), // Light greyish background for nav bar area
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 20,
                     offset: const Offset(0, -4),
                   ),
@@ -244,7 +246,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.more_horiz, // Three dots
                       label: 'Plus',
                       isActive: _selectedIndex == 3,
-                       activeColor: const Color(0xFF0F172A),
+                      activeColor: const Color(0xFF0F172A),
                     ),
                   ),
                 ],
@@ -294,7 +296,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-                 const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
                 // Chiffre d'affaires
                 const DashboardSection(
@@ -315,7 +317,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 100), // Bottom padding for Nav Bar
               ],
             ),

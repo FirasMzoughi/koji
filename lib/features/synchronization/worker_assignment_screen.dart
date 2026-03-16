@@ -17,12 +17,15 @@ class WorkerAssignmentScreen extends StatefulWidget {
 class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
   final WorkerRepository _workerRepo = WorkerRepository();
   final ProjectRepository _projectRepo = ProjectRepository();
-  
+
   List<Worker> _allWorkers = [];
   Set<String> _selectedWorkerIds = {};
-  String _selectedFilter = 'Tous'; // Tous, Plombier, Electricien...
+  String _selectedFilter = 'Tous';
   bool _isLoading = true;
   String _searchQuery = '';
+
+  // Unique professions from loaded workers
+  List<String> _professionFilters = ['Tous'];
 
   @override
   void initState() {
@@ -33,9 +36,16 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
   Future<void> _loadWorkers() async {
     try {
       final workers = await _workerRepo.getWorkers();
+      final professions = workers
+          .map((w) => w.profession)
+          .toSet()
+          .toList()
+        ..sort();
+
       if (mounted) {
         setState(() {
           _allWorkers = workers;
+          _professionFilters = ['Tous', ...professions];
           _isLoading = false;
         });
       }
@@ -59,12 +69,13 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
     if (_selectedWorkerIds.isEmpty) return;
 
     try {
-      await _projectRepo.assignWorkersToProject(widget.project.id, _selectedWorkerIds.toList());
+      await _projectRepo.assignWorkersToProject(
+          widget.project.id, _selectedWorkerIds.toList());
       if (mounted) {
         context.pushReplacement('/projects/success');
       }
     } catch (e) {
-       if (mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur: $e')),
         );
@@ -74,259 +85,374 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkBlue = const Color(0xFF0F3995);
-    final scaffoldBg = const Color(0xFFF5F8FF); 
-    
-    // Filter logic
+    const darkNavy = Color(0xFF0A1227);
+    const appBg = Color(0xFFFBFBFC);
+
+    // Filter workers by profession and search
     final filteredWorkers = _allWorkers.where((w) {
-      final matchesSearch = "${w.firstName} ${w.lastName}".toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesJob = _selectedFilter == 'Tous' || w.profession == _selectedFilter;
-      return matchesSearch && matchesJob;
+      final matchesSearch = "${w.firstName} ${w.lastName}"
+          .toLowerCase()
+          .contains(_searchQuery.toLowerCase());
+      final matchesProfession =
+          _selectedFilter == 'Tous' || w.profession == _selectedFilter;
+      return matchesSearch && matchesProfession;
     }).toList();
 
     return Scaffold(
-      backgroundColor: scaffoldBg,
-      appBar: AppBar(
-        backgroundColor: scaffoldBg,
-        elevation: 0,
-        leading: GestureDetector(
-          onTap: () => context.pop(),
-          child: Container(
-             margin: const EdgeInsets.only(left: 16),
-            padding: const EdgeInsets.all(8),
-             decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+      backgroundColor: appBg,
+      body: Stack(
+        children: [
+          // Background Gradient
+          Positioned(
+            top: -50,
+            right: -100,
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFBE4D2).withValues(alpha: 0.6),
+                    const Color(0xFFFBE4D2).withValues(alpha: 0.0),
+                  ],
                 ),
-              ],
+              ),
             ),
-            child: Icon(Icons.chevron_left, color: darkBlue),
           ),
-        ),
-        title: Text(
-          "Affectation aux chantiers",
-          style: TextStyle(
-            fontFamily: 'Outfit',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: darkBlue,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-             const SizedBox(height: 24),
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE0E7FF)),
-                ),
-                child: TextField(
-                  onChanged: (val) => setState(() => _searchQuery = val),
-                   decoration: InputDecoration(
-                    hintText: "Rechercher un artisan...",
-                    hintStyle: TextStyle(fontFamily: 'Outfit', color: Colors.grey[400]),
-                    border: InputBorder.none,
-                    icon: Icon(Icons.search, color: Colors.grey[400]),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Filter Chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: ['Tous', 'Plombier', 'Electricien', 'Maçon', 'Peintre'].map((filter) {
-                  final isSelected = _selectedFilter == filter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedFilter = filter),
-                      child: Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                         decoration: BoxDecoration(
-                          color: isSelected ? darkBlue : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: isSelected ? null : Border.all(color: Colors.blue.withOpacity(0.1)),
-                          boxShadow: isSelected ? [
-                             BoxShadow(
-                                color: darkBlue.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              )
-                          ] : null,
-                         ),
-                         child: Text(
-                          filter,
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : darkBlue,
-                          ),
-                         ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Sélectionner l'équipe",
-                  style: TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: darkBlue,
-                  ),
-                ),
-              ),
-            ),
-             const SizedBox(height: 16),
-
-            // Worker List
-             Expanded(
-              child: _isLoading 
-                ? Center(child: CircularProgressIndicator(color: darkBlue))
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    itemCount: filteredWorkers.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final worker = filteredWorkers[index];
-                      final isSelected = _selectedWorkerIds.contains(worker.id);
-
-                      return GestureDetector(
-                        onTap: () => _toggleSelection(worker.id),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 20.0),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.pop(),
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: isSelected ? Border.all(color: Colors.blue.withOpacity(0.3), width: 2) : null,
+                            shape: BoxShape.circle,
                             boxShadow: [
-                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                              BoxShadow(
+                                color: darkNavy.withValues(alpha: 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: Colors.amber[100],
-                                backgroundImage: worker.profilePictureUrl != null ? NetworkImage(worker.profilePictureUrl!) : null,
-                                child: worker.profilePictureUrl == null ? Icon(Icons.person, color: Colors.amber[800]) : null,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "${worker.firstName} ${worker.lastName}",
-                                      style: TextStyle(
-                                        fontFamily: 'Outfit', 
-                                        fontWeight: FontWeight.bold, 
-                                        color: darkBlue,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      "${worker.profession} - ${worker.status}",
-                                      style: TextStyle(
-                                        fontFamily: 'Outfit', 
-                                        color: Colors.grey[400],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isSelected ? const Color(0xFF1D74FF) : Colors.transparent,
-                                   border: isSelected ? null : Border.all(color: Colors.grey[300]!, width: 2),
-                                ),
-                                child: isSelected 
-                                  ? const Icon(Icons.check, size: 16, color: Colors.white)
-                                  : null,
-                              )
-                            ],
+                          child: const Icon(Icons.chevron_left,
+                              color: darkNavy, size: 28),
+                        ),
+                      ),
+                      const Expanded(
+                        child: Text(
+                          "Affectation aux chantiers",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: darkNavy,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 44),
+                    ],
+                  ),
+                ),
+
+                // Search Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border:
+                          Border.all(color: const Color(0xFFE0E7FF)),
+                    ),
+                    child: TextField(
+                      onChanged: (val) =>
+                          setState(() => _searchQuery = val),
+                      style: const TextStyle(
+                        fontFamily: 'Outfit',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: darkNavy,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "Rechercher un artisan...",
+                        hintStyle: TextStyle(
+                          fontFamily: 'Outfit',
+                          color: Colors.grey[400],
+                          fontWeight: FontWeight.w400,
+                        ),
+                        border: InputBorder.none,
+                        suffixIcon: const Icon(Icons.search,
+                            color: Color(0xFF2E65F3), size: 22),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Profession Filter Chips
+                SizedBox(
+                  height: 44,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: _professionFilters.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final filter = _professionFilters[index];
+                      final isActive = _selectedFilter == filter;
+                      return GestureDetector(
+                        onTap: () =>
+                            setState(() => _selectedFilter = filter),
+                        child: AnimatedContainer(
+                          duration:
+                              const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? darkNavy
+                                : Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(24),
+                            border: isActive
+                                ? null
+                                : Border.all(
+                                    color:
+                                        const Color(0xFFE0E7FF)),
+                          ),
+                          child: Text(
+                            filter,
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isActive
+                                  ? Colors.white
+                                  : darkNavy,
+                            ),
                           ),
                         ),
                       );
                     },
                   ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Section Title
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Text(
+                    "Sélectionner l'équipe",
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: darkNavy,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Worker List
+                Expanded(
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xFF2E65F3)))
+                      : filteredWorkers.isEmpty
+                          ? Center(
+                              child: Text(
+                                "Aucun artisan trouvé",
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontSize: 15,
+                                  color: Colors.grey[400],
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24),
+                              itemCount: filteredWorkers.length,
+                              itemBuilder: (context, index) {
+                                final worker =
+                                    filteredWorkers[index];
+                                return _buildWorkerItem(worker);
+                              },
+                            ),
+                ),
+              ],
             ),
-            
-            // Bottom Action Bar
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                 color: Colors.white,
-                 boxShadow: [
-                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                   )
-                 ]
-              ),
+          ),
+
+          // Bottom Continue Button
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              padding:
+                  const EdgeInsets.fromLTRB(24, 12, 24, 32),
               child: SizedBox(
                 height: 56,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _selectedWorkerIds.isNotEmpty ? _submitAssignment : null,
+                  onPressed: _selectedWorkerIds.isNotEmpty
+                      ? _submitAssignment
+                      : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F3995), // Dark Blue
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor:
+                        _selectedWorkerIds.isNotEmpty
+                            ? darkNavy
+                            : const Color(0xFFE2E8F0),
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(16)),
                     elevation: 0,
+                    disabledBackgroundColor:
+                        const Color(0xFFE2E8F0),
                   ),
-                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.center,
                     children: [
-                       Text(
+                      Text(
                         "Continuer (${_selectedWorkerIds.length} sélectionnés)",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Outfit',
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          color: _selectedWorkerIds
+                                  .isNotEmpty
+                              ? Colors.white
+                              : const Color(0xFF8B95A5),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                      Icon(
+                        Icons.arrow_forward,
+                        color: _selectedWorkerIds
+                                .isNotEmpty
+                            ? Colors.white
+                            : const Color(0xFF8B95A5),
+                        size: 20,
+                      ),
                     ],
-                   ),
+                  ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkerItem(Worker worker) {
+    const darkNavy = Color(0xFF0A1227);
+    final isSelected = _selectedWorkerIds.contains(worker.id);
+
+    return GestureDetector(
+      onTap: () => _toggleSelection(worker.id),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFFEEF2FF)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            // Avatar
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFE2E8F0),
+                image: worker.profilePictureUrl != null
+                    ? DecorationImage(
+                        image: NetworkImage(
+                            worker.profilePictureUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: worker.profilePictureUrl == null
+                  ? Icon(Icons.person,
+                      color: Colors.blueGrey[300])
+                  : null,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${worker.firstName} ${worker.lastName}",
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: darkNavy,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "${worker.profession} - ${worker.status}",
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF8B95A5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Checkbox
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected
+                    ? const Color(0xFF2E65F3)
+                    : Colors.transparent,
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: const Color(0xFFCBD5E1),
+                        width: 2),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check,
+                      size: 18, color: Colors.white)
+                  : null,
             ),
           ],
         ),

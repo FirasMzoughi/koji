@@ -19,7 +19,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _obscurePassword = true;
   bool _marketingConsent = true;
   bool _termsAccepted = true;
@@ -49,16 +49,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final isPro = ref.read(accountTypeProvider) ?? false;
 
     await ref.read(authProvider.notifier).signUpWithEmailAndPassword(
-      _emailController.text.trim(),
-      _passwordController.text,
-      isPro: isPro,
-    );
+          _emailController.text.trim(),
+          _passwordController.text,
+          isPro: isPro,
+        );
   }
 
   void _handleGoogleSignup() async {
     // Get isPro from provider (default to false if not set)
     final isPro = ref.read(accountTypeProvider) ?? false;
-    
+
     await ref.read(authProvider.notifier).signInWithGoogle(isPro: isPro);
   }
 
@@ -108,12 +108,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 8),
-                
+
                 // Logo
                 Center(
                   child: Text(
                     'K Ô J I',
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 6,
@@ -121,18 +122,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Title
                 Text(
                   'Inscrivez-vous pour simplifier votre activité',
                   style: AppTheme.headingStyle(context).copyWith(fontSize: 24),
                   textAlign: TextAlign.left,
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Google Sign-in Button
                 ElevatedButton.icon(
                   onPressed: isLoading ? null : _handleGoogleSignup,
@@ -150,19 +151,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Icon(Icons.g_mobiledata, color: AppTheme.primaryBlue, size: 20),
+                    child: const Icon(Icons.g_mobiledata,
+                        color: AppTheme.primaryBlue, size: 20),
                   ),
                   label: Text(
                     'Continuer avec Google',
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // "Ou" divider
                 Row(
                   children: [
@@ -171,7 +174,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'Ou',
-                        style: TextStyle(fontFamily: 'Outfit', 
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
                           color: AppTheme.textLight,
                           fontSize: 14,
                         ),
@@ -180,27 +184,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     const Expanded(child: Divider(color: Color(0xFFE5E7EB))),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // First Name
                 _buildTextField(
                   controller: _firstNameController,
                   label: 'Prénom',
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Last Name
                 _buildTextField(
                   controller: _lastNameController,
                   label: 'Nom',
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Email
                 _buildTextField(
                   controller: _emailController,
@@ -208,9 +212,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   keyboardType: TextInputType.emailAddress,
                   onChanged: (_) => setState(() {}),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Password
                 _buildTextField(
                   controller: _passwordController,
@@ -219,7 +223,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   onChanged: (_) => setState(() {}),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: AppTheme.textLight,
                       size: 20,
                     ),
@@ -230,12 +236,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     },
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Country Dropdown
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(12),
@@ -245,8 +252,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     child: DropdownButton<String>(
                       value: _selectedCountry,
                       isExpanded: true,
-                      icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.darkNavy),
-                      style: TextStyle(fontFamily: 'Outfit', 
+                      icon: const Icon(Icons.keyboard_arrow_down,
+                          color: AppTheme.darkNavy),
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
                         fontSize: 16,
                         color: AppTheme.darkNavy,
                       ),
@@ -264,22 +273,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Marketing Consent Checkbox
                 _buildCheckbox(
                   value: _marketingConsent,
-                  text: 'Envoyez-moi des conseils pour optimiser la gestion de mes devis et chantiers.',
+                  text:
+                      'Envoyez-moi des conseils pour optimiser la gestion de mes devis et chantiers.',
                   onChanged: (value) {
                     setState(() {
                       _marketingConsent = value!;
                     });
                   },
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Terms Checkbox
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,13 +314,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     Expanded(
                       child: RichText(
                         text: TextSpan(
-                          style: TextStyle(fontFamily: 'Outfit', 
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
                             fontSize: 13,
                             color: AppTheme.textLight,
                             height: 1.4,
                           ),
                           children: [
-                            const TextSpan(text: 'Oui, je comprends et j\'accepte les '),
+                            const TextSpan(
+                                text: 'Oui, je comprends et j\'accepte les '),
                             TextSpan(
                               text: 'Conditions d\'utilisation',
                               style: const TextStyle(
@@ -333,9 +345,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Progress Indicator
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -347,16 +359,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     _buildDot(false),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Submit Button
                 ElevatedButton(
-                  onPressed: _isFormValid && !isLoading
-                      ? _handleSignup
-                      : null,
+                  onPressed: _isFormValid && !isLoading ? _handleSignup : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isFormValid ? AppTheme.darkNavy : const Color(0xFFE5E7EB),
+                    backgroundColor: _isFormValid
+                        ? AppTheme.darkNavy
+                        : const Color(0xFFE5E7EB),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
@@ -365,39 +377,41 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     disabledBackgroundColor: const Color(0xFFE5E7EB),
                     disabledForegroundColor: const Color(0xFFD1D5DB),
                   ),
-                  child: isLoading 
-                    ? const SizedBox(
-                        height: 20, 
-                        width: 20, 
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                      )
-                    : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Suivant',
-                        style: TextStyle(fontFamily: 'Outfit', 
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Suivant',
+                              style: TextStyle(
+                                fontFamily: 'Outfit',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_isFormValid) ...[
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward, size: 20),
+                            ],
+                          ],
                         ),
-                      ),
-                      if (_isFormValid) ...[
-                        const SizedBox(width: 8),
-                        const Icon(Icons.arrow_forward, size: 20),
-                      ],
-                    ],
-                  ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Login Link
                 Center(
                   child: GestureDetector(
                     onTap: () => context.go('/login'),
                     child: RichText(
                       text: TextSpan(
-                        style: TextStyle(fontFamily: 'Outfit', 
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
                           fontSize: 14,
                           color: AppTheme.textLight,
                         ),
@@ -415,7 +429,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
               ],
             ),
@@ -444,18 +458,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         obscureText: obscureText,
         keyboardType: keyboardType,
         onChanged: onChanged,
-        style: TextStyle(fontFamily: 'Outfit', 
+        style: TextStyle(
+          fontFamily: 'Outfit',
           fontSize: 16,
           color: AppTheme.darkNavy,
         ),
         decoration: InputDecoration(
           hintText: label,
-          hintStyle: TextStyle(fontFamily: 'Outfit', 
+          hintStyle: TextStyle(
+            fontFamily: 'Outfit',
             fontSize: 16,
             color: AppTheme.textLight,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           suffixIcon: suffixIcon,
         ),
       ),
@@ -486,7 +503,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(fontFamily: 'Outfit', 
+            style: TextStyle(
+              fontFamily: 'Outfit',
               fontSize: 13,
               color: AppTheme.textLight,
               height: 1.4,

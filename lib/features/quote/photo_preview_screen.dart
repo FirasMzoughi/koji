@@ -22,7 +22,7 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
   final List<String> _images = [];
   late PageController _pageController;
   int _currentIndex = 0;
-  final Map<String, int> _rotations = {}; 
+  final Map<String, int> _rotations = {};
 
   @override
   void initState() {
@@ -64,7 +64,7 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
   Future<void> _cropImage() async {
     if (_images.isEmpty) return;
     String currentPath = _images[_currentIndex];
-    
+
     try {
       final croppedFile = await ImageCropper().cropImage(
         sourcePath: currentPath,
@@ -100,14 +100,15 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
       _rotations[path] = (_rotations[path] ?? 0) + 1;
     });
   }
-  
+
   void _deleteImage() {
     if (_images.isEmpty) return;
-    
+
     setState(() {
       _images.removeAt(_currentIndex);
-      _rotations.remove(_images.length > _currentIndex ? _images[_currentIndex] : ""); 
-      
+      _rotations
+          .remove(_images.length > _currentIndex ? _images[_currentIndex] : "");
+
       if (_images.isEmpty) {
       } else if (_currentIndex >= _images.length) {
         _currentIndex = _images.length - 1;
@@ -131,7 +132,8 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppTheme.darkNavy, size: 20),
+            icon: const Icon(Icons.arrow_back,
+                color: AppTheme.darkNavy, size: 20),
             onPressed: () => context.pop(),
           ),
         ),
@@ -139,7 +141,7 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
         title: Column(
           children: [
             Text(
-              'Preuves Visuelles',
+              'Créer votre chantier',
               style: AppTheme.headingStyle(context).copyWith(fontSize: 18),
             ),
           ],
@@ -150,7 +152,6 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 24),
-            
             Padding(
               padding: responsive.paddingSymmetric(horizontalPercent: 6.4),
               child: Text(
@@ -159,29 +160,32 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
-             if (_images.isNotEmpty)
+            if (_images.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
                   '${_currentIndex + 1}/${_images.length}',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: AppTheme.textLight,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-            
             Padding(
               padding: responsive.paddingSymmetric(horizontalPercent: 6.4),
               child: TextButton(
                 onPressed: () {
-                  ref.read(quoteCreationProvider.notifier).setVisualEvidence(_images);
+                  ref
+                      .read(quoteCreationProvider.notifier)
+                      .setVisualEvidence(_images);
                   context.push('/quote/visual-evidence-grid', extra: _images);
                 },
                 child: Text(
                   'Passer',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: AppTheme.darkNavy,
                     fontWeight: FontWeight.w600,
@@ -190,12 +194,13 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                 ),
               ),
             ),
-            
             const SizedBox(height: 16),
-            
             Expanded(
-              child: _images.isEmpty 
-                  ? Center(child: Text("Aucune image", style: TextStyle(fontFamily: 'Outfit', color: AppTheme.textLight)))
+              child: _images.isEmpty
+                  ? Center(
+                      child: Text("Aucune image",
+                          style: TextStyle(
+                              fontFamily: 'Outfit', color: AppTheme.textLight)))
                   : PageView.builder(
                       controller: _pageController,
                       itemCount: _images.length,
@@ -207,7 +212,8 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                       itemBuilder: (context, index) {
                         final path = _images[index];
                         return Padding(
-                          padding: responsive.paddingSymmetric(horizontalPercent: 6.4),
+                          padding: responsive.paddingSymmetric(
+                              horizontalPercent: 6.4),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(24),
                             child: RotatedBox(
@@ -222,9 +228,7 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                       },
                     ),
             ),
-            
             const SizedBox(height: 32),
-            
             Padding(
               padding: responsive.paddingSymmetric(horizontalPercent: 6.4),
               child: Row(
@@ -249,60 +253,62 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                 ],
               ),
             ),
-            
             const SizedBox(height: 32),
-            
             Padding(
               padding: responsive.paddingSymmetric(horizontalPercent: 6.4),
               child: ElevatedButton(
-                  onPressed: () {
-                     ref.read(quoteCreationProvider.notifier).setVisualEvidence(_images);
-                     context.push('/quote/visual-evidence-grid', extra: _images);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE5E7EB),
-                    foregroundColor: AppTheme.darkNavy,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
+                onPressed: () {
+                  ref
+                      .read(quoteCreationProvider.notifier)
+                      .setVisualEvidence(_images);
+                  context.push('/quote/visual-evidence-grid', extra: _images);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE5E7EB),
+                  foregroundColor: AppTheme.darkNavy,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Suivant',
-                        style: TextStyle(fontFamily: 'Outfit', 
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward, size: 20),
-                    ],
-                  ),
+                  elevation: 0,
                 ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Suivant',
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward, size: 20),
+                  ],
+                ),
+              ),
             ),
-            
             const SizedBox(height: 24),
-            
             if (_images.isNotEmpty)
               Center(
                 child: TextButton.icon(
                   onPressed: () async {
-                    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+                    final XFile? image =
+                        await _picker.pickImage(source: ImageSource.camera);
                     if (image != null) {
                       setState(() {
-                         _images[_currentIndex] = image.path;
-                         _rotations.remove(image.path);
+                        _images[_currentIndex] = image.path;
+                        _rotations.remove(image.path);
                       });
                     }
                   },
-                  icon: const Icon(Icons.camera_alt_outlined, size: 18, color: AppTheme.textLight),
+                  icon: const Icon(Icons.camera_alt_outlined,
+                      size: 18, color: AppTheme.textLight),
                   label: Text(
                     'Reprendre la photo',
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: AppTheme.textLight,
                       fontWeight: FontWeight.w500,
@@ -310,15 +316,15 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                   ),
                 ),
               ),
-            
-             const SizedBox(height: 24),
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionButton({required IconData icon, required VoidCallback onPressed}) {
+  Widget _buildActionButton(
+      {required IconData icon, required VoidCallback onPressed}) {
     return Container(
       width: 56,
       height: 56,
@@ -327,7 +333,7 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

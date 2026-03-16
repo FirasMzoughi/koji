@@ -10,12 +10,13 @@ class CompanyProfileScreen extends ConsumerStatefulWidget {
   const CompanyProfileScreen({super.key});
 
   @override
-  ConsumerState<CompanyProfileScreen> createState() => _CompanyProfileScreenState();
+  ConsumerState<CompanyProfileScreen> createState() =>
+      _CompanyProfileScreenState();
 }
 
 class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _dailyRateController = TextEditingController();
   final _hoursPerDayController = TextEditingController();
@@ -26,19 +27,19 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _tvaController = TextEditingController();
-  
+
   bool _isLoading = true;
   bool _isSaving = false;
   File? _imageFile;
   String? _currentLogoUrl;
   final ImagePicker _picker = ImagePicker();
-  
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
   }
-  
+
   @override
   void dispose() {
     _dailyRateController.dispose();
@@ -52,18 +53,22 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
     _tvaController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadUserData() async {
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user != null) {
-        final userData = await ref.read(userRepositoryProvider).getUser(user.id);
-        final businessInfo = userData?['business_info'] as Map<String, dynamic>?;
+        final userData =
+            await ref.read(userRepositoryProvider).getUser(user.id);
+        final businessInfo =
+            userData?['business_info'] as Map<String, dynamic>?;
         _currentLogoUrl = userData?['logo_url'] as String?;
-        
+
         if (businessInfo != null) {
-          _dailyRateController.text = (businessInfo['dailyRate'] as num?)?.toString() ?? '350';
-          _hoursPerDayController.text = (businessInfo['hoursPerDay'] as num?)?.toString() ?? '7';
+          _dailyRateController.text =
+              (businessInfo['dailyRate'] as num?)?.toString() ?? '350';
+          _hoursPerDayController.text =
+              (businessInfo['hoursPerDay'] as num?)?.toString() ?? '7';
           _businessNameController.text = businessInfo['raisonSociale'] ?? '';
           _legalFormController.text = businessInfo['formeJuridique'] ?? '';
           _siretController.text = businessInfo['siret'] ?? '';
@@ -76,7 +81,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur de chargement: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Erreur de chargement: $e'),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -85,7 +92,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       }
     }
   }
-  
+
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -94,42 +101,42 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       });
     }
   }
-  
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isSaving = true);
-    
+
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user == null) throw Exception('User not logged in');
-      
+
       // Upload logo if selected
       String? logoUrl = _currentLogoUrl;
       if (_imageFile != null) {
         logoUrl = await ref.read(userRepositoryProvider).uploadBusinessLogo(
-          user.id,
-          _imageFile!.path,
-        );
+              user.id,
+              _imageFile!.path,
+            );
       }
-      
+
       final dailyRate = double.tryParse(_dailyRateController.text) ?? 350.0;
       final hoursPerDay = double.tryParse(_hoursPerDayController.text) ?? 7.0;
-      
+
       await ref.read(userRepositoryProvider).updateBusinessInfo(
-        uid: user.id,
-        raisonSociale: _businessNameController.text,
-        formeJuridique: _legalFormController.text,
-        siret: _siretController.text,
-        emailPro: _emailController.text,
-        phone: _phoneController.text,
-        address: _addressController.text,
-        tva: _tvaController.text,
-        dailyRate: dailyRate,
-        hoursPerDay: hoursPerDay,
-        logoUrl: logoUrl,
-      );
-      
+            uid: user.id,
+            raisonSociale: _businessNameController.text,
+            formeJuridique: _legalFormController.text,
+            siret: _siretController.text,
+            emailPro: _emailController.text,
+            phone: _phoneController.text,
+            address: _addressController.text,
+            tva: _tvaController.text,
+            dailyRate: dailyRate,
+            hoursPerDay: hoursPerDay,
+            logoUrl: logoUrl,
+          );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -154,7 +161,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -204,12 +211,14 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                                       )
                                     : (_currentLogoUrl != null
                                         ? DecorationImage(
-                                            image: NetworkImage(_currentLogoUrl!),
+                                            image:
+                                                NetworkImage(_currentLogoUrl!),
                                             fit: BoxFit.cover,
                                           )
                                         : null),
                               ),
-                              child: (_imageFile == null && _currentLogoUrl == null)
+                              child: (_imageFile == null &&
+                                      _currentLogoUrl == null)
                                   ? const Icon(
                                       Icons.add_photo_alternate_outlined,
                                       size: 50,
@@ -226,7 +235,8 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1E3A8A),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
+                                  border:
+                                      Border.all(color: Colors.white, width: 3),
                                 ),
                                 child: const Icon(
                                   Icons.camera_alt,
@@ -251,17 +261,17 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Pricing Section
                     _buildSectionTitle('Tarification'),
                     _buildPricingCard(),
                     const SizedBox(height: 24),
-                    
+
                     // Business Info Section
                     _buildSectionTitle('Informations Entreprise'),
                     _buildBusinessInfoCard(),
                     const SizedBox(height: 32),
-                    
+
                     // Save Button
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -279,7 +289,8 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Text(
@@ -297,7 +308,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
             ),
     );
   }
-  
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -312,7 +323,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       ),
     );
   }
-  
+
   Widget _buildPricingCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -329,7 +340,8 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
               decoration: InputDecoration(
                 labelText: 'Tarif journalier (€ HT / jour)',
                 prefixIcon: const Icon(Icons.euro, color: Color(0xFF1E3A8A)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -344,15 +356,18 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
               },
             ),
             const SizedBox(height: 16),
-            
+
             // Hours per Day
             TextFormField(
               controller: _hoursPerDayController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: 'Heures par jour',
-                prefixIcon: const Icon(Icons.access_time, color: Color(0xFF1E3A8A)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon:
+                    const Icon(Icons.access_time, color: Color(0xFF1E3A8A)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -368,14 +383,15 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
               },
             ),
             const SizedBox(height: 16),
-            
+
             // Calculated hourly rate
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E3A8A).withOpacity(0.1),
+                color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1E3A8A).withOpacity(0.3)),
+                border: Border.all(
+                    color: const Color(0xFF1E3A8A).withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -410,18 +426,18 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       ),
     );
   }
-  
+
   String _calculateHourlyRate() {
     final dailyRate = double.tryParse(_dailyRateController.text);
     final hoursPerDay = double.tryParse(_hoursPerDayController.text);
-    
+
     if (dailyRate != null && hoursPerDay != null && hoursPerDay > 0) {
       final hourlyRate = dailyRate / hoursPerDay;
       return '${hourlyRate.toStringAsFixed(2)} € / h';
     }
     return '-- € / h';
   }
-  
+
   Widget _buildBusinessInfoCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -479,7 +495,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       ),
     );
   }
-  
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,

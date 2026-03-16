@@ -36,7 +36,8 @@ class SubmitButton extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(fontFamily: 'Outfit', 
+            style: TextStyle(
+              fontFamily: 'Outfit',
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),

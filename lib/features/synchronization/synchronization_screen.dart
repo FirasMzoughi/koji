@@ -1,314 +1,333 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:koji/features/home/widgets/stat_card.dart'; // Reuse if applicable, or build custom
 
 class SynchronizationScreen extends StatelessWidget {
   const SynchronizationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Colors extracted from design/home_screen
-    final darkBlue = const Color(0xFF0F3995);
-    final primaryBlue = const Color(0xFF1D74FF);
-    final scaffoldBg = const Color(0xFFF5F8FF); // Light blueish grey from image hint
+    // Colors based on design
+    final darkText = const Color(0xFF031229);
+    final greyText = const Color(0xFF8B95A5);
+    final appBg = const Color(0xFFFBFBFC);
     
     return Scaffold(
-      backgroundColor: scaffoldBg,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              _buildHeader(context, darkBlue),
-
-              const SizedBox(height: 32),
-
-              // Title Section
-              Text(
-                "État de synchronisation",
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: darkBlue,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Assurez-vous que toutes les heures sont à jour",
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontSize: 14,
-                  color: darkBlue.withOpacity(0.6),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Grid Options
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.0, // Square cards
-                children: [
-                   _buildSyncOptionCard(
-                    context,
-                    title: "Profils Ouvriers",
-                    icon: Icons.person,
-                    onTap: () => context.push('/workers'), 
-                  ),
-                   _buildSyncOptionCard(
-                    context,
-                    title: "Affectation Chantiers",
-                    icon: Icons.assignment_ind,
-                    onTap: () => context.push('/projects'),
-                  ),
-                   _buildSyncOptionCard(
-                    context,
-                    title: "Planning Individuel",
-                    icon: Icons.calendar_month,
-                    onTap: () => context.push('/planning'),
-                  ),
-                   _buildSyncOptionCard(
-                    context,
-                    title: "Pointage et Heures",
-                    icon: Icons.access_time,
-                    onTap: () => context.push('/synchronization/pointage'),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // Aujourd'hui Section
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
+      backgroundColor: appBg,
+      body: Stack(
+        children: [
+          // Background Gradient (Peach glow at top right)
+          Positioned(
+            top: -100,
+            right: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFBE4D2).withOpacity(0.8),
+                    const Color(0xFFFBE4D2).withOpacity(0.0),
                   ],
                 ),
-                child: Column(
-                  children: [
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Aujourd'hui",
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: darkBlue,
-                          ),
-                        ),
-                        Text(
-                          "Janvier 2026",
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontSize: 14,
-                            color: Colors.grey[400],
-                          ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(context, darkText),
+                  const SizedBox(height: 32),
+                  // Title Section
+                  Text(
+                    "État de synchronisation",
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "Assurez-vous que toutes les heures sont à jour",
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 14,
+                      color: greyText,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Grid Options
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.92,
+                    children: [
+                      _buildSyncOptionCard(
+                        context,
+                        title: "Profils\nOuvriers",
+                        icon: Icons.person,
+                        onTap: () => context.push('/workers'),
+                        iconSize: 34,
+                      ),
+                      _buildSyncOptionCard(
+                        context,
+                        title: "Affectation\nChantiers",
+                        icon: Icons.groups,
+                        onTap: () => context.push('/projects'),
+                        iconSize: 34,
+                      ),
+                      _buildSyncOptionCard(
+                        context,
+                        title: "Planning\nIndividuel",
+                        icon: Icons.calendar_month_outlined,
+                        onTap: () => context.push('/planning'),
+                        iconSize: 30,
+                      ),
+                      _buildSyncOptionCard(
+                        context,
+                        title: "Pointage et\nHeurs",
+                        icon: Icons.access_time,
+                        onTap: () => context.push('/synchronization/pointage'),
+                        iconSize: 30,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  // Aujourd'hui Section
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: darkText.withOpacity(0.04),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    
-                    const SizedBox(height: 20),
-
-                    // Blue Team Hours Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF0F3995),
-                            primaryBlue,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Aujourd'hui",
+                              style: TextStyle(
+                                fontFamily: 'Outfit',
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: darkText,
+                              ),
+                            ),
+                            Text(
+                              "Janvier 2026",
+                              style: TextStyle(
+                                fontFamily: 'Outfit',
+                                fontSize: 14,
+                                color: greyText,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: primaryBlue.withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                        const SizedBox(height: 20),
+                        // Blue Team Hours Card
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0A1227), // Deep navy
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                "Total heures équipe",
-                                style: TextStyle(
-                                  fontFamily: 'Outfit',
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Total heures équipe",
+                                    style: TextStyle(
+                                      fontFamily: 'Outfit',
+                                      fontSize: 14,
+                                      color: Color(0xFFB3B9C5),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    "123.4 h",
+                                    style: TextStyle(
+                                      fontFamily: 'Outfit',
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                "123.4 h",
-                                style: TextStyle(
-                                  fontFamily: 'Outfit',
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.25),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.access_time_filled,
                                   color: Colors.white,
+                                  size: 32,
                                 ),
                               ),
                             ],
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.access_time_filled,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Stats Row (Actifs / Retards)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatBox(
-                            label: "Actifs",
-                            value: "12/20",
-                            color: darkBlue,
-                          ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildStatBox(
-                            label: "Retards",
-                            value: "02",
-                            color: darkBlue,
-                          ),
+                        const SizedBox(height: 16),
+                        // Stats Row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatBox(
+                                label: "Actifs",
+                                value: "12/20",
+                                darkText: darkText,
+                                greyText: greyText,
+                                valueSize: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildStatBox(
+                                label: "Retards",
+                                value: "02",
+                                darkText: darkText,
+                                greyText: greyText,
+                                valueSize: 24,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, Color darkBlue) {
+  Widget _buildHeader(BuildContext context, Color darkText) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Back Button
         GestureDetector(
-          onTap: () => context.pop(),
+          onTap: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
           child: Container(
-            padding: const EdgeInsets.all(10),
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: darkText.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Icon(Icons.chevron_left, color: darkBlue, size: 24),
+            child: Icon(Icons.chevron_left, color: darkText, size: 28),
           ),
         ),
-        
-        // Title
-        Text(
-          "Synchronisation",
-          style: TextStyle(
-            fontFamily: 'Outfit',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: darkBlue,
-          ),
-        ),
-
-        // Notification Bell
-        Stack(
-          children: [
-             Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.notifications_none, color: darkBlue, size: 24),
+        Expanded(
+          child: Text(
+            "Synchronisation",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Outfit',
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: darkText,
             ),
-            Positioned(
-              right: 12, // Adjusted for container padding
-              top: 10,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFF5252), // Red dot
-                  shape: BoxShape.circle,
+          ),
+        ),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: darkText.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Icon(Icons.notifications_none, color: darkText, size: 26),
+              Positioned(
+                right: 9,
+                top: 9,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF4848),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
                 ),
               ),
-            )
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSyncOptionCard(BuildContext context, {required String title, required IconData icon, required VoidCallback onTap}) {
-    final darkBlue = const Color(0xFF0F3995);
-    
+  Widget _buildSyncOptionCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+    required double iconSize,
+  }) {
+    final darkText = const Color(0xFF031229);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04), // Subtle shadow
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: darkText.withOpacity(0.03),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -318,25 +337,29 @@ class SynchronizationScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F8FF), // Very light blue bg for icon
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE5EEFF)),
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
               ),
               child: Icon(
                 icon,
-                size: 32,
-                color: const Color(0xFF0F3995), // Dark blue icon
+                size: iconSize,
+                color: darkText,
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit',
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: darkBlue,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: darkText,
+                  height: 1.3,
+                ),
               ),
             ),
           ],
@@ -345,13 +368,19 @@ class SynchronizationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatBox({required String label, required String value, required Color color}) {
+  Widget _buildStatBox({
+    required String label,
+    required String value,
+    required Color darkText,
+    required Color greyText,
+    required double valueSize,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC), // Slight grey/blue
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,7 +390,8 @@ class SynchronizationScreen extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Outfit',
               fontSize: 14,
-              color: const Color(0xFF64748B), // Slate grey
+              color: greyText,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -369,9 +399,9 @@ class SynchronizationScreen extends StatelessWidget {
             value,
             style: TextStyle(
               fontFamily: 'Outfit',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
+              fontSize: valueSize,
+              fontWeight: FontWeight.w700,
+              color: darkText,
             ),
           ),
         ],

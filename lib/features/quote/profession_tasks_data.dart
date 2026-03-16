@@ -1,4 +1,3 @@
-
 class TaskCategory {
   final String title;
   final List<TaskItem> tasks;
@@ -23,7 +22,7 @@ final Map<String, List<TaskCategory>> professionTasksData = {
 List<TaskCategory> getTasksForProfession(String? profession) {
   // Return empty or fetch? logic updates might be needed elsewhere if this returns empty.
   if (profession == null) return [];
-  
+
   // "Tout corps d'état" gets all tasks
   if (profession == "Tout corps d'état") {
     final allTasks = <TaskCategory>[];
@@ -34,6 +33,6 @@ List<TaskCategory> getTasksForProfession(String? profession) {
     });
     return allTasks;
   }
-  
+
   return professionTasksData[profession] ?? [];
 }

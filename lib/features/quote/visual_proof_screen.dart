@@ -20,7 +20,8 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
       if (image != null && mounted) {
         // Navigate to preview screen allowing user to see the image
         // For now, we'll pass the path as a query parameter
-        context.push('/quote/photo-preview?imagePath=${Uri.encodeComponent(image.path)}');
+        context.push(
+            '/quote/photo-preview?imagePath=${Uri.encodeComponent(image.path)}');
       }
     } catch (e) {
       // Handle error
@@ -44,7 +45,8 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppTheme.darkNavy, size: 20),
+            icon: const Icon(Icons.arrow_back,
+                color: AppTheme.darkNavy, size: 20),
             onPressed: () => context.pop(),
           ),
         ),
@@ -52,10 +54,9 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
         title: Column(
           children: [
             Text(
-              'Preuves Visuelles',
+              'Créer votre chantier',
               style: AppTheme.headingStyle(context).copyWith(fontSize: 18),
             ),
-            
           ],
         ),
       ),
@@ -67,7 +68,7 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              
+
               // Icon Circle
               Center(
                 child: Container(
@@ -84,31 +85,32 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Title
               Text(
                 'Prise de Photo',
                 style: AppTheme.headingStyle(context).copyWith(fontSize: 24),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Description
               Text(
                 'Ajoutez une nouvelle photo en utilisant votre appareil ou en sélectionnant une image existante dans votre galerie.',
-                style: TextStyle(fontFamily: 'Outfit', 
+                style: TextStyle(
+                  fontFamily: 'Outfit',
                   fontSize: 16,
                   color: AppTheme.textLight,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const Spacer(),
-              
+
               // Camera Button
               ElevatedButton.icon(
                 onPressed: () => _pickImage(ImageSource.camera),
@@ -123,49 +125,56 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
                 icon: const Icon(Icons.camera_alt_outlined, size: 24),
                 label: Text(
                   'Prendre une photo',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Gallery Button
               OutlinedButton.icon(
                 onPressed: () => _pickImage(ImageSource.gallery),
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE5E7EB).withOpacity(0.5),
+                  backgroundColor:
+                      const Color(0xFFE5E7EB).withValues(alpha: 0.5),
                   foregroundColor: AppTheme.darkNavy,
                   side: BorderSide.none,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Colors.transparent), // Removing border as per visual design suggestion of light grey button
+                    side: const BorderSide(
+                        color: Colors
+                            .transparent), // Removing border as per visual design suggestion of light grey button
                   ),
                 ),
                 icon: const Icon(Icons.add_photo_alternate_outlined, size: 24),
                 label: Text(
                   'Choisir depuis la galerie',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Skip Button - Navigate to visual evidence grid without photos
               Center(
                 child: TextButton(
                   onPressed: () {
-                    context.push('/quote/visual-evidence-grid', extra: <String>[]);
+                    context
+                        .push('/quote/visual-evidence-grid', extra: <String>[]);
                   },
                   child: Text(
                     'Passer',
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: 16,
                       color: AppTheme.darkNavy,
                       fontWeight: FontWeight.w600,
@@ -174,7 +183,7 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
             ],
           ),

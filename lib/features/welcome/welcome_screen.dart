@@ -19,7 +19,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final responsive = context.responsive;
-    
+
     return Scaffold(
       body: Stack(
         children: [
@@ -31,10 +31,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     key: const ValueKey('entreprise'),
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        image: const AssetImage('assets/images/construction_bg.png'),
+                        image: const AssetImage(
+                            'assets/images/construction_bg.png'),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
-                          AppTheme.darkNavy.withOpacity(0.7),
+                          AppTheme.darkNavy.withAlpha((0.7 * 255).round()),
                           BlendMode.darken,
                         ),
                       ),
@@ -57,39 +58,41 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(height: responsive.height(3)),
-                  
+
                   // Title
                   Text(
                     'Bienvenue sur Kôji !',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(28),
                       fontWeight: FontWeight.w700,
-                      color: _selectedProfile == 1 
-                          ? Colors.white 
+                      color: _selectedProfile == 1
+                          ? Colors.white
                           : const Color(0xFF0F172A),
                       height: 1.2,
                     ),
                   ),
-                  
+
                   SizedBox(height: responsive.height(1.5)),
-                  
+
                   // Subtitle
                   Text(
                     'Choisissez votre type de compte pour\ncommencer l\'expérience',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(15),
                       fontWeight: FontWeight.w400,
                       color: _selectedProfile == 1
-                          ? Colors.white.withOpacity(0.9)
+                          ? Colors.white.withAlpha((0.9 * 255).round())
                           : const Color(0xFF64748B),
                       height: 1.5,
                     ),
                   ),
-                  
+
                   const Spacer(),
-                  
+
                   // Profile Cards
                   _buildProfileCard(
                     id: 1,
@@ -98,36 +101,40 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     tag: 'Gérez devis, factures & clients',
                     icon: Icons.business_rounded,
                   ),
-                  
+
                   SizedBox(height: responsive.height(2)),
-                  
+
                   _buildProfileCard(
                     id: 2,
                     title: 'Profil Particulier',
-                    subtitle: 'Pour les clients cherchant des artisans\nqualifiés.',
+                    subtitle:
+                        'Pour les clients cherchant des artisans\nqualifiés.',
                     tag: 'Suivez vos travaux & devis',
                     icon: Icons.person_rounded,
                   ),
 
                   const Spacer(),
-                  
+
                   // Next Button
                   ElevatedButton(
-                    onPressed: _selectedProfile != null 
-                      ? () {
-                          final isPro = _selectedProfile == 1;
-                          ref.read(accountTypeProvider.notifier).state = isPro;
-                          context.go('/login');
-                        } 
-                      : null,
+                    onPressed: _selectedProfile != null
+                        ? () {
+                            final isPro = _selectedProfile == 1;
+                            ref.read(accountTypeProvider.notifier).state =
+                                isPro;
+                            context.go('/login');
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedProfile != null 
-                          ? AppTheme.primaryBlue 
+                      backgroundColor: _selectedProfile != null
+                          ? AppTheme.primaryBlue
                           : const Color(0xFFD1D5DB),
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: responsive.height(2.25)),
+                      padding: EdgeInsets.symmetric(
+                          vertical: responsive.height(2.25)),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(responsive.borderRadius(12)),
+                        borderRadius:
+                            BorderRadius.circular(responsive.borderRadius(12)),
                       ),
                       elevation: 0,
                     ),
@@ -136,19 +143,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       children: [
                         Text(
                           'Suivant',
-                          style: TextStyle(fontFamily: 'Outfit', 
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
                             fontSize: responsive.fontSize(16),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (_selectedProfile != null) ...[ 
+                        if (_selectedProfile != null) ...[
                           SizedBox(width: responsive.width(2.1)),
-                          Icon(Icons.arrow_forward, size: responsive.iconSize(20)),
+                          Icon(Icons.arrow_forward,
+                              size: responsive.iconSize(20)),
                         ]
                       ],
                     ),
                   ),
-                  
+
                   SizedBox(height: responsive.height(3)),
                 ],
               ),
@@ -168,7 +177,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }) {
     final responsive = context.responsive;
     final isSelected = _selectedProfile == id;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -180,27 +189,23 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         curve: Curves.easeInOut,
         padding: EdgeInsets.all(responsive.width(5)),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryBlue
-              : Colors.white,
+          color: isSelected ? AppTheme.primaryBlue : Colors.white,
           borderRadius: BorderRadius.circular(responsive.borderRadius(16)),
           border: Border.all(
-            color: isSelected 
-                ? AppTheme.primaryBlue 
-                : const Color(0xFFE5E7EB),
+            color: isSelected ? AppTheme.primaryBlue : const Color(0xFFE5E7EB),
             width: 2,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppTheme.primaryBlue.withOpacity(0.3),
+                    color: AppTheme.primaryBlue.withAlpha((0.3 * 255).round()),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withAlpha((0.05 * 255).round()),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -212,16 +217,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             Container(
               padding: EdgeInsets.all(responsive.width(3.5)),
               decoration: BoxDecoration(
-                color: isSelected 
-                    ? Colors.white 
-                    : AppTheme.darkNavy,
-                borderRadius: BorderRadius.circular(responsive.borderRadius(12)),
+                color: isSelected ? Colors.white : AppTheme.darkNavy,
+                borderRadius:
+                    BorderRadius.circular(responsive.borderRadius(12)),
               ),
               child: Icon(
                 icon,
-                color: isSelected 
-                    ? AppTheme.primaryBlue 
-                    : Colors.white,
+                color: isSelected ? AppTheme.primaryBlue : Colors.white,
                 size: responsive.iconSize(28),
               ),
             ),
@@ -235,7 +237,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(18),
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : AppTheme.darkNavy,
@@ -244,10 +247,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   SizedBox(height: responsive.height(0.5)),
                   Text(
                     subtitle,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(13),
-                      color: isSelected 
-                          ? Colors.white.withOpacity(0.9) 
+                      color: isSelected
+                          ? Colors.white.withAlpha((0.9 * 255).round())
                           : const Color(0xFF6B7280),
                       height: 1.4,
                     ),
@@ -255,12 +259,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   SizedBox(height: responsive.height(1)),
                   Text(
                     tag,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(12),
                       fontWeight: FontWeight.w600,
-                      color: isSelected 
-                          ? Colors.white 
-                          : AppTheme.primaryBlue,
+                      color: isSelected ? Colors.white : AppTheme.primaryBlue,
                     ),
                   ),
                 ],

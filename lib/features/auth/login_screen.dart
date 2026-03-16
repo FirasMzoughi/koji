@@ -16,7 +16,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _obscurePassword = true;
   bool _rememberMe = true;
 
@@ -36,15 +36,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_isFormValid) return;
 
     await ref.read(authProvider.notifier).signInWithEmailAndPassword(
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
   }
 
   void _handleGoogleLogin() async {
     // Get isPro from provider (default to false if not set)
     final isPro = ref.read(accountTypeProvider) ?? false;
-    
+
     await ref.read(authProvider.notifier).signInWithGoogle(isPro: isPro);
   }
 
@@ -82,12 +82,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(height: responsive.height(5)), // ~40px
-              
+
               // Logo
               Center(
                 child: Text(
                   'K Ô J I',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: responsive.fontSize(28),
                     fontWeight: FontWeight.bold,
                     letterSpacing: responsive.width(1.6), // ~6px
@@ -95,9 +96,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
-              
+
               SizedBox(height: responsive.height(5)), // ~40px
-              
+
               // Title
               Text(
                 'Bon retour ! Accédez à vos devis et chantiers en un instant',
@@ -106,9 +107,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 textAlign: TextAlign.left,
               ),
-              
+
               SizedBox(height: responsive.height(4)), // ~32px
-              
+
               // Email Field
               _buildTextField(
                 controller: _emailController,
@@ -116,9 +117,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (_) => setState(() {}),
               ),
-              
+
               SizedBox(height: responsive.height(2)), // ~16px
-              
+
               // Password Field
               _buildTextField(
                 controller: _passwordController,
@@ -138,9 +139,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
               ),
-              
+
               SizedBox(height: responsive.height(2)), // ~16px
-              
+
               // Remember Me & Forgot Password
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -159,14 +160,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           },
                           activeColor: AppTheme.primaryBlue,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(responsive.borderRadius(4)),
+                            borderRadius: BorderRadius.circular(
+                                responsive.borderRadius(4)),
                           ),
                         ),
                       ),
                       SizedBox(width: responsive.width(2.1)), // ~8px
                       Text(
                         'Enregistrer le mot de passe',
-                        style: TextStyle(fontFamily: 'Outfit', 
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
                           fontSize: responsive.fontSize(13),
                           color: AppTheme.textLight,
                         ),
@@ -179,7 +182,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     },
                     child: Text(
                       'Mot de passe oublié?',
-                      style: TextStyle(fontFamily: 'Outfit', 
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
                         fontSize: responsive.fontSize(13),
                         color: AppTheme.primaryBlue,
                         fontWeight: FontWeight.w600,
@@ -188,50 +192,55 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
               ),
-              
+
               SizedBox(height: responsive.height(3)), // ~24px
-              
+
               // Login Button
               ElevatedButton(
-                onPressed: _isFormValid && !isLoading
-                    ? _handleLogin
-                    : null,
+                onPressed: _isFormValid && !isLoading ? _handleLogin : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _isFormValid ? AppTheme.darkNavy : const Color(0xFFE5E7EB),
+                  backgroundColor: _isFormValid
+                      ? AppTheme.darkNavy
+                      : const Color(0xFFE5E7EB),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: responsive.height(2.25)), // ~18px
+                  padding: EdgeInsets.symmetric(
+                      vertical: responsive.height(2.25)), // ~18px
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(responsive.borderRadius(12)),
+                    borderRadius:
+                        BorderRadius.circular(responsive.borderRadius(12)),
                   ),
                   disabledBackgroundColor: const Color(0xFFE5E7EB),
                   disabledForegroundColor: const Color(0xFFD1D5DB),
                 ),
-                child: isLoading 
-                  ? SizedBox(
-                      height: responsive.iconSize(20), 
-                      width: responsive.iconSize(20), 
-                      child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                    )
-                  : Text(
-                  'Connexion',
-                  style: TextStyle(fontFamily: 'Outfit', 
-                    fontSize: responsive.fontSize(16),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: isLoading
+                    ? SizedBox(
+                        height: responsive.iconSize(20),
+                        width: responsive.iconSize(20),
+                        child: const CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text(
+                        'Connexion',
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: responsive.fontSize(16),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
-              
+
               SizedBox(height: responsive.height(3)), // ~24px
-              
+
               // "Ou" divider
               Row(
                 children: [
                   const Expanded(child: Divider(color: Color(0xFFE5E7EB))),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: responsive.width(4.3)), // ~16px
+                    padding: EdgeInsets.symmetric(
+                        horizontal: responsive.width(4.3)), // ~16px
                     child: Text(
                       'Ou',
-                      style: TextStyle(fontFamily: 'Outfit', 
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
                         color: AppTheme.textLight,
                         fontSize: responsive.fontSize(14),
                       ),
@@ -240,46 +249,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Expanded(child: Divider(color: Color(0xFFE5E7EB))),
                 ],
               ),
-              
+
               SizedBox(height: responsive.height(3)), // ~24px
-              
+
               // Google Sign-in Button
               ElevatedButton.icon(
                 onPressed: isLoading ? null : _handleGoogleLogin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryBlue,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: responsive.height(2)), // ~16px
+                  padding: EdgeInsets.symmetric(
+                      vertical: responsive.height(2)), // ~16px
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(responsive.borderRadius(12)),
+                    borderRadius:
+                        BorderRadius.circular(responsive.borderRadius(12)),
                   ),
                 ),
                 icon: Container(
                   padding: EdgeInsets.all(responsive.width(0.5)), // ~2px
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(responsive.borderRadius(4)),
+                    borderRadius:
+                        BorderRadius.circular(responsive.borderRadius(4)),
                   ),
-                  child: Icon(Icons.g_mobiledata, color: AppTheme.primaryBlue, size: responsive.iconSize(20)),
+                  child: Icon(Icons.g_mobiledata,
+                      color: AppTheme.primaryBlue,
+                      size: responsive.iconSize(20)),
                 ),
                 label: Text(
                   'Continuer avec Google',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: responsive.fontSize(16),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              
+
               SizedBox(height: responsive.height(3)), // ~24px
-              
+
               // Signup Link
               Center(
                 child: GestureDetector(
                   onTap: () => context.go('/signup'),
                   child: RichText(
                     text: TextSpan(
-                      style: TextStyle(fontFamily: 'Outfit', 
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
                         fontSize: responsive.fontSize(14),
                         color: AppTheme.textLight,
                       ),
@@ -297,7 +313,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
-              
+
               SizedBox(height: responsive.height(5)), // ~40px
             ],
           ),
@@ -315,7 +331,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     required Function(String) onChanged,
   }) {
     final responsive = context.responsive;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF3F4F6),
@@ -327,13 +343,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         obscureText: obscureText,
         keyboardType: keyboardType,
         onChanged: onChanged,
-        style: TextStyle(fontFamily: 'Outfit', 
+        style: TextStyle(
+          fontFamily: 'Outfit',
           fontSize: responsive.fontSize(16),
           color: AppTheme.darkNavy,
         ),
         decoration: InputDecoration(
           hintText: label,
-          hintStyle: TextStyle(fontFamily: 'Outfit', 
+          hintStyle: TextStyle(
+            fontFamily: 'Outfit',
             fontSize: responsive.fontSize(16),
             color: AppTheme.textLight,
           ),

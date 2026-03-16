@@ -12,6 +12,7 @@ class ProductRepository {
     final data = response as List<dynamic>;
     return data.map((json) => Product.fromJson(json)).toList();
   }
+
   Future<void> addProduct(Map<String, dynamic> productData) async {
     await SupabaseConfig.client.from('products').insert(productData);
   }

@@ -20,7 +20,8 @@ class BottomNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveActiveColor = activeColor ?? (isDark ? Colors.white : AppTheme.darkNavy);
+    final effectiveActiveColor =
+        activeColor ?? (isDark ? Colors.white : AppTheme.darkNavy);
     final inactiveColor = isDark ? Colors.grey[600] : AppTheme.textLight;
 
     return Column(

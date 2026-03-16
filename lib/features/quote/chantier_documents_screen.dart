@@ -1,28 +1,29 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:koji/features/quote/providers/document_provider.dart';
 
-class ChantierDocumentsScreen extends StatefulWidget {
+class ChantierDocumentsScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
   const ChantierDocumentsScreen({super.key, required this.data});
 
   @override
-  State<ChantierDocumentsScreen> createState() =>
+  ConsumerState<ChantierDocumentsScreen> createState() =>
       _ChantierDocumentsScreenState();
 }
 
-class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
+class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScreen> {
   static const _kDark = Color(0xFF0F172A);
   static const _kBg = Color(0xFFF5F0EB);
 
-  late List<Map<String, dynamic>> _docs;
-
+  bool _isUploading = false;
+  
   @override
   void initState() {
     super.initState();
-    _docs = List<Map<String, dynamic>>.from(
-      (widget.data['documents'] as List?)?.cast<Map<String, dynamic>>() ?? [],
-    );
   }
 
   @override
@@ -38,13 +39,14 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
               child: GestureDetector(
                 onTap: _showAddOptions,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   decoration: BoxDecoration(
                     color: _kDark,
                     borderRadius: BorderRadius.circular(32),
                     boxShadow: [
                       BoxShadow(
-                        color: _kDark.withOpacity(0.15),
+                        color: _kDark.withValues(alpha: 0.15),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -70,7 +72,7 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
               ),
             ),
             Expanded(
-              child: _docs.isEmpty ? _buildEmpty() : _buildList(),
+              child: _buildBody(),
             ),
           ],
         ),
@@ -88,7 +90,13 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: () => context.pop(),
+              onTap: () {
+                if (Navigator.canPop(context)) {
+                  context.pop();
+                } else {
+                  context.go('/home');
+                }
+              },
               child: const Icon(Icons.chevron_left_rounded,
                   color: _kDark, size: 30),
             ),
@@ -118,7 +126,7 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -138,20 +146,57 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
     );
   }
 
-  Widget _buildList() {
+  Widget _buildBody() {
+    final chantierId = widget.data['id'] as String?;
+    if (chantierId == null) return const Center(child: Text("Erreur: Aucun ID de chantier disponible."));
+
+    final docsAsync = ref.watch(chantierDocumentsProvider(chantierId));
+
+    return Stack(
+      children: [
+        docsAsync.when(
+          data: (docs) {
+            if (docs.isEmpty) return _buildEmpty();
+            return _buildList(docs);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text("Erreur: $err")),
+        ),
+        if (_isUploading)
+          Container(
+            color: Colors.white.withValues(alpha: 0.6),
+            child: const Center(
+              child: CircularProgressIndicator(color: _kDark),
+            ),
+          )
+      ],
+    );
+  }
+
+  Widget _buildList(List<Map<String, dynamic>> docs) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-      itemCount: _docs.length,
+      itemCount: docs.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _buildDocTile(_docs[i], i),
+      itemBuilder: (_, i) => _buildDocTile(docs[i], i),
     );
   }
 
   Widget _buildDocTile(Map<String, dynamic> doc, int index) {
     final String name = doc['name'] as String? ?? 'Document';
-    final String date = doc['date'] as String? ?? '—';
-    final String size = doc['size'] as String? ?? '—';
-    final bool isImage = doc['isImage'] as bool? ?? false;
+    
+    // Format timestamp
+    String date = '—';
+    if (doc['created_at'] != null) {
+      final dt = DateTime.parse(doc['created_at']);
+      date = '${dt.day}/${dt.month}/${dt.year}';
+    }
+    
+    final int sizeBytes = doc['file_size'] as int? ?? 0;
+    final String size = sizeBytes > 0 ? '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB' : '—';
+    
+    final String type = doc['file_type'] as String? ?? '';
+    final bool isImage = type.startsWith('image');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -160,7 +205,7 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -178,7 +223,7 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
             ),
             child: Icon(
               isImage
-                  ? Icons.add_photo_alternate_outlined
+                  ? Icons.image_outlined
                   : Icons.description_outlined,
               color: _kDark,
               size: 22,
@@ -215,7 +260,7 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
           ),
           // Three-dot menu
           GestureDetector(
-            onTap: () => _showDocMenu(context, index),
+            onTap: () => _showDocMenu(context, doc),
             child: const Padding(
               padding: EdgeInsets.all(4),
               child: Icon(Icons.more_vert_rounded,
@@ -227,7 +272,7 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
     );
   }
 
-  void _showDocMenu(BuildContext context, int index) {
+  void _showDocMenu(BuildContext context, Map<String, dynamic> doc) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -264,9 +309,19 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
               icon: Icons.delete_outline_rounded,
               label: 'Supprimer',
               color: const Color(0xFFEF4444),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                setState(() => _docs.removeAt(index));
+                try {
+                  final repo = ref.read(documentRepositoryProvider);
+                  await repo.deleteDocument(doc['id'], doc['file_url']);
+                } catch (e) {
+                  debugPrint('Failed to delete document: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erreur suppression: $e'))
+                    );
+                  }
+                }
               },
             ),
           ],
@@ -349,6 +404,15 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
                 _pickImage(ImageSource.gallery);
               },
             ),
+            const SizedBox(height: 12),
+            _menuOption(
+              icon: Icons.description_outlined,
+              label: 'Prendre un document',
+              onTap: () {
+                Navigator.pop(context);
+                _pickDocument();
+              },
+            ),
           ],
         ),
       ),
@@ -356,26 +420,88 @@ class _ChantierDocumentsScreenState extends State<ChantierDocumentsScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    final chantierId = widget.data['id'] as String?;
+    if (chantierId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur: Aucun ID de chantier disponible.')));
+      }
+      return;
+    }
+
     try {
       final XFile? image = await _picker.pickImage(source: source);
       if (image != null && mounted) {
-        final length = await image.length();
-        final sizeMb = (length / (1024 * 1024)).toStringAsFixed(1);
-        final dateStr = '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}';
+        setState(() => _isUploading = true);
         
-        setState(() {
-          _docs.add({
-            'name': image.name.isNotEmpty ? image.name : 'Photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
-            'date': dateStr,
-            'size': '${sizeMb} MB',
-            'isImage': true,
-            'path': image.path,
-          });
-          widget.data['documents'] = _docs;
-        });
+        final length = await image.length();
+        final file = File(image.path);
+        
+        final String name = image.name.isNotEmpty
+            ? image.name
+            : 'Photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            
+        // Basic type inference
+        final String type = name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+        
+        final repo = ref.read(documentRepositoryProvider);
+        await repo.uploadDocument(chantierId, file, name, type, length);
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
+      debugPrint('Error picking/uploading image: $e');
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _pickDocument() async {
+    final chantierId = widget.data['id'] as String?;
+    if (chantierId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur: Aucun ID de chantier disponible.')),
+        );
+      }
+      return;
+    }
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'csv'],
+      );
+
+      if (result != null && result.files.single.path != null && mounted) {
+        setState(() => _isUploading = true);
+
+        final pickedFile = result.files.single;
+        final file = File(pickedFile.path!);
+        final name = pickedFile.name;
+        final size = pickedFile.size;
+
+        // Infer MIME type from extension
+        String type = 'application/octet-stream';
+        final ext = name.split('.').last.toLowerCase();
+        if (ext == 'pdf') type = 'application/pdf';
+        else if (ext == 'doc' || ext == 'docx') type = 'application/msword';
+        else if (ext == 'xls' || ext == 'xlsx') type = 'application/vnd.ms-excel';
+        else if (ext == 'txt') type = 'text/plain';
+        else if (ext == 'csv') type = 'text/csv';
+
+        final repo = ref.read(documentRepositoryProvider);
+        await repo.uploadDocument(chantierId, file, name, type, size);
+      }
+    } catch (e) {
+      debugPrint('Error picking/uploading document: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 }

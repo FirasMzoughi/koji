@@ -9,13 +9,13 @@ import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Supabasew
   await SupabaseConfig.initialize();
 
   // Initialize Date Formatting
   await initializeDateFormatting();
-  
+
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -23,15 +23,13 @@ void main() async {
   );
 }
 
-
-
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
-    
+
     return MaterialApp.router(
       title: 'Kôji',
       debugShowCheckedModeBanner: false,

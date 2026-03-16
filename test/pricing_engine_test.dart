@@ -36,7 +36,7 @@ void main() {
     // Req: Filler 8m2/bag
     final taskSkimming = SmartTask(
       id: 'ratissage', label: 'Skim', profession: 'Peintre', unit: 'm2', normativeTime: 0.15,
-      materialRequirements: [MaterialRequirement(productCategory: 'Enduit', yield: 8.0, defaultPricePerUnit: 18.0)]
+      materialRequirements: [MaterialRequirement(taskId: 'ratissage', productCategory: 'Enduit', yield: 8.0, defaultPricePerUnit: 18.0)]
     );
 
     // Sanding - Walls 35m2
@@ -49,21 +49,21 @@ void main() {
     // Req: Primer 8m2/L
     final taskPrimer = SmartTask(
       id: 'impression', label: 'Prime', profession: 'Peintre', unit: 'm2', normativeTime: 0.10,
-      materialRequirements: [MaterialRequirement(productCategory: 'Peinture', yield: 8.0, defaultPricePerUnit: 10.0)]
+      materialRequirements: [MaterialRequirement(taskId: 'impression', productCategory: 'Peinture', yield: 8.0, defaultPricePerUnit: 10.0)]
     );
 
     // Wall Painting (2 coats) - Walls 35m2
     // Req: Paint 10m2/L/coat -> 5m2/L total
     final taskWallPaint = SmartTask(
       id: 'paint_murs', label: 'Paint Walls', profession: 'Peintre', unit: 'm2', normativeTime: 0.60,
-      materialRequirements: [MaterialRequirement(productCategory: 'Peinture', yield: 5.0, defaultPricePerUnit: 12.0)]
+      materialRequirements: [MaterialRequirement(taskId: 'paint_murs', productCategory: 'Peinture', yield: 5.0, defaultPricePerUnit: 12.0)]
     );
 
     // Ceiling Painting (2 coats) - Ceiling 12m2
     // Req: Paint 5m2/L
     final taskCeilPaint = SmartTask(
       id: 'paint_ceil', label: 'Paint Ceil', profession: 'Peintre', unit: 'm2', normativeTime: 0.70,
-      materialRequirements: [MaterialRequirement(productCategory: 'Peinture', yield: 5.0, defaultPricePerUnit: 12.0)]
+      materialRequirements: [MaterialRequirement(taskId: 'paint_ceil', productCategory: 'Peinture', yield: 5.0, defaultPricePerUnit: 12.0)]
     );
 
     // Protection - Fixed

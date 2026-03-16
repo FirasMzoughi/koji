@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/features/auth/repository/auth_repository.dart';
+import 'package:koji/features/quote/providers/chantier_provider.dart';
 
 class ChantierListScreen extends ConsumerStatefulWidget {
   const ChantierListScreen({super.key});
@@ -20,61 +22,7 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
     "Refusés",
   ];
 
-  // Mock data matching the UI exactly
-  final List<Map<String, dynamic>> _mockChantiers = [
-    {
-      'name': 'Jean Dupont',
-      'type': 'Rénovation Cuisine',
-      'ref': '#DEV-2026-010',
-      'date': '24 Oct',
-      'status': 'En cours',
-      'price': '4 500 €',
-    },
-    {
-      'name': 'Carla Balti',
-      'type': 'Sous sol',
-      'ref': '#DEV-2026-120',
-      'date': '4 Oct',
-      'status': 'Accepté',
-      'price': '12 500 €',
-    },
-    {
-      'name': 'Marie Martin',
-      'type': 'Installattion SDB',
-      'ref': '#DEV-2026-020',
-      'date': '21 Oct',
-      'status': 'Refusé',
-      'price': '500 €',
-      'hasTrash': true,
-    },
-    {
-      'name': 'Carla Balti',
-      'type': 'Sous sol',
-      'ref': '#DEV-2026-120',
-      'date': '4 Oct',
-      'status': 'Accepté',
-      'price': '12 500 €',
-    },
-    {
-      'name': 'Jean Dupont',
-      'type': 'Rénovation Cuisine',
-      'ref': '#DEV-2026-010',
-      'date': '24 Oct',
-      'status': 'En cours',
-      'price': '4 500 €',
-    },
-    {
-      'name': 'Carla Balti',
-      'type': 'Sous sol',
-      'ref': '#DEV-2026-120',
-      'date': '4 Oct',
-      'status': 'Terminé',
-      'price': '12 500 €',
-      'hasTrash': true,
-      'hasDownload': true,
-    },
-  ];
-
+  // Tab controller setup
   @override
   void initState() {
     super.initState();
@@ -92,6 +40,16 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authRepositoryProvider).currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: Text("Veuillez vous connecter")),
+      );
+    }
+
+    final chantiersAsync = ref.watch(userChantiersProvider(user.id));
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
@@ -125,7 +83,7 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -173,7 +131,8 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF0A1128) : Colors.white,
+                        color:
+                            isSelected ? const Color(0xFF0A1128) : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: isSelected
                             ? null
@@ -200,14 +159,59 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
 
             // List
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                itemCount: _mockChantiers.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final item = _mockChantiers[index];
-                  return _buildChantierCard(item, context);
+              child: chantiersAsync.when(
+                data: (chantiers) {
+                  // Filter logic based on tabs
+                  final filtered = chantiers.where((c) {
+                    if (_tabController.index == 0) return true; // Tous
+
+                    final status = c['status']?.toString().toLowerCase() ?? '';
+                    if (_tabController.index == 1 &&
+                        (status == 'en cours' || status == 'en attente')) {
+                      return true; // En cours
+                    }
+                    if (_tabController.index == 2 && 
+                         (status == 'accepté' || status == 'terminé')) {
+                      return true; // Acceptés
+                    }
+                    if (_tabController.index == 3 && status == 'refusé') {
+                      return true; // Refusés
+                    }
+                    return false;
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "Aucun chantier trouvé",
+                        style: TextStyle(fontFamily: 'Outfit', color: Colors.grey),
+                      ),
+                    );
+                  }
+
+                  return ListView.separated(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final item = filtered[index];
+                      // Map real data to UI
+                      final mappedItem = {
+                        'id': item['id'],
+                        'name': item['title'] ?? 'Chantier Sans Nom',
+                        'type': item['property_type'] ?? 'Rénovation',
+                        'ref': item['reference'] ?? 'N/A',
+                        'date': _formatDateForBadge(item['created_at']),
+                        'status': _formatStatusForUI(item['status']),
+                        'price': '${item['estimated_budget'] ?? '0'} €',
+                      };
+                      return _buildChantierCard(mappedItem, context);
+                    },
+                  );
                 },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text('Erreur: $err')),
               ),
             ),
           ],
@@ -216,19 +220,37 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
     );
   }
 
+  String _formatDateForBadge(String? isoDate) {
+    if (isoDate == null) return "N/A";
+    try {
+      final dt = DateTime.parse(isoDate);
+      final months = [
+        'Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      return "${dt.day} ${months[dt.month - 1]}";
+    } catch (_) {
+      return "N/A";
+    }
+  }
+
+  String _formatStatusForUI(String? dbStatus) {
+    if (dbStatus == null) return 'En cours';
+    final s = dbStatus.toLowerCase();
+    if (s.contains('accepté')) return 'Accepté';
+    if (s.contains('terminé')) return 'Terminé';
+    if (s.contains('refusé')) return 'Refusé';
+    return 'En cours';
+  }
+
   Widget _buildChantierCard(Map<String, dynamic> item, BuildContext context) {
     return GestureDetector(
       onTap: () {
-         // Create mock extra data to pass to dashboard
-         final Map<String, dynamic> extraData = {
-           'reference': item['ref'],
-           // Dummy budget values
-           'mainOeuvreReal': 2500.0,
-           'mainOeuvreEstimated': 3000.0,
-           'fournitureReal': 1500.0,
-           'fournitureEstimated': 2000.0,
-         };
-         context.push('/chantier/dashboard', extra: extraData);
+        // Pass the actual database ID to the dashboard so it can fetch its own real data
+        final Map<String, dynamic> extraData = {
+          'id': item['id'], // Real ID for subsequent fetches
+          'reference': item['ref'],
+        };
+        context.push('/chantier/dashboard', extra: extraData);
       },
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -237,7 +259,7 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -274,7 +296,8 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(6),
@@ -364,7 +387,7 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: textColor.withOpacity(0.3)),
+        border: Border.all(color: textColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

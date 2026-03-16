@@ -62,9 +62,9 @@ class OnboardingNavigationControls extends StatelessWidget {
               ),
             ],
           ),
-          
+
           SizedBox(height: responsive.height(3)),
-          
+
           // Skip button / "Passer cette étape" centered at bottom
           if (!isLastPage)
             TextButton(
@@ -75,15 +75,16 @@ class OnboardingNavigationControls extends StatelessWidget {
                   Text(
                     'Passer cette étape',
                     style: TextStyle(
-                      fontFamily: 'Outfit', 
+                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(16),
-                      color:  AppTheme.primaryBlueDark, // Light blueish per screenshot, or use primaryBlueLight
+                      color: AppTheme
+                          .primaryBlueDark, // Light blueish per screenshot, or use primaryBlueLight
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(width: responsive.width(1)),
                   Icon(
-                    Icons.arrow_forward, 
+                    Icons.arrow_forward,
                     size: responsive.iconSize(16),
                     color: const Color(0xFF7CA7F4),
                   ),
@@ -91,8 +92,8 @@ class OnboardingNavigationControls extends StatelessWidget {
               ),
             )
           else
-             // Maintain space or show a "Commencer" button if needed, but for now just SizedBox to keep layout stable
-             SizedBox(height: responsive.height(6)), 
+            // Maintain space or show a "Commencer" button if needed, but for now just SizedBox to keep layout stable
+            SizedBox(height: responsive.height(6)),
         ],
       ),
     );

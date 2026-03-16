@@ -1,38 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/features/quote/providers/chantier_provider.dart';
+import 'package:koji/features/quote/repositories/chantier_repository.dart';
 
-class ChantierAFaireScreen extends StatefulWidget {
+class ChantierAFaireScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
   const ChantierAFaireScreen({super.key, required this.data});
 
   @override
-  State<ChantierAFaireScreen> createState() => _ChantierAFaireScreenState();
+  ConsumerState<ChantierAFaireScreen> createState() => _ChantierAFaireScreenState();
 }
 
-class _ChantierAFaireScreenState extends State<ChantierAFaireScreen> {
+class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
   static const _kDark = Color(0xFF0F172A);
 
-  // Sample tasks — in a real app these come from the chantier data
-  late List<Map<String, dynamic>> _tasks;
-
+  final _repository = ChantierRepository();
   @override
   void initState() {
     super.initState();
-    final existingTasks = widget.data['afaire'] as List?;
-    if (existingTasks == null || existingTasks.isEmpty) {
-      _tasks = [
-        {'title': 'Début peinture', 'subtitle': 'J - 2', 'done': false},
-        {'title': 'Validation devis élec', 'subtitle': 'Client', 'done': false},
-        {'title': 'Commander carrelage', 'subtitle': 'Fourniture', 'done': false},
-      ];
-      widget.data['afaire'] = _tasks;
-    } else {
-      _tasks = List<Map<String, dynamic>>.from(existingTasks.cast<Map<String, dynamic>>());
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final chantierId = widget.data['id'] as String?;
+    
+    // Fallback if no ID is provided
+    if (chantierId == null) {
+      return const Scaffold(body: Center(child: Text("ID Chantier manquant")));
+    }
+
+    final tasksAsync = ref.watch(chantierTasksProvider(chantierId));
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0EB),
       body: SafeArea(
@@ -44,13 +43,14 @@ class _ChantierAFaireScreenState extends State<ChantierAFaireScreen> {
               child: GestureDetector(
                 onTap: _addTask,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   decoration: BoxDecoration(
                     color: _kDark,
                     borderRadius: BorderRadius.circular(32),
                     boxShadow: [
                       BoxShadow(
-                        color: _kDark.withOpacity(0.15),
+                        color: _kDark.withValues(alpha: 0.15),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -76,11 +76,106 @@ class _ChantierAFaireScreenState extends State<ChantierAFaireScreen> {
               ),
             ),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                itemCount: _tasks.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, i) => _buildTaskTile(_tasks[i]),
+              child: tasksAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator(color: _kDark)),
+                error: (err, stack) => Center(child: Text('Erreur: $err')),
+                data: (tasks) {
+                  final activeTasks = tasks.where((t) => t['is_done'] != true).toList();
+                  final archivedTasks = tasks.where((t) => t['is_done'] == true).toList();
+
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                    child: CustomScrollView(
+                    slivers: [
+                      if (activeTasks.isEmpty && archivedTasks.isEmpty)
+                        const SliverFillRemaining(
+                          child: Center(
+                            child: Text(
+                              'Aucune tâche pour le moment',
+                              style: TextStyle(
+                                fontFamily: 'Outfit',
+                                fontSize: 16,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                      if (activeTasks.isNotEmpty)
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, i) {
+                              final task = activeTasks[i];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildTaskTile(
+                                  task,
+                                  i,
+                                  false,
+                                  () async {
+                                    try {
+                                      await _repository.updateTaskStatus(task['id'], true);
+                                    } catch (e) {
+                                      debugPrint('Error toggling task: $e');
+                                    }
+                                  },
+                                ),
+                              );
+                            },
+                            childCount: activeTasks.length,
+                          ),
+                        ),
+                        
+                      if (archivedTasks.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 24, bottom: 16),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.archive_outlined, color: Color(0xFF64748B), size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Archives (${archivedTasks.length})',
+                                  style: const TextStyle(
+                                    fontFamily: 'Outfit',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                      if (archivedTasks.isNotEmpty)
+                         SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, i) {
+                              final task = archivedTasks[i];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildTaskTile(
+                                  task,
+                                  i,
+                                  true,
+                                  () async {
+                                    try {
+                                      await _repository.updateTaskStatus(task['id'], false);
+                                    } catch (e) {
+                                      debugPrint('Error toggling task: $e');
+                                    }
+                                  },
+                                ),
+                              );
+                            },
+                            childCount: archivedTasks.length,
+                          ),
+                        ),
+                    ],
+                  ),
+                  );
+                },
               ),
             ),
           ],
@@ -118,66 +213,71 @@ class _ChantierAFaireScreenState extends State<ChantierAFaireScreen> {
     );
   }
 
-  Widget _buildTaskTile(Map<String, dynamic> task) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(10),
+  Widget _buildTaskTile(
+      Map<String, dynamic> task, int index, bool isDone, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: const Icon(Icons.calendar_month_outlined,
-                color: _kDark, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task['title'] as String,
-                  style: const TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: _kDark,
-                  ),
+          ],
+        ),
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: isDone ? const Color(0xFF0F172A) : Colors.white,
+                border: Border.all(
+                  color: isDone
+                      ? const Color(0xFF0F172A)
+                      : const Color(0xFFCBD5E1),
+                  width: 1.5,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  task['subtitle'] as String,
-                  style: const TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: isDone
+                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  : null,
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task['label'] as String,
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isDone ? const Color(0xFF94A3B8) : _kDark,
+                      decoration: isDone
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _addTask() {
+  Future<void> _addTask() async {
     final titleCtrl = TextEditingController();
-    final subCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -185,9 +285,7 @@ class _ChantierAFaireScreenState extends State<ChantierAFaireScreen> {
         title: const Text(
           'Nouvelle tâche',
           style: TextStyle(
-              fontFamily: 'Outfit',
-              fontWeight: FontWeight.bold,
-              color: _kDark),
+              fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: _kDark),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -196,16 +294,7 @@ class _ChantierAFaireScreenState extends State<ChantierAFaireScreen> {
               controller: titleCtrl,
               autofocus: true,
               decoration: const InputDecoration(
-                hintText: 'Titre (ex: Début peinture)',
-                hintStyle: TextStyle(fontFamily: 'Outfit'),
-              ),
-              style: const TextStyle(fontFamily: 'Outfit'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: subCtrl,
-              decoration: const InputDecoration(
-                hintText: 'Sous-titre (ex: J - 2)',
+                hintText: 'Titre de la tâche',
                 hintStyle: TextStyle(fontFamily: 'Outfit'),
               ),
               style: const TextStyle(fontFamily: 'Outfit'),
@@ -216,21 +305,27 @@ class _ChantierAFaireScreenState extends State<ChantierAFaireScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler',
-                style: TextStyle(
-                    fontFamily: 'Outfit', color: Color(0xFF64748B))),
+                style:
+                    TextStyle(fontFamily: 'Outfit', color: Color(0xFF64748B))),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (titleCtrl.text.trim().isNotEmpty) {
-                setState(() {
-                  _tasks.add({
-                    'title': titleCtrl.text.trim(),
-                    'subtitle': subCtrl.text.trim(),
-                    'done': false,
-                  });
-                  widget.data['afaire'] = _tasks;
-                });
-                Navigator.pop(ctx);
+                final chantierId = widget.data['id'] as String?;
+                if (chantierId != null) {
+                  Navigator.pop(ctx);
+                  try {
+                    await _repository.addTask(
+                        chantierId, titleCtrl.text.trim());
+                  } catch (e) {
+                    debugPrint('Error adding task: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Erreur: $e')),
+                      );
+                    }
+                  }
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -240,8 +335,7 @@ class _ChantierAFaireScreenState extends State<ChantierAFaireScreen> {
               elevation: 0,
             ),
             child: const Text('Ajouter',
-                style:
-                    TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+                style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
           ),
         ],
       ),

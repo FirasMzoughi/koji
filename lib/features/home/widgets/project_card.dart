@@ -27,7 +27,7 @@ class ProjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // RepaintBoundary to prevent unnecessary repaints
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return RepaintBoundary(
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -36,7 +36,7 @@ class ProjectCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -50,21 +50,24 @@ class ProjectCard extends StatelessWidget {
               children: [
                 Text(
                   clientName,
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : AppTheme.darkNavy,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     status,
-                    style: TextStyle(fontFamily: 'Outfit', 
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: statusTextColor,
@@ -76,7 +79,8 @@ class ProjectCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               projectType,
-              style: TextStyle(fontFamily: 'Outfit', 
+              style: TextStyle(
+                fontFamily: 'Outfit',
                 fontSize: 13,
                 color: isDark ? Colors.grey[400] : AppTheme.textLight,
               ),
@@ -87,7 +91,8 @@ class ProjectCard extends StatelessWidget {
               children: [
                 Text(
                   'Progress',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.grey[400] : AppTheme.textLight,
@@ -95,7 +100,8 @@ class ProjectCard extends StatelessWidget {
                 ),
                 Text(
                   '${(progress * 100).toInt()}%',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : AppTheme.darkNavy,
@@ -108,7 +114,8 @@ class ProjectCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: progress,
-                backgroundColor: isDark ? Colors.grey[800] : const Color(0xFFF3F4F6),
+                backgroundColor:
+                    isDark ? Colors.grey[800] : const Color(0xFFF3F4F6),
                 valueColor: AlwaysStoppedAnimation<Color>(progressBarColor),
                 minHeight: 6,
               ),

@@ -1,4 +1,4 @@
-package com.example.kojimobile
+package com.example.kojimobilejimobile
 
 import io.flutter.embedding.android.FlutterActivity
 

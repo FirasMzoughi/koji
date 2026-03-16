@@ -19,7 +19,8 @@ class SectionDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             text,
-            style: TextStyle(fontFamily: 'Outfit', 
+            style: TextStyle(
+              fontFamily: 'Outfit',
               color: const Color(0xFF9CA3AF),
               fontSize: 14,
             ),

@@ -9,12 +9,13 @@ class ClientDetailsScreen extends ConsumerStatefulWidget {
   const ClientDetailsScreen({super.key});
 
   @override
-  ConsumerState<ClientDetailsScreen> createState() => _ClientDetailsScreenState();
+  ConsumerState<ClientDetailsScreen> createState() =>
+      _ClientDetailsScreenState();
 }
 
 class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -31,16 +32,16 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
-      // Save data to provider
-      final clientData = {
-        'name': _nameController.text,
-        'email': _emailController.text,
-        'phone': _phoneController.text,
-        'address': _addressController.text,
-      };
-      
-      ref.read(quoteCreationProvider.notifier).updateClientInfo(clientData);
-      
+      // Build a typed ClientInfo instead of a raw Map
+      final clientInfo = ClientInfo(
+        name: _nameController.text,
+        email: _emailController.text,
+        phone: _phoneController.text,
+        address: _addressController.text,
+      );
+
+      ref.read(quoteCreationProvider.notifier).updateClientInfo(clientInfo);
+
       // Navigate to next step
       context.push('/quote/visual-proofs');
     }
@@ -51,7 +52,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     final responsive = context.responsive;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Cream/White background from image
+      backgroundColor:
+          const Color(0xFFF8F9FA), // Cream/White background from image
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -62,7 +64,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.darkNavy, size: 16),
+            icon: const Icon(Icons.arrow_back_ios_new,
+                color: AppTheme.darkNavy, size: 16),
             onPressed: () => context.pop(),
           ),
         ),
@@ -72,13 +75,14 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
             Text(
               'Détails Client',
               style: AppTheme.headingStyle(context).copyWith(
-                fontSize: 18, 
+                fontSize: 18,
                 color: const Color(0xFF1E3A8A), // Dark blue
               ),
             ),
             Text(
               'Etape 1/6',
-              style: TextStyle(fontFamily: 'Outfit', 
+              style: TextStyle(
+                fontFamily: 'Outfit',
                 fontSize: 12,
                 color: AppTheme.textLight,
               ),
@@ -87,7 +91,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+            icon: const Icon(Icons.arrow_forward_ios,
+                color: Colors.grey, size: 16),
             onPressed: () {}, // Optional helper
           )
         ],
@@ -116,77 +121,83 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Title
                 Text(
                   'Informations',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF1E3A8A),
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Description
                 Text(
                   'Renseignez les coordonnées du client avant de procéder à l\'état des lieux',
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: AppTheme.textLight,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Fields
                 _buildLabel('Nom du client'),
                 _buildTextField(
-                  controller: _nameController, 
+                  controller: _nameController,
                   hint: 'Rajouter votre texte...',
                   validator: (v) => v?.isEmpty == true ? 'Requis' : null,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 _buildLabel('Adresse e-mail'),
                 _buildTextField(
-                  controller: _emailController, 
+                  controller: _emailController,
                   hint: 'Rajouter votre texte...',
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) => v?.isNotEmpty == true && !v!.contains('@') ? 'Email invalide' : null,
+                  validator: (v) => v?.isNotEmpty == true && !v!.contains('@')
+                      ? 'Email invalide'
+                      : null,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 _buildLabel('Numéro de téléphone'),
                 _buildTextField(
-                  controller: _phoneController, 
+                  controller: _phoneController,
                   hint: 'Rajouter votre texte...',
                   keyboardType: TextInputType.phone,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 _buildLabel('Adresse complète'),
                 _buildTextField(
-                  controller: _addressController, 
+                  controller: _addressController,
                   hint: 'Rajouter votre texte...',
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Submit Button
                 ElevatedButton(
                   onPressed: _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E3A8A), // Beige/Gold from image
-                    foregroundColor: const Color.fromARGB(255, 237, 237, 238), // Dark text
+                    backgroundColor:
+                        const Color(0xFF1E3A8A), // Beige/Gold from image
+                    foregroundColor:
+                        const Color.fromARGB(255, 237, 237, 238), // Dark text
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -198,7 +209,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                     children: [
                       Text(
                         'Suivant',
-                        style: TextStyle(fontFamily: 'Outfit', 
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -208,7 +220,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
               ],
             ),
@@ -223,7 +235,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: TextStyle(fontFamily: 'Outfit', 
+        style: TextStyle(
+          fontFamily: 'Outfit',
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: const Color(0xFF1F2937),
@@ -233,8 +246,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
   }
 
   Widget _buildTextField({
-    required TextEditingController controller, 
-    required String hint, 
+    required TextEditingController controller,
+    required String hint,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
@@ -247,7 +260,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(fontFamily: 'Outfit', color: Colors.grey[400]),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
@@ -265,5 +279,4 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       ),
     );
   }
-
 }

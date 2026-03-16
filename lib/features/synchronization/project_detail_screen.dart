@@ -22,7 +22,7 @@ class ProjectDetailScreen extends StatefulWidget {
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   final ProjectRepository _projectRepo = ProjectRepository();
   final WorkerRepository _workerRepo = WorkerRepository();
-  
+
   Project? _project;
   List<Worker> _assignedWorkers = [];
   List<TaskItem> _projectTasks = [];
@@ -38,25 +38,27 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Future<void> _loadProjectData() async {
     try {
       setState(() => _isLoading = true);
-      
+
       // Load project if not provided
       if (_project == null) {
         final projects = await _projectRepo.fetchProjects();
         _project = projects.firstWhere((p) => p.id == widget.projectId);
       }
-      
+
       // Load assigned workers
-      final assignments = await _projectRepo.fetchAssignmentsForProject(widget.projectId);
+      final assignments =
+          await _projectRepo.fetchAssignmentsForProject(widget.projectId);
       final workerIds = assignments.map((a) => a.workerId).toList();
-      
+
       if (workerIds.isNotEmpty) {
         final allWorkers = await _workerRepo.getWorkers();
-        _assignedWorkers = allWorkers.where((w) => workerIds.contains(w.id)).toList();
+        _assignedWorkers =
+            allWorkers.where((w) => workerIds.contains(w.id)).toList();
       }
-      
+
       // Load project tasks
       _projectTasks = await _projectRepo.fetchProjectTasks(widget.projectId);
-      
+
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       debugPrint('Error loading project data: $e');
@@ -71,7 +73,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final taskName = task.taskName;
     final roomName = task.roomName;
     final status = task.status;
-    
+
     Color statusColor;
     switch (status) {
       case 'En Cours':
@@ -91,7 +93,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -134,7 +136,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       fontFamily: 'Outfit',
                       fontSize: 14,
                       color: Colors.grey[600],
-                      ),
+                    ),
                   ),
                 ],
               ],
@@ -143,7 +145,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withAlpha((0.1 * 255).round()),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -163,7 +165,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   Future<void> _assignWorkers() async {
     if (_project == null) return;
-    
+
     final result = await context.push(
       '/projects/assign/${widget.projectId}',
       extra: _project, // Pass the project object
@@ -215,7 +217,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withAlpha((0.05 * 255).round()),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -261,7 +263,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withAlpha((0.05 * 255).round()),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -289,23 +291,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             children: [
               // Project Info Card
               _buildProjectInfoCard(),
-              
+
               const SizedBox(height: 24),
-              
+
               // Assigned Workers Section
               _buildSectionHeader('Ouvriers assignés', _assignedWorkers.length),
               const SizedBox(height: 16),
-              
+
               if (_assignedWorkers.isEmpty)
                 _buildEmptyState('Aucun ouvrier assigné', Icons.person_off)
               else
                 ..._assignedWorkers.map((worker) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildWorkerCard(worker),
-                )),
-              
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildWorkerCard(worker),
+                    )),
+
               const SizedBox(height: 16),
-              
+
               // Assign Workers Button
               SizedBox(
                 width: double.infinity,
@@ -331,20 +333,20 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Project Tasks Section
               _buildSectionHeader('Tâches du projet', _projectTasks.length),
               const SizedBox(height: 16),
-              
+
               if (_projectTasks.isEmpty)
                 _buildEmptyState('Aucune tâche disponible', Icons.task_alt)
               else
                 ..._projectTasks.map((task) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildTaskCard(task),
-                )),
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildTaskCard(task),
+                    )),
             ],
           ),
         ),
@@ -354,10 +356,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   Widget _buildProjectInfoCard() {
     final darkBlue = const Color(0xFF0F3995);
-    
+
     Color statusBg;
     Color statusText;
-    
+
     switch (_project!.status) {
       case 'En Cours':
         statusBg = const Color(0xFFE3F2FD);
@@ -383,7 +385,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -399,7 +401,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: statusBg,
                         borderRadius: BorderRadius.circular(20),
@@ -453,7 +456,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   Widget _buildSectionHeader(String title, int count) {
     final darkBlue = const Color(0xFF0F3995);
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -494,7 +497,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -546,7 +549,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       ),
     );
   }
-
 
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(
@@ -609,7 +611,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler', style: TextStyle(fontFamily: 'Outfit')),
+            child:
+                const Text('Annuler', style: TextStyle(fontFamily: 'Outfit')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -617,7 +620,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               _removeWorker(worker.id);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Retirer', style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+            child: const Text('Retirer',
+                style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
           ),
         ],
       ),

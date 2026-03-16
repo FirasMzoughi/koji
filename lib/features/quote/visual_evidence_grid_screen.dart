@@ -17,25 +17,25 @@ class VisualEvidenceGridScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<VisualEvidenceGridScreen> createState() => _VisualEvidenceGridScreenState();
+  ConsumerState<VisualEvidenceGridScreen> createState() =>
+      _VisualEvidenceGridScreenState();
 }
 
-class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScreen> {
+class _VisualEvidenceGridScreenState
+    extends ConsumerState<VisualEvidenceGridScreen> {
   final ImagePicker _picker = ImagePicker();
   late List<String> _images;
   final TextEditingController _notesController = TextEditingController();
   final List<String> _selectedTags = [];
-  
-  final List<String> _problemTags = [
-    
-  ];
+
+  final List<String> _problemTags = [];
 
   @override
   void initState() {
     super.initState();
     _images = List.from(widget.initialImages);
     if (_selectedTags.isEmpty && _problemTags.isNotEmpty) {
-       _selectedTags.add('Fissure');
+      _selectedTags.add('Fissure');
     }
   }
 
@@ -79,7 +79,7 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
     final responsive = context.responsive;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), 
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF8F9FA),
         elevation: 0,
@@ -90,7 +90,8 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppTheme.darkNavy, size: 20),
+            icon: const Icon(Icons.arrow_back,
+                color: AppTheme.darkNavy, size: 20),
             onPressed: () => context.pop(),
           ),
         ),
@@ -98,16 +99,8 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
         title: Column(
           children: [
             Text(
-              'Preuves Visuelles',
+              'Créer votre chantier',
               style: AppTheme.headingStyle(context).copyWith(fontSize: 18),
-            ),
-             Text(
-              'Etape 1/5',
-              style: TextStyle(fontFamily: 'Outfit', 
-                fontSize: 12,
-                color: AppTheme.textLight,
-                fontWeight: FontWeight.w500,
-              ),
             ),
           ],
         ),
@@ -137,9 +130,9 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
                   return _buildPhotoCard(imagePath, index - 1);
                 },
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Notes Section
               Text(
                 'Notes & Observations',
@@ -150,10 +143,10 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -165,11 +158,13 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.add_circle, color: Color(0xFF8B93A7), size: 20),
+                        const Icon(Icons.add_circle,
+                            color: Color(0xFF8B93A7), size: 20),
                         const SizedBox(width: 8),
                         Text(
                           'Ajouter des notes',
-                          style: TextStyle(fontFamily: 'Outfit', 
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.darkNavy,
@@ -183,21 +178,25 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
                       maxLines: 4,
                       decoration: InputDecoration(
                         hintText: 'Rajouter votre texte...',
-                        hintStyle: TextStyle(fontFamily: 'Outfit', 
+                        hintStyle: TextStyle(
+                          fontFamily: 'Outfit',
                           color: const Color(0xFF9CA3AF),
                           fontSize: 14,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                          borderSide: BorderSide(
+                              color: Colors.grey.withValues(alpha: 0.3)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                          borderSide: BorderSide(
+                              color: Colors.grey.withValues(alpha: 0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.darkNavy),
+                          borderSide:
+                              const BorderSide(color: AppTheme.darkNavy),
                         ),
                         contentPadding: const EdgeInsets.all(12),
                       ),
@@ -209,7 +208,7 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
               const SizedBox(height: 32),
 
               // Tags Section
-            
+
               const SizedBox(height: 16),
               Wrap(
                 spacing: 12,
@@ -223,18 +222,23 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
                     backgroundColor: Colors.white,
                     selectedColor: AppTheme.darkNavy,
                     checkmarkColor: Colors.white,
-                    labelStyle: TextStyle(fontFamily: 'Outfit', 
-                      color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                    labelStyle: TextStyle(
+                      fontFamily: 'Outfit',
+                      color:
+                          isSelected ? Colors.white : const Color(0xFF6B7280),
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected ? AppTheme.darkNavy : Colors.grey.withOpacity(0.3),
+                        color: isSelected
+                            ? AppTheme.darkNavy
+                            : Colors.grey.withValues(alpha: 0.3),
                       ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     showCheckmark: true,
                   );
                 }).toList(),
@@ -248,7 +252,9 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
                   debugPrint('Navigating to room selection...');
                   try {
                     // Save to provider
-                    ref.read(quoteCreationProvider.notifier).setVisualEvidence(_images);
+                    ref
+                        .read(quoteCreationProvider.notifier)
+                        .setVisualEvidence(_images);
                     context.push('/quote/room-selection', extra: _images);
                   } catch (e) {
                     debugPrint('Navigation error: $e');
@@ -268,7 +274,8 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
                   children: [
                     Text(
                       'Confirmer et Attacher',
-                      style: TextStyle(fontFamily: 'Outfit', 
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
@@ -278,7 +285,7 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 32),
             ],
           ),
@@ -302,19 +309,21 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-               Container(
-                 width: 64,
-                 height: 64,
-                 decoration: const BoxDecoration(
-                   color: Color(0xFFE5E7EB),
-                   shape: BoxShape.circle,
-                 ),
-                 child: const Icon(Icons.add_photo_alternate_outlined, color: Colors.white, size: 32),
-               ),
-               const SizedBox(height: 12),
-               Text(
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE5E7EB),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add_photo_alternate_outlined,
+                    color: Colors.white, size: 32),
+              ),
+              const SizedBox(height: 12),
+              Text(
                 'Ajouter Photo',
-                style: TextStyle(fontFamily: 'Outfit', 
+                style: TextStyle(
+                  fontFamily: 'Outfit',
                   color: const Color(0xFF9CA3AF),
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
@@ -346,32 +355,33 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-               _buildMiniButton(Icons.crop, () {}),
-               _buildMiniButton(Icons.delete_outline, () => _removeImage(index)),
+              _buildMiniButton(Icons.crop, () {}),
+              _buildMiniButton(Icons.delete_outline, () => _removeImage(index)),
             ],
           ),
         ),
         Positioned(
-           bottom: 8,
-           right: 8,
-           child: Container(
-             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-             decoration: BoxDecoration(
-               color: Colors.black.withOpacity(0.6),
-               borderRadius: BorderRadius.circular(12),
-             ),
-             child: Row(
-               mainAxisSize: MainAxisSize.min,
-               children: [
-                 const Icon(Icons.fullscreen, color: Colors.white, size: 14),
-                 const SizedBox(width: 4),
-                 Text(
-                   "Agrandir",
-                   style: TextStyle(fontFamily: 'Outfit', color: Colors.white, fontSize: 10),
-                 )
-               ],
-             ),
-           ),
+          bottom: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.fullscreen, color: Colors.white, size: 14),
+                const SizedBox(width: 4),
+                Text(
+                  "Agrandir",
+                  style: TextStyle(
+                      fontFamily: 'Outfit', color: Colors.white, fontSize: 10),
+                )
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -384,7 +394,7 @@ class _VisualEvidenceGridScreenState extends ConsumerState<VisualEvidenceGridScr
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.3),
+          color: Colors.white.withValues(alpha: 0.3),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: Colors.white, size: 16),
@@ -431,7 +441,8 @@ class DashedBorderPainter extends CustomPainter {
       while (distance < metric.length) {
         final double len = draw ? width : space;
         if (draw) {
-          dest.addPath(metric.extractPath(distance, distance + len), Offset.zero);
+          dest.addPath(
+              metric.extractPath(distance, distance + len), Offset.zero);
         }
         distance += len;
         draw = !draw;

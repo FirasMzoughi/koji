@@ -4,20 +4,23 @@ import 'package:koji/core/responsive_helper.dart';
 
 class AppTheme {
   // Colors
-  static const Color primaryBlueLight = Color(0xFF1D74FF); // User specified for White Mood
-  static const Color primaryBlueDark = Color(0xFF0F296F);  // User specified for Black Mood
-  
+  static const Color primaryBlueLight =
+      Color(0xFF1D74FF); // User specified for White Mood
+  static const Color primaryBlueDark =
+      Color(0xFF0F296F); // User specified for Black Mood
+
   // Aliases for backward compatibility
   static const Color primaryBlue = primaryBlueLight;
-  
-  static const Color darkNavy = Color(0xFF111827); 
+
+  static const Color darkNavy = Color(0xFF111827);
   static const Color textDark = Color(0xFF1F2937);
   static const Color textLight = Color(0xFF6B7280);
   static const Color backgroundLight = Color(0xFFFFFFFF);
   static const Color background = backgroundLight; // Alias
   static const Color cream = Color(0xFFF3F4F6); // Re-added
   static const Color backgroundDark = Color(0xFF121212); // Standard dark bg
-  static const Color surfaceDark = Color(0xFF1E1E1E); // Slightly lighter for cards in dark mode
+  static const Color surfaceDark =
+      Color(0xFF1E1E1E); // Slightly lighter for cards in dark mode
 
   // Google Fonts - Outfit
   static TextStyle outfitTextStyle({FontWeight? fontWeight}) {
@@ -47,16 +50,16 @@ class AppTheme {
   }
 
   static TextStyle buttonTextStyle(BuildContext context) => GoogleFonts.outfit(
-    fontSize: context.responsive.fontSize(16),
-    fontWeight: FontWeight.w600,
-    color: Colors.white,
-  );
+        fontSize: context.responsive.fontSize(16),
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      );
 
   // Light Theme
   static ThemeData lightThemeData(BuildContext context) {
     final responsive = context.responsive;
     final textTheme = GoogleFonts.outfitTextTheme(Theme.of(context).textTheme);
-    
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -89,11 +92,12 @@ class AppTheme {
   // Dark Theme
   static ThemeData darkThemeData(BuildContext context) {
     final responsive = context.responsive;
-    final textTheme = GoogleFonts.outfitTextTheme(Theme.of(context).textTheme).apply(
+    final textTheme =
+        GoogleFonts.outfitTextTheme(Theme.of(context).textTheme).apply(
       bodyColor: Colors.white,
       displayColor: Colors.white,
     );
-    
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -123,7 +127,7 @@ class AppTheme {
       ),
     );
   }
-  
+
   // Backward compatibility alias if needed, or remove if updated everywhere
   static ThemeData themeData(BuildContext context) => lightThemeData(context);
 }

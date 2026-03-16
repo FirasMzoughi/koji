@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/core/route_args.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/features/quote/model/expense_item.dart';
 import 'package:koji/features/quote/providers/quote_creation_provider.dart';
@@ -99,7 +100,10 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
     
 
     // Navigate
-    context.push('/quote/detail', extra: ref.read(quoteCreationProvider).toMap());
+    context.push(
+      '/quote/detail',
+      extra: QuoteDetailArgs(data: ref.read(quoteCreationProvider).toMap()),
+    );
   }
 
   void _navigateToRoom(String roomId) {
@@ -574,28 +578,29 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => context.go('/rooms'),
+                  onPressed: () => context.push('/quote/fourniture-summary'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.darkNavy,
                     side: const BorderSide(color: AppTheme.darkNavy),
                     minimumSize: const Size(double.infinity, 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Créer un projet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  child: const Text('Validé la liste de fournitures', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                flex: 2,
                 child: ElevatedButton(
                   onPressed: _saveAndContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.darkNavy,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Valider le Devis', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  child: const Text('Valider le Devis', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
