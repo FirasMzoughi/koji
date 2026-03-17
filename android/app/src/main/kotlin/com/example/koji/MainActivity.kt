@@ -1,5 +1,5 @@
-package com.example.kojimobilejimobile
+package com.firas.koji.legacy
 
 import io.flutter.embedding.android.FlutterActivity
 
-class MainActivity : FlutterActivity()
+class MainActivityLegacy : FlutterActivity()
