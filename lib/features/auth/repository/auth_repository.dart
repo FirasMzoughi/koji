@@ -55,7 +55,7 @@ class AuthRepository {
       final result = await _supabase.auth.signUp(
         email: email,
         password: password,
-        emailRedirectTo: 'https://koji-signature.vercel.app/auth/confirm',
+        emailRedirectTo: 'https://koji-admin-three.vercel.app/auth/confirm',
         // Pass isPro in user metadata so the DB trigger can read it
         data: {'is_pro': isPro},
       );
@@ -98,6 +98,20 @@ class AuthRepository {
       return result;
     } catch (e) {
       _logger.e('❌ [AuthRepository] Google Sign-In failed', error: e);
+      rethrow;
+    }
+  }
+
+  Future<void> resetPassword({required String email}) async {
+    _logger.i('🔑 [AuthRepository] Sending password reset email to $email');
+    try {
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'koji://reset-password',
+      );
+      _logger.i('✅ [AuthRepository] Password reset email sent');
+    } catch (e) {
+      _logger.e('❌ [AuthRepository] Password reset failed', error: e);
       rethrow;
     }
   }
