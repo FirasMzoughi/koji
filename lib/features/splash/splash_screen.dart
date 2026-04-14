@@ -72,18 +72,27 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       // No account - go directly to welcome skipping onboarding
       if (mounted) context.go('/welcome');
     } else {
-      // Has account - Check for logo in Supabase
+      // Has account - check user type and profile completion
       try {
         final userRepository = ref.read(userRepositoryProvider);
         final userData = await userRepository.getUser(user.id);
-        final logoUrl = userData?['logo_url'] as String?;
+        final isPro = userData?['is_pro'] as bool? ?? true;
+        final isProfileComplete = userData?['is_profile_complete'] == true;
 
+        if (!isPro) {
+          // CLIENT (Particulier) — always go to client home
+          if (mounted) context.go('/client-home');
+          return;
+        }
+
+        // ENTREPRISE — check onboarding completion
+        final logoUrl = userData?['logo_url'] as String?;
         if (logoUrl == null || logoUrl.isEmpty) {
-          // No logo found - go to business info to upload it
           if (mounted) context.go('/business-info');
-        } else {
-          // Has logo - continue to profession selection or home
+        } else if (!isProfileComplete) {
           if (mounted) context.go('/profession-selection');
+        } else {
+          if (mounted) context.go('/home');
         }
       } catch (e) {
         // Error fetching user data - go to business info to be safe

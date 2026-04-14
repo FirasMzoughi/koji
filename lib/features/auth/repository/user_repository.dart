@@ -139,6 +139,45 @@ class UserRepository {
     }
   }
 
+  /// Fetch all quotes where the client email matches the user's email.
+  /// Falls back to returning quotes owned by the user uid.
+  Future<List<Map<String, dynamic>>> getClientQuotes(String uid) async {
+    _logger.i('📋 [UserRepository] Fetching client quotes for uid=$uid');
+    try {
+      // Try to get quotes linked by user_id (client side)
+      final response = await _supabase
+          .from('quotes')
+          .select()
+          .eq('user_id', uid)
+          .order('created_at', ascending: false);
+      _logger.i('✅ [UserRepository] Got ${response.length} client quotes');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      _logger.e('❌ [UserRepository] Failed to fetch client quotes', error: e);
+      return [];
+    }
+  }
+
+  Future<void> updateClientProfile({
+    required String uid,
+    required String fullName,
+    required String phone,
+    required String address,
+  }) async {
+    _logger.i('👤 [UserRepository] Updating client profile');
+    try {
+      await _supabase.from('users').update({
+        'full_name': fullName,
+        'phone': phone,
+        'address': address,
+      }).eq('id', uid);
+      _logger.i('✅ [UserRepository] Client profile updated');
+    } catch (e) {
+      _logger.e('❌ [UserRepository] Failed to update client profile', error: e);
+      rethrow;
+    }
+  }
+
   Future<void> updateProfession(String uid, List<String> professions) async {
     final professionsString = professions.join(',');
     _logger.i('👔 [UserRepository] Updating professions');

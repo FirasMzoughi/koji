@@ -56,6 +56,7 @@ import 'package:koji/features/quote/chantier_devis_screen.dart';
 import 'package:koji/features/quote/chantier_rdv_screen.dart';
 import 'package:koji/features/quote/chantier_add_task_screen.dart';
 import 'package:koji/features/quote/chantier_documents_screen.dart';
+import 'package:koji/features/client/client_home_screen.dart';
 
 // Custom page transition for faster navigation - OPTIMIZED
 Page<dynamic> _buildPageWithTransition(
@@ -149,6 +150,14 @@ final router = GoRouter(
         context,
         state,
         const HomeScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/client-home',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const ClientHomeScreen(),
       ),
     ),
     GoRoute(

@@ -59,6 +59,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final userRepo = ref.read(userRepositoryProvider);
       final userData = await userRepo.getUser(user.id);
       if (!mounted) return;
+
+      final isPro = userData?['is_pro'] as bool? ?? true;
+
+      // CLIENT — go straight to client home
+      if (!isPro) {
+        context.go('/client-home');
+        return;
+      }
+
+      // ENTREPRISE — check onboarding completion
       final isComplete = userData?['is_profile_complete'] == true;
       context.go(isComplete ? '/home' : '/profession-selection');
     } catch (_) {
@@ -303,11 +313,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         fontSize: responsive.fontSize(14),
                         color: AppTheme.textLight,
                       ),
-                      children: [
-                        const TextSpan(text: 'Pas encore de compte ? '),
+                      children: const [
+                        TextSpan(text: 'Pas encore de compte ? '),
                         TextSpan(
                           text: 'S\'inscrire',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppTheme.primaryBlue,
                             fontWeight: FontWeight.w600,
                           ),
