@@ -162,7 +162,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                 const Text(
                   ' Chantier',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F172A),
@@ -171,7 +170,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                 Text(
                   _chantierName,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 13,
                     color: Color(0xFF94A3B8),
                   ),
@@ -217,7 +215,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
               const Text(
                 'À faire',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),
@@ -233,7 +230,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
               child: Text(
                 'Aucune tâche pour le moment',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   color: Color(0xFF94A3B8),
                   fontSize: 14,
                 ),
@@ -279,7 +275,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                       child: Text(
                         task['label'] as String,
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 14,
                           color: isDone
                               ? const Color(0xFF94A3B8)
@@ -313,7 +308,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
               Text(
                 'Budget',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),
@@ -354,7 +348,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
             Text(
               label,
               style: const TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 14,
                 color: Color(0xFF0F172A),
               ),
@@ -365,7 +358,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                   TextSpan(
                     text: '${actual}€ ',
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
@@ -374,7 +366,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                   TextSpan(
                     text: '/ $estimated €',
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 13,
                       color: Color(0xFF94A3B8),
                     ),
@@ -398,7 +389,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
         const Text(
           'Réel/ Estimé',
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 11,
             color: Color(0xFFCBD5E1),
           ),
@@ -427,7 +417,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                       Text(
                         'Devis',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF0F172A),
@@ -439,7 +428,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                   Text(
                     '0',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
@@ -449,7 +437,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                   Text(
                     'Aucun devis',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 12,
                       color: Color(0xFF94A3B8),
                     ),
@@ -477,7 +464,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                         child: Text(
                           'Prochain RDV',
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF0F172A),
@@ -491,7 +477,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                   Text(
                     'Réunion chantier',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 13,
                       color: Color(0xFF0F172A),
                     ),
@@ -500,7 +485,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                   Text(
                     'Demain, 09:00',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 12,
                       color: Color(0xFF94A3B8),
                     ),
@@ -533,7 +517,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                     Text(
                       'Documents',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF0F172A),
@@ -551,7 +534,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                   child: Text(
                     '${documents.length} total',
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 12,
                       color: Color(0xFF64748B),
                     ),
@@ -579,7 +561,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                           Text(
                             documents.first['name'] as String? ?? 'Document sans nom',
                             style: const TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF0F172A),
@@ -590,7 +571,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                           const Text(
                             'Récent',
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 12,
                               color: Color(0xFF94A3B8),
                             ),
@@ -607,7 +587,6 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                 child: Text(
                   'Aucun document',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: Color(0xFF94A3B8),
                   ),
@@ -704,7 +683,6 @@ class _AddMenuSheet extends StatelessWidget {
               const Text(
                 'Ajouter tâche',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),
@@ -759,7 +737,6 @@ class _MenuTile extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF0F172A),

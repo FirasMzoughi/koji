@@ -48,12 +48,16 @@ class AuthRepository {
   Future<AuthResponse> createUserWithEmailAndPassword({
     required String email,
     required String password,
+    bool isPro = false,
   }) async {
     _logger.i('📝 [AuthRepository] Calling Supabase signUp');
     try {
       final result = await _supabase.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: 'https://koji-signature.vercel.app/auth/confirm',
+        // Pass isPro in user metadata so the DB trigger can read it
+        data: {'is_pro': isPro},
       );
       _logger.i('✅ [AuthRepository] Supabase signUp successful');
       return result;

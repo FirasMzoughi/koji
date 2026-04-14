@@ -82,7 +82,6 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
             Text(
               'Etape 1/6',
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 12,
                 color: AppTheme.textLight,
               ),
@@ -128,7 +127,6 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                 Text(
                   'Informations',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF1E3A8A),
@@ -142,7 +140,6 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                 Text(
                   'Renseignez les coordonnées du client avant de procéder à l\'état des lieux',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: AppTheme.textLight,
                   ),
@@ -210,7 +207,6 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                       Text(
                         'Suivant',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -236,7 +232,6 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       child: Text(
         text,
         style: TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: const Color(0xFF1F2937),
@@ -256,10 +251,10 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       keyboardType: keyboardType,
       validator: validator,
       cursorColor: const Color(0xFF1E3A8A),
-      style: const TextStyle(fontFamily: 'Outfit', color: Color(0xFF1F2937)),
+      style: const TextStyle( color: Color(0xFF1F2937)),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontFamily: 'Outfit', color: Colors.grey[400]),
+        hintStyle: TextStyle( color: Colors.grey[400]),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(

@@ -60,7 +60,6 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
                       Text(
                         'Ajouter un document',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -104,7 +103,6 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
           const Text(
             'Ajouter Documents',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: _kDark,
@@ -136,7 +134,6 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
           child: Text(
             'Aucune Document',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 15,
               color: Color(0xFF94A3B8),
             ),
@@ -240,7 +237,6 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: _kDark,
@@ -250,7 +246,6 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
                 Text(
                   '$date  $size',
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 12,
                     color: Color(0xFF64748B),
                   ),
@@ -352,7 +347,6 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: color,

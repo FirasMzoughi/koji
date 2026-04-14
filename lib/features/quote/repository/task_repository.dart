@@ -11,15 +11,23 @@ class TaskRepository {
 
   TaskRepository(this._supabase);
 
+  /// Fetch ALL tasks for a profession from the backend:
+  /// - Global/admin tasks (no user_id or shared)
+  /// - The current user's own custom tasks
   Future<List<CustomTask>> getTasks(String profession) async {
     try {
-      final response =
-          await _supabase.from('tasks').select().eq('profession', profession);
+      // Fetch tasks matching the profession (all users see them via RLS or public)
+      final response = await _supabase
+          .from('tasks')
+          .select()
+          .eq('profession', profession)
+          .order('created_at', ascending: true);
 
-      // Also fetch tasks that might have no profession or 'All'?
-      // For now specific profession.
+      final all = (response as List).map((e) => CustomTask.fromMap(e)).toList();
 
-      return (response as List).map((e) => CustomTask.fromMap(e)).toList();
+      // Deduplicate by id
+      final seen = <String>{};
+      return all.where((t) => seen.add(t.id)).toList();
     } catch (e) {
       throw Exception('Error fetching tasks: $e');
     }

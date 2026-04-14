@@ -41,6 +41,9 @@ import 'package:koji/features/synchronization/worker_assignment_screen.dart';
 import 'package:koji/features/synchronization/assignment_success_screen.dart';
 import 'package:koji/features/synchronization/data/project_model.dart';
 import 'package:koji/features/planning/planning_screen.dart';
+import 'package:koji/features/calendar/calendrier_screen.dart';
+import 'package:koji/features/calendar/nouvel_evenement_screen.dart';
+import 'package:koji/features/calendar/detail_planning_screen.dart';
 import 'package:koji/features/settings/pricing_settings_screen.dart';
 import 'package:koji/features/profile/company_profile_screen.dart';
 import 'package:koji/features/fournitures/fournitures_screen.dart';
@@ -584,6 +587,34 @@ final router = GoRouter(
         state,
         const PlanningScreen(),
       ),
+    ),
+    // ── Calendar routes ──────────────────────────────────────
+    GoRoute(
+      path: '/calendrier',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const CalendrierScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/calendrier/new-event',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const NouvelEvenementScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/calendrier/detail/:eventId',
+      pageBuilder: (context, state) {
+        final eventId = state.pathParameters['eventId']!;
+        return _buildPageWithTransition(
+          context,
+          state,
+          DetailPlanningScreen(eventId: eventId),
+        );
+      },
     ),
     // Settings Routes
     GoRoute(

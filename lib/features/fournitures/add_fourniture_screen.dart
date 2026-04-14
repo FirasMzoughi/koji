@@ -138,7 +138,6 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
                             Text(
                               'Manuel',
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontWeight: FontWeight.w600,
                                 color: !_isUrlMode
                                     ? Colors.white
@@ -173,7 +172,6 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
                             Text(
                               'Via URL',
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontWeight: FontWeight.w600,
                                 color: _isUrlMode
                                     ? Colors.white
@@ -244,7 +242,6 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
                     : const Text(
                         'Enregistrer',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
@@ -362,7 +359,6 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
               const Text(
                 'Ajouter via un lien',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.darkNavy,
@@ -373,7 +369,6 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
                 'Collez le lien du produit depuis le site du fournisseur.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 13,
                   color: Color(0xFF64748B),
                 ),
@@ -463,7 +458,6 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
           border: InputBorder.none,
           labelText: 'Fournisseur (optionnel)',
           labelStyle: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 13,
             color: Color(0xFF94A3B8),
           ),
@@ -474,13 +468,13 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
           const DropdownMenuItem(
             value: null,
             child: Text('Aucun (Divers)',
-                style: TextStyle(fontFamily: 'Outfit', fontSize: 14)),
+                style: TextStyle( fontSize: 14)),
           ),
           ...list.map((f) => DropdownMenuItem(
                 value: f.id,
                 child: Text(f.name,
                     style:
-                        const TextStyle(fontFamily: 'Outfit', fontSize: 14)),
+                        const TextStyle( fontSize: 14)),
               )),
         ],
         onChanged: (val) {
@@ -510,17 +504,15 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
-        style: const TextStyle(fontFamily: 'Outfit', fontSize: 14),
+        style: const TextStyle( fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
           labelStyle: const TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 13,
             color: Color(0xFF94A3B8),
           ),
           hintStyle: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 13,
             color: Colors.grey[300],
           ),
@@ -559,7 +551,6 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
           border: InputBorder.none,
           labelText: label,
           labelStyle: const TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 13,
             color: Color(0xFF94A3B8),
           ),
@@ -571,8 +562,7 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
             .map((c) => DropdownMenuItem(
                 value: c,
                 child: Text(c,
-                    style: const TextStyle(
-                        fontFamily: 'Outfit', fontSize: 14))))
+                    style: const TextStyle( fontSize: 14))))
             .toList(),
         onChanged: onChanged,
       ),

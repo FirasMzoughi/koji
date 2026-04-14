@@ -332,7 +332,9 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         'ht': totalHT,
         'tva': tva,
         'ttc': totalTTC,
-      }
+      },
+      if (widget.data['chantier_id'] != null)
+        'chantier_id': widget.data['chantier_id'],
     };
 
     try {
@@ -443,7 +445,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   children: [
                     Text("DEVIS N°",
                         style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 8,
                             color: const Color(0xFFA18B73))),
                     _buildEditableText(_quoteNumber,
@@ -475,7 +476,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                         const SizedBox(width: 4),
                         Text("CLIENT",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFFA18B73))),
@@ -525,7 +525,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 children: [
                   Text("DATE",
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFA18B73))),
@@ -536,7 +535,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   const SizedBox(height: 8),
                   Text("VALIDITE",
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFA18B73))),
@@ -578,7 +576,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                     children: [
                       Text("Lieu du chantier",
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 10,
                               color: const Color(0xFFA18B73))),
                       _buildEditableText(_siteAddress,
@@ -605,7 +602,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
       return TextFormField(
         initialValue: value,
         style: TextStyle(
-          fontFamily: 'Outfit',
           fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
           fontSize: fontSize,
           color: color ?? AppTheme.darkNavy,
@@ -620,7 +616,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     return Text(
       value,
       style: TextStyle(
-        fontFamily: 'Outfit',
         fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
         fontSize: fontSize,
         color: color ?? AppTheme.darkNavy,
@@ -641,7 +636,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               child: TextFormField(
                 initialValue: text,
                 style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 10,
                     color: AppTheme.textLight),
                 decoration: const InputDecoration(
@@ -667,7 +661,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           const SizedBox(width: 6),
           Text(text,
               style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 10,
                   color: AppTheme.textLight)),
         ],
@@ -749,7 +742,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                       child: Text(
                         "${_rooms.length} Pièces",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           color: AppTheme.darkNavy,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
@@ -771,7 +763,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20)),
                         textStyle: TextStyle(
-                            fontFamily: 'Outfit',
                             fontWeight: FontWeight.w600,
                             fontSize: 12),
                       ),
@@ -787,8 +778,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   child: Center(
                       child: Text(
                     "Aucun détail disponible. Ajoutez une pièce.",
-                    style: TextStyle(
-                        fontFamily: 'Outfit', color: AppTheme.textLight),
+                    style: TextStyle( color: AppTheme.textLight),
                   )),
                 ),
 
@@ -822,7 +812,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                     Text(
                       "Total",
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         color: AppTheme.darkNavy,
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
@@ -845,7 +834,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                             Text(
                               "Total TTC",
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 color: const Color(0xFF6B7280),
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -854,7 +842,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                             Text(
                               "Payable à la commande",
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 color: const Color(0xFF9CA3AF),
                                 fontSize: 10,
                               ),
@@ -864,7 +851,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                         Text(
                           "${totalTTC.toStringAsFixed(2)} €",
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             color: const Color(0xFF4B4B4B), // Dark grey
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
@@ -913,7 +899,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                     label: Text(
                       "Enregistrer les modifications",
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontWeight: FontWeight.bold,
                           fontSize: 16),
                     ),
@@ -924,7 +909,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                     child: Text(
                       "Annuler",
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         color: const Color(0xFF9CA3AF),
                         fontWeight: FontWeight.w600,
                         decoration: TextDecoration.underline,
@@ -943,8 +927,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                       icon: const Icon(Icons.edit, size: 18),
                       label: Text(
                         "Modifier",
-                        style: TextStyle(
-                            fontFamily: 'Outfit', fontWeight: FontWeight.w600),
+                        style: TextStyle( fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.darkNavy,
@@ -973,7 +956,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                             ? 'Mettre à jour'
                             : 'Générer le Devis',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -993,7 +975,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'Outfit',
             color: const Color(0xFF9CA3AF),
             fontSize: 14,
           ),
@@ -1001,7 +982,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         Text(
           "${value.toStringAsFixed(2)} €",
           style: TextStyle(
-            fontFamily: 'Outfit',
             color: const Color(0xFF4B4B4B),
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -1035,7 +1015,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                       decoration: const InputDecoration(
                           isDense: true, border: InputBorder.none),
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: AppTheme.darkNavy),
@@ -1047,7 +1026,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   : Text(
                       _getRoomLabel(roomName),
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: AppTheme.darkNavy,
@@ -1063,7 +1041,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               Text(
                 "${roomTotal.toStringAsFixed(2)} €",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: AppTheme.darkNavy,
@@ -1073,8 +1050,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         ),
         subtitle: Text(
           "${items.length} prestations",
-          style: TextStyle(
-              fontFamily: 'Outfit', color: AppTheme.textLight, fontSize: 12),
+          style: TextStyle( color: AppTheme.textLight, fontSize: 12),
         ),
         children: [
           // Tasks Inclus Header with Add button if editing
@@ -1096,7 +1072,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                           Text(
                             "Ajouter",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 color: const Color(0xFF3B82F6),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12),
@@ -1142,7 +1117,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                     ? TextFormField(
                         initialValue: item.title,
                         style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             color: AppTheme.darkNavy),
@@ -1156,7 +1130,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                     : Text(
                         item.title, // "Démolition carrelage"
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                           color: AppTheme.darkNavy,
@@ -1175,7 +1148,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 Text(
                   "${item.total.toStringAsFixed(2)} €",
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: AppTheme.darkNavy,
@@ -1196,7 +1168,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               child: Text(
                 _getLocationTag(item.id), // "Sol", "Murs", etc.
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   color: AppTheme.textLight,
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
@@ -1206,7 +1177,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
 
           const SizedBox(height: 16),
 
-          // Tasks Included (Static for now as it's not in the main model cleanly yet)
+          // Tasks Included — show task name and their products
           if (!_isEditing) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -1220,22 +1191,74 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 children: [
                   Text("Taches inclus",
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 10,
                           color: const Color(0xFF6B7280),
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  if (_roomTasks[room] != null &&
-                      _roomTasks[room]['tasks'] != null)
-                    ...(_roomTasks[room]['tasks'] as List).map((t) => Column(
+                  Builder(builder: (context) {
+                    // Collect task entries for this item
+                    final roomTaskMap = _roomTasks[room];
+                    if (roomTaskMap == null || roomTaskMap is! Map || roomTaskMap.isEmpty) {
+                      return const Text("Aucune tâche spécifique",
+                          style: TextStyle(fontSize: 10, color: Colors.grey));
+                    }
+                    // Find matching task entry by item id or label
+                    final taskEntries = roomTaskMap.entries.where((e) {
+                      final td = e.value;
+                      return td is Map && (td['taskId'] == item.id || td['label'] == item.title);
+                    }).toList();
+
+                    if (taskEntries.isEmpty) {
+                      return const Text("Aucune tâche spécifique",
+                          style: TextStyle(fontSize: 10, color: Colors.grey));
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: taskEntries.map((e) {
+                        final td = e.value as Map;
+                        final label = td['label']?.toString() ?? '';
+                        final selectedFournitures = td['selectedFournitures'];
+                        List<Widget> productRows = [];
+                        if (selectedFournitures is Map) {
+                          selectedFournitures.forEach((_, pd) {
+                            if (pd is Map) {
+                              final name = pd['name']?.toString() ?? pd['title']?.toString() ?? 'Produit';
+                              final qty = (pd['quantity'] as num?)?.toDouble() ?? 1.0;
+                              final unitPrice = (pd['unitPrice'] as num?)?.toDouble() ?? 0.0;
+                              productRows.add(Padding(
+                                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.circle, size: 5, color: Color(0xFF9CA3AF)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(fontSize: 10, color: AppTheme.darkNavy, fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${qty.toStringAsFixed(1)} × ${unitPrice.toStringAsFixed(2)} €',
+                                      style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+                                    ),
+                                  ],
+                                ),
+                              ));
+                            }
+                          });
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildTaskRow(t.toString()),
-                            const SizedBox(height: 4),
+                            if (label.isNotEmpty) _buildTaskRow(label),
+                            ...productRows,
+                            if (productRows.isNotEmpty) const SizedBox(height: 4),
                           ],
-                        ))
-                  else
-                    const Text("Aucune tâche spécifique",
-                        style: TextStyle(fontSize: 10, color: Colors.grey)),
+                        );
+                      }).toList(),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -1250,7 +1273,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   flex: 3,
                   child: Text("ÉLÉMENT",
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF9CA3AF)))),
@@ -1259,7 +1281,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   child: Center(
                       child: Text("QTÉ",
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF9CA3AF))))),
@@ -1268,7 +1289,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   child: Center(
                       child: Text(_isEditing ? "PRIX U." : "PRIX U.",
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF9CA3AF))))),
@@ -1279,7 +1299,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                         alignment: Alignment.centerRight,
                         child: Text("TOTAL",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF9CA3AF))))),
@@ -1328,7 +1347,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 const SizedBox(width: 6),
                 Text(label,
                     style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.darkNavy)),
@@ -1345,7 +1363,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                           keyboardType: TextInputType.number,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 10,
                               color: AppTheme.darkNavy),
                           decoration: const InputDecoration(
@@ -1365,7 +1382,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                             borderRadius: BorderRadius.circular(4)),
                         child: Text("${qty.toInt()} m²",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 10,
                                 color: AppTheme.textLight)),
                       ))),
@@ -1380,7 +1396,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                           keyboardType: TextInputType.number,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 10,
                               color: AppTheme.darkNavy),
                           decoration: const InputDecoration(
@@ -1400,7 +1415,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                             borderRadius: BorderRadius.circular(4)),
                         child: Text("${unitPrice.toInt()} €",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 10,
                                 color: AppTheme.textLight)),
                       ))),
@@ -1411,7 +1425,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   alignment: Alignment.centerRight,
                   child: Text("${(qty * unitPrice).toStringAsFixed(2)} €",
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.darkNavy)))),
@@ -1432,7 +1445,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         Expanded(
             child: Text(task,
                 style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 10,
                     color: AppTheme.darkNavy,
                     fontWeight: FontWeight.w500))),

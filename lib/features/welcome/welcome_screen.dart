@@ -64,7 +64,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     'Bienvenue sur Kôji !',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(28),
                       fontWeight: FontWeight.w700,
                       color: _selectedProfile == 1
@@ -81,7 +80,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     'Choisissez votre type de compte pour\ncommencer l\'expérience',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(15),
                       fontWeight: FontWeight.w400,
                       color: _selectedProfile == 1
@@ -144,7 +142,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                         Text(
                           'Suivant',
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: responsive.fontSize(16),
                             fontWeight: FontWeight.w600,
                           ),
@@ -238,7 +235,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(18),
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : AppTheme.darkNavy,
@@ -248,7 +244,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(13),
                       color: isSelected
                           ? Colors.white.withAlpha((0.9 * 255).round())
@@ -260,7 +255,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   Text(
                     tag,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(12),
                       fontWeight: FontWeight.w600,
                       color: isSelected ? Colors.white : AppTheme.primaryBlue,

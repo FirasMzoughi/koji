@@ -379,7 +379,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
             ),
              Text(
               'Etape 3/5',
-              style: TextStyle(fontFamily: 'Outfit', 
+              style: TextStyle( 
                 fontSize: 12,
                 color: AppTheme.textLight,
                 fontWeight: FontWeight.w500,
@@ -422,7 +422,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                            const SizedBox(width: 8),
                            Text(
                              _tabs[index],
-                             style: TextStyle(fontFamily: 'Outfit', 
+                             style: TextStyle( 
                                color: isSelected ? Colors.white : AppTheme.darkNavy,
                                fontWeight: FontWeight.w600,
                                fontSize: 14,
@@ -437,7 +437,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                               ),
                               child: Text(
                                 "${_expensesByRoom[_tabs[index]]?.length ?? 0}",
-                                style: TextStyle(fontFamily: 'Outfit', 
+                                style: TextStyle( 
                                   fontSize: 10,
                                   color: isSelected ? Colors.white : AppTheme.textLight,
                                 ),
@@ -476,7 +476,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                          children: [
                            Text(
                              'Total estimé de la pièce',
-                             style: TextStyle(fontFamily: 'Outfit', 
+                             style: TextStyle( 
                                color: Colors.white.withOpacity(0.7),
                                fontSize: 14,
                              ),
@@ -484,7 +484,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                            const SizedBox(height: 8),
                            Text(
                              '${roomTotal.toStringAsFixed(2)} €',
-                             style: TextStyle(fontFamily: 'Outfit', 
+                             style: TextStyle( 
                                color: Colors.white,
                                fontSize: 32,
                                fontWeight: FontWeight.bold,
@@ -513,7 +513,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                      const SizedBox(height: 4),
                      Text(
                        'Définissez les postes de dépenses et les estimations pour cette pièce ou bien ajoutez un poste personnalisé.',
-                       style: TextStyle(fontFamily: 'Outfit', 
+                       style: TextStyle( 
                          color: AppTheme.textLight,
                          fontSize: 13,
                          height: 1.4,
@@ -550,7 +550,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                           children: [
                             Text(
                               "Ajouter un poste personnalisé",
-                              style: TextStyle(fontFamily: 'Outfit', 
+                              style: TextStyle( 
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
                                 color: AppTheme.darkNavy,
@@ -564,7 +564,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                                     controller: _customPostController,
                                     decoration: InputDecoration(
                                       hintText: 'Nom du poste...',
-                                      hintStyle: TextStyle(fontFamily: 'Outfit', 
+                                      hintStyle: TextStyle( 
                                         color: const Color(0xFF9CA3AF),
                                         fontSize: 14,
                                       ),
@@ -643,7 +643,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
               const SizedBox(width: 8),
               Text(
                 'Valider les pièces',
-                style: TextStyle(fontFamily: 'Outfit', 
+                style: TextStyle( 
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -676,7 +676,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
         const SizedBox(width: 8),
         Text(
           label,
-          style: TextStyle(fontFamily: 'Outfit', 
+          style: TextStyle( 
             color: Colors.white.withOpacity(0.7),
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -723,7 +723,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                   children: [
                     Text(
                       item.title,
-                      style: TextStyle(fontFamily: 'Outfit', 
+                      style: TextStyle( 
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                         color: AppTheme.darkNavy,
@@ -731,7 +731,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                     ),
                     Text(
                       item.subtitle,
-                      style: TextStyle(fontFamily: 'Outfit', 
+                      style: TextStyle( 
                         color: AppTheme.textLight,
                         fontSize: 12,
                       ),
@@ -799,7 +799,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
             children: [
               Text(
                 "Total Calculé ${item.subtitle.contains('Calculé') ? ' (Auto)' : ''}",
-                style: TextStyle(fontFamily: 'Outfit', 
+                style: TextStyle( 
                   color: AppTheme.textLight,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -807,7 +807,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
               ),
               Text(
                 "${total.toStringAsFixed(2)} €",
-                style: TextStyle(fontFamily: 'Outfit', 
+                style: TextStyle( 
                   color: AppTheme.darkNavy,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -829,7 +829,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
           children: [
             Text(
               label,
-              style: TextStyle(fontFamily: 'Outfit', 
+              style: TextStyle( 
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.darkNavy,
@@ -856,7 +856,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                   onChanged: onChanged,
                   readOnly: readOnly,
                   enabled: !readOnly, // Visually disable
-                  style: TextStyle(fontFamily: 'Outfit', 
+                  style: TextStyle( 
                     fontWeight: FontWeight.w600,
                     color: readOnly ? AppTheme.textLight : AppTheme.darkNavy,
                     fontSize: 14,
@@ -872,7 +872,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                   padding: const EdgeInsets.only(right: 12),
                   child: Text(
                     suffix,
-                    style: TextStyle(fontFamily: 'Outfit', color: AppTheme.textLight, fontSize: 14),
+                    style: TextStyle( color: AppTheme.textLight, fontSize: 14),
                   ),
                 ),
             ],
@@ -888,7 +888,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(fontFamily: 'Outfit', 
+          style: TextStyle( 
             fontSize: 12,
             fontWeight: FontWeight.bold,
              color: AppTheme.darkNavy,
@@ -908,7 +908,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
             children: [
               Text(
                 value,
-                style: TextStyle(fontFamily: 'Outfit', 
+                style: TextStyle( 
                   fontWeight: FontWeight.w600,
                   color: AppTheme.darkNavy,
                   fontSize: 14,

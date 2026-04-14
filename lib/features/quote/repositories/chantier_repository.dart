@@ -132,4 +132,53 @@ class ChantierRepository {
         .update(updates)
         .eq('chantier_id', chantierId);
   }
+
+  /// Update Chantier Status
+  Future<void> updateChantierStatus(String chantierId, String status) async {
+    await _client.from('chantiers').update({'status': status}).eq('id', chantierId);
+  }
+
+  /// Stream all quotes for a specific chantier (real-time)
+  Stream<List<Map<String, dynamic>>> streamChantierQuotes(String chantierId) {
+    return _client
+        .from('quotes')
+        .stream(primaryKey: ['id'])
+        .eq('chantier_id', chantierId)
+        .order('created_at', ascending: false)
+        .map((data) => data.map((q) {
+              final metadata = (q['metadata'] as Map?)?.cast<String, dynamic>() ?? {};
+              return {
+                'id': q['id'],
+                'status': q['status'] ?? 'Draft',
+                'reference': metadata['quoteNumber'] ?? q['reference'] ?? 'N/A',
+                'total_ht': q['total_ht'] ?? 0,
+                'total_ttc': q['total_ttc'] ?? 0,
+                'date': metadata['date'] ?? '',
+                'client': (metadata['client'] as Map?)?.cast<String, dynamic>() ?? {},
+              };
+            }).toList());
+  }
+
+  /// Get all open tasks across all chantiers for the current user
+  Future<List<Map<String, dynamic>>> getOpenTasksForUser(String userId) async {
+    // 1. Get user's chantiers
+    final chantiers = await _client
+        .from('chantiers')
+        .select('id')
+        .eq('user_id', userId);
+        
+    if (chantiers.isEmpty) return [];
+    
+    final chantierIds = chantiers.map((c) => c['id']).toList();
+    
+    // 2. Fetch tasks
+    final tasksResponse = await _client
+        .from('chantier_tasks')
+        .select()
+        .inFilter('chantier_id', chantierIds)
+        .eq('is_done', false)
+        .order('created_at', ascending: false);
+        
+    return List<Map<String, dynamic>>.from(tasksResponse);
+  }
 }

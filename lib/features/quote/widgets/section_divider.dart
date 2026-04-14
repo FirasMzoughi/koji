@@ -20,7 +20,6 @@ class SectionDivider extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(
-              fontFamily: 'Outfit',
               color: const Color(0xFF9CA3AF),
               fontSize: 14,
             ),

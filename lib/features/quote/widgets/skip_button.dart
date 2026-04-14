@@ -21,7 +21,6 @@ class SkipButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 16,
             color: AppTheme.darkNavy,
             fontWeight: FontWeight.w600,

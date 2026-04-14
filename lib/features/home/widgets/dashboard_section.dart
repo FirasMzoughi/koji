@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class DashboardSection extends StatelessWidget {
   final String title;
   final Widget child;
+  final VoidCallback? onTap;
 
   const DashboardSection({
     super.key,
     required this.title,
     required this.child,
+    this.onTap,
   });
 
   @override
@@ -15,15 +17,25 @@ class DashboardSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Outfit',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A), // Dark Navy
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A), // Dark Navy
+                  ),
+                ),
+                if (onTap != null)
+                  const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF64748B)),
+              ],
             ),
           ),
         ),
@@ -65,7 +77,6 @@ class DashboardEmptyState extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Color(0xFF0F172A),
@@ -76,7 +87,6 @@ class DashboardEmptyState extends StatelessWidget {
         Text(
           subtitle,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 14,
             color: Colors.grey[500],
           ),
@@ -107,7 +117,6 @@ class DashboardStatRow extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: Colors.grey[500],
@@ -125,7 +134,6 @@ class DashboardStatRow extends StatelessWidget {
               Text(
                 value,
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),

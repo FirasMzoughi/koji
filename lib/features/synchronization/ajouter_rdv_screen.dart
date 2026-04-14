@@ -99,7 +99,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                           "Ajouter un RDV",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: darkNavy,
@@ -122,7 +121,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                         const Text(
                           "Intitulé",
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: darkNavy,
@@ -139,14 +137,12 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                           child: TextField(
                             controller: _titleController,
                             style: const TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 15,
                               color: darkNavy,
                             ),
                             decoration: InputDecoration(
                               hintText: "Ex: Pose carrelage",
                               hintStyle: TextStyle(
-                                fontFamily: 'Outfit',
                                 color: const Color(0xFF8B95A5)
                                     .withValues(alpha: 0.6),
                               ),
@@ -169,7 +165,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                           child: Text(
                             "Choisissez L'heure",
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: darkNavy,
@@ -187,7 +182,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                         const Text(
                           "Durée",
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: darkNavy,
@@ -202,7 +196,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                         const Text(
                           "Ajouter une personne",
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: darkNavy,
@@ -227,7 +220,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                                         ? "${widget.worker!.firstName} ${widget.worker!.lastName}"
                                         : "Invité un sous-traitant / Ouvrier",
                                     style: TextStyle(
-                                      fontFamily: 'Outfit',
                                       fontSize: 15,
                                       color: widget.worker != null
                                           ? darkNavy
@@ -263,7 +255,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                         const Text(
                           "Note",
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: darkNavy,
@@ -281,7 +272,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                             controller: _noteController,
                             maxLines: 3,
                             style: const TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 15,
                               color: darkNavy,
                             ),
@@ -289,7 +279,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                               hintText:
                                   "Informations complémentaires...",
                               hintStyle: TextStyle(
-                                fontFamily: 'Outfit',
                                 color: const Color(0xFF8B95A5)
                                     .withValues(alpha: 0.6),
                               ),
@@ -320,7 +309,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                                 child: Text(
                                   "Conflit avec un autre RDV (Pose fenêtre)",
                                   style: TextStyle(
-                                    fontFamily: 'Outfit',
                                     fontSize: 13,
                                     color: const Color(0xFFFF9800)
                                         .withValues(alpha: 0.9),
@@ -373,7 +361,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                       Text(
                         "Enregistrer",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -409,7 +396,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
         child: Text(
           d,
           style: const TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 11,
             fontWeight: FontWeight.w700,
             color: Color(0xFF8B95A5),
@@ -427,7 +413,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
         child: Text(
           "${prevEnd - i + 1}",
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 14,
             color: const Color(0xFF8B95A5).withValues(alpha: 0.35),
           ),
@@ -457,7 +442,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
               Text(
                 "$day",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: isSelected
@@ -507,7 +491,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                   Text(
                     "${monthNames[_currentMonth.month]} ${_currentMonth.year}",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: darkNavy,
@@ -571,7 +554,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                 child: Text(
                   "${(_selectedHour + 1).toString().padLeft(2, '0')}",
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     color: const Color(0xFF2E65F3).withValues(alpha: 0.5),
                     fontWeight: FontWeight.w500,
@@ -582,7 +564,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
               Text(
                 _selectedHour.toString().padLeft(2, '0'),
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 42,
                   fontWeight: FontWeight.w700,
                   color: darkNavy,
@@ -595,7 +576,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                 child: Text(
                   "${(_selectedHour - 1 + 24) % 24}".padLeft(2, '0'),
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     color: const Color(0xFF2E65F3).withValues(alpha: 0.5),
                     fontWeight: FontWeight.w500,
@@ -610,7 +590,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
             child: Text(
               ":",
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 42,
                 fontWeight: FontWeight.w700,
                 color: darkNavy,
@@ -627,7 +606,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                 child: Text(
                   "${(_selectedMinute + 5) % 60}".padLeft(2, '0'),
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     color: const Color(0xFF2E65F3).withValues(alpha: 0.5),
                     fontWeight: FontWeight.w500,
@@ -638,7 +616,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
               Text(
                 _selectedMinute.toString().padLeft(2, '0'),
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 42,
                   fontWeight: FontWeight.w700,
                   color: darkNavy,
@@ -651,7 +628,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                 child: Text(
                   "${(_selectedMinute - 5 + 60) % 60}".padLeft(2, '0'),
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     color: const Color(0xFF2E65F3).withValues(alpha: 0.5),
                     fontWeight: FontWeight.w500,
@@ -690,7 +666,6 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
             child: Text(
               d,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: isSelected ? Colors.white : darkNavy,

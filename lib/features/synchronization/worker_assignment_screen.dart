@@ -155,7 +155,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                           "Affectation aux chantiers",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: darkNavy,
@@ -183,7 +182,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                       onChanged: (val) =>
                           setState(() => _searchQuery = val),
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: darkNavy,
@@ -191,7 +189,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                       decoration: InputDecoration(
                         hintText: "Rechercher un artisan...",
                         hintStyle: TextStyle(
-                          fontFamily: 'Outfit',
                           color: Colors.grey[400],
                           fontWeight: FontWeight.w400,
                         ),
@@ -243,7 +240,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                           child: Text(
                             filter,
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: isActive
@@ -265,7 +261,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                   child: Text(
                     "Sélectionner l'équipe",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: darkNavy,
@@ -286,7 +281,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                               child: Text(
                                 "Aucun artisan trouvé",
                                 style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 15,
                                   color: Colors.grey[400],
                                 ),
@@ -339,7 +333,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                       Text(
                         "Continuer (${_selectedWorkerIds.length} sélectionnés)",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: _selectedWorkerIds
@@ -415,7 +408,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                   Text(
                     "${worker.firstName} ${worker.lastName}",
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: darkNavy,
@@ -425,7 +417,6 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                   Text(
                     "${worker.profession} - ${worker.status}",
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF8B95A5),

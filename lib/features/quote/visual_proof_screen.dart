@@ -101,7 +101,6 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
               Text(
                 'Ajoutez une nouvelle photo en utilisant votre appareil ou en sélectionnant une image existante dans votre galerie.',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 16,
                   color: AppTheme.textLight,
                   height: 1.5,
@@ -126,7 +125,6 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
                 label: Text(
                   'Prendre une photo',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -155,7 +153,6 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
                 label: Text(
                   'Choisir depuis la galerie',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -174,7 +171,6 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
                   child: Text(
                     'Passer',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       color: AppTheme.darkNavy,
                       fontWeight: FontWeight.w600,

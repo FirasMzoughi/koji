@@ -113,13 +113,16 @@ class _ProfessionSelectionScreenState
 
               // Profession Grid
               Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.85,
-                  ),
+                child: Center(
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.85,
+                    ),
                   itemCount: _professions.length,
                   itemBuilder: (context, index) {
                     final profession = _professions[index];
@@ -168,7 +171,6 @@ class _ProfessionSelectionScreenState
                               profession['name'],
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                                 color: isSelected
@@ -182,7 +184,7 @@ class _ProfessionSelectionScreenState
                     );
                   },
                 ),
-              ),
+              )),
 
               const SizedBox(height: 24),
 
@@ -229,7 +231,6 @@ class _ProfessionSelectionScreenState
                           Text(
                             'Créer mon compte',
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),

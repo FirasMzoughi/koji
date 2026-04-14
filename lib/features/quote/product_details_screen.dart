@@ -115,7 +115,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             Text(
               widget.product.brand.toUpperCase(),
               style: const TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.textLight,
@@ -126,7 +125,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             Text(
               widget.product.name,
               style: const TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.darkNavy,
@@ -143,7 +141,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 Text(
                   '${widget.product.priceHT.toStringAsFixed(2)}€ HT / ${widget.product.unit}',
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1D74FF),
@@ -161,7 +158,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ? widget.product.packaging
                         : 'Unité',
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       color: Color(0xFF1D74FF),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -177,7 +173,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             const Text(
               'Quantité',
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.darkNavy,
@@ -204,7 +199,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   Text(
                     _quantity.toStringAsFixed(0),
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.darkNavy,
@@ -229,7 +223,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 const Text(
                   'Total estimé:',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 18,
                     color: AppTheme.textLight,
                   ),
@@ -237,7 +230,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 Text(
                   '${totalPrice.toStringAsFixed(2)}€ HT',
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1D74FF),
@@ -265,7 +257,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             child: const Text(
               'Valider et ajouter à la tâche',
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),

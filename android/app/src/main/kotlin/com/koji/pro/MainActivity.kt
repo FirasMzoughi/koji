@@ -1,4 +1,4 @@
-package com.firas.koji
+package com.koji.pro
 
 import io.flutter.embedding.android.FlutterActivity
 

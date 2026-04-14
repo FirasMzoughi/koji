@@ -65,7 +65,6 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                   const Text(
                     'Chantiers',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
@@ -141,7 +140,6 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                       child: Text(
                         _tabs[index],
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 14,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w500,
@@ -184,7 +182,7 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                     return const Center(
                       child: Text(
                         "Aucun chantier trouvé",
-                        style: TextStyle(fontFamily: 'Outfit', color: Colors.grey),
+                        style: TextStyle( color: Colors.grey),
                       ),
                     );
                   }
@@ -277,7 +275,6 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                     Text(
                       item['name'],
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF0F172A),
@@ -287,7 +284,6 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                     Text(
                       '${item['type']} • ${item['ref']}',
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 13,
                         color: Color(0xFF64748B),
                         fontWeight: FontWeight.w500,
@@ -305,7 +301,6 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                   child: Text(
                     item['date'],
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF3B82F6),
@@ -336,7 +331,6 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                 Text(
                   item['price'],
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F172A),
@@ -397,7 +391,6 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
           Text(
             status,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: textColor,

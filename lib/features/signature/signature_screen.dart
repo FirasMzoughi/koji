@@ -85,7 +85,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
       appBar: AppBar(
         title: const Text('Signer un devis',
             style: TextStyle(
-                fontFamily: 'Outfit',
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F2648))),
         centerTitle: true,
@@ -111,7 +110,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
             Text(
               "#$quoteNumber",
               style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1E3A8A)),
@@ -143,7 +141,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                             borderRadius: BorderRadius.circular(8)),
                         child: Text("Devis N° #$quoteNumber",
                             style: const TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 12,
                                 color: Color(0xFF1E3A8A),
                                 fontWeight: FontWeight.bold)),
@@ -156,7 +153,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                             borderRadius: BorderRadius.circular(8)),
                         child: const Text("En Cours",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 12,
                                 color: Color(0xFF1D74FF),
                                 fontWeight: FontWeight.bold)),
@@ -166,7 +162,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                   const SizedBox(height: 12),
                   Text(title,
                       style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF0F2648))),
@@ -182,13 +177,11 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                     children: [
                       const Text("Total TTC",
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               color: Color(0xFF94A3B8),
                               fontSize: 12)),
                       Text(
                           "${(totalTTC as num).toDouble().toStringAsFixed(2)} €",
                           style: const TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
                               color: Color(0xFF0F2648))),
@@ -205,7 +198,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
               children: [
                 const Text("Signez dans le cadre ci-dessous",
                     style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF0F2648))),
                 IconButton(
@@ -255,7 +247,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                       const Center(
                           child: Text("Zone de signature tactile",
                               style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   color: Color(0xFFCBD5E1),
                                   fontSize: 14))),
 
@@ -298,7 +289,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                     child: Text(
                       "En signant ce document, vous acceptez les conditions générales de vente et reconnaissez la valeur juridique de cette signature électronique, conformément à l'article 1367 du Code Civil. Ce document sera archivé de manière sécurisée",
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 11,
                           color: const Color(0xFF1D74FF)
                               .withAlpha((0.8 * 255).round()),
@@ -341,7 +331,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                       Text(
                         _isSaving ? "Enregistrement..." : "Confirmer et signer",
                         style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -365,7 +354,6 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
         Expanded(
             child: Text(text,
                 style: const TextStyle(
-                    fontFamily: 'Outfit',
                     color: Color(0xFF64748B),
                     fontSize: 13),
                 overflow: TextOverflow.ellipsis)),

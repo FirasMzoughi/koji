@@ -102,8 +102,8 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
         widget.quoteData['expenses'] as Map<String, dynamic>? ?? {};
 
     // Load fonts and colors
-    final fontRegular = await PdfGoogleFonts.outfitRegular();
-    final fontBold = await PdfGoogleFonts.outfitBold();
+    final fontRegular = await PdfGoogleFonts.interRegular();
+    final fontBold = await PdfGoogleFonts.interBold();
     final colorNavy = PdfColor.fromInt(0xFF0F172A); // AppTheme.darkNavy approx
     final colorCream = PdfColor.fromInt(0xFFFFF7ED); // Light background approx
     final colorAccent = PdfColor.fromInt(0xFFA18B73); // Gold/Brown accent
@@ -613,43 +613,77 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
     final company = widget.quoteData['company'] ?? {};
     final client = widget.quoteData['client'] ?? {};
     final expenses = widget.quoteData['expenses'] as Map<String, dynamic>? ?? {};
+    final tasks = widget.quoteData['tasks'] as Map<String, dynamic>? ?? {};
 
     // Load fonts and colors
-    final fontRegular = await PdfGoogleFonts.outfitRegular();
-    final fontBold = await PdfGoogleFonts.outfitBold();
+    final fontRegular = await PdfGoogleFonts.interRegular();
+    final fontBold = await PdfGoogleFonts.interBold();
     final colorNavy = PdfColor.fromInt(0xFF0F172A);
     final colorCream = PdfColor.fromInt(0xFFFFF7ED);
     final colorAccent = PdfColor.fromInt(0xFFA18B73);
 
-    // Extract Fournier data
-    final Map<String, List<Map<String, dynamic>>> fournituresByRoom = {};
+    final Map<String, List<Map<String, dynamic>>> fournituresByGroup = {};
     double totalMaterialCost = 0.0;
     int totalItemsCount = 0;
 
-    expenses.forEach((roomId, items) {
-      if (items is List) {
-        final List<Map<String, dynamic>> roomFournitures = [];
-        for (var item in items) {
-          final qty = ((item['quantity'] ?? 0) as num).toDouble();
-          final materialUnitPrice = ((item['materialCost'] ?? 0) as num).toDouble();
-          
-          if (materialUnitPrice > 0) {
-            final totalLine = qty * materialUnitPrice;
-            roomFournitures.add({
-              'title': item['title'] ?? 'Article',
+    if (tasks.isNotEmpty) {
+      tasks.forEach((roomId, roomTasksData) {
+        if (roomTasksData is! Map) return;
+        final roomTasks = roomTasksData as Map<String, dynamic>;
+        roomTasks.forEach((_, taskData) {
+          if (taskData is! Map) return;
+          final selectedFournitures =
+              taskData['selectedFournitures'] as Map<String, dynamic>? ?? {};
+          selectedFournitures.forEach((__, itemData) {
+            if (itemData is! Map) return;
+            final qty = (itemData['quantity'] as num?)?.toDouble() ?? 1;
+            final unitPrice = (itemData['unitPrice'] as num?)?.toDouble() ?? 0;
+            final fournisseur =
+                (itemData['fournisseur'] ?? 'Sans fournisseur').toString();
+            final title = (itemData['name'] ?? 'Article').toString();
+            final totalLine = qty * unitPrice;
+            fournituresByGroup.putIfAbsent(fournisseur, () => []);
+            fournituresByGroup[fournisseur]!.add({
+              'title': title,
               'quantity': qty,
-              'unitPrice': materialUnitPrice,
+              'unitPrice': unitPrice,
               'total': totalLine,
+              'room': roomId,
             });
             totalMaterialCost += totalLine;
             totalItemsCount++;
+          });
+        });
+      });
+    }
+
+    if (fournituresByGroup.isEmpty) {
+      expenses.forEach((roomId, items) {
+        if (items is List) {
+          final List<Map<String, dynamic>> roomFournitures = [];
+          for (var item in items) {
+            final qty = ((item['quantity'] ?? 0) as num).toDouble();
+            final materialUnitPrice =
+                ((item['materialCost'] ?? 0) as num).toDouble();
+
+            if (materialUnitPrice > 0) {
+              final totalLine = qty * materialUnitPrice;
+              roomFournitures.add({
+                'title': item['title'] ?? 'Article',
+                'quantity': qty,
+                'unitPrice': materialUnitPrice,
+                'total': totalLine,
+              });
+              totalMaterialCost += totalLine;
+              totalItemsCount++;
+            }
+          }
+          if (roomFournitures.isNotEmpty) {
+            fournituresByGroup[roomId] = roomFournitures;
           }
         }
-        if (roomFournitures.isNotEmpty) {
-          fournituresByRoom[roomId] = roomFournitures;
-        }
-      }
-    });
+      });
+    }
 
     pdf.addPage(pw.MultiPage(
         pageFormat: format,
@@ -674,18 +708,24 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                         width: 40,
                         height: 40,
                         decoration: pw.BoxDecoration(
-                          color: _logoPath != null ? PdfColors.white : colorNavy,
+                          color:
+                              (_logoBytes != null || _logoPath != null) ? PdfColors.white : colorNavy,
                           borderRadius: pw.BorderRadius.circular(8),
-                          image: _logoPath != null
+                          image: _logoBytes != null
                               ? pw.DecorationImage(
-                                  image: pw.MemoryImage(
-                                    File(_logoPath!).readAsBytesSync(),
-                                  ),
+                                  image: pw.MemoryImage(_logoBytes!),
                                   fit: pw.BoxFit.cover,
                                 )
-                              : null,
+                              : _logoPath != null
+                                  ? pw.DecorationImage(
+                                      image: pw.MemoryImage(
+                                        File(_logoPath!).readAsBytesSync(),
+                                      ),
+                                      fit: pw.BoxFit.cover,
+                                    )
+                                  : null,
                         ),
-                        child: _logoPath == null
+                        child: (_logoBytes == null && _logoPath == null)
                             ? pw.Center(
                                 child: pw.PdfLogo(color: PdfColors.white))
                             : null,
@@ -775,21 +815,21 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
             ),
             pw.SizedBox(height: 25),
 
-            pw.Text("Détail des matériaux par pièce",
+            pw.Text("Liste des fournitures par fournisseur",
                 style: pw.TextStyle(
                     fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
                     color: colorNavy)),
             pw.SizedBox(height: 10),
 
-            // Room Lists
-            if (fournituresByRoom.isEmpty)
+            // Group Lists
+            if (fournituresByGroup.isEmpty)
               pw.Text("Aucune fourniture nécessaire.",
                   style: const pw.TextStyle(
                       fontSize: 12, color: PdfColors.grey600))
             else
-              ...fournituresByRoom.entries.map((entry) {
-                final roomName = entry.key;
+              ...fournituresByGroup.entries.map((entry) {
+                final groupName = entry.key;
                 final items = entry.value;
 
                 return pw.Container(
@@ -800,7 +840,7 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                       border: pw.Border.all(color: PdfColors.grey200),
                     ),
                     child: pw.Column(children: [
-                      // Room Header
+                      // Group Header
                       pw.Container(
                           padding: const pw.EdgeInsets.symmetric(
                               horizontal: 15, vertical: 10),
@@ -813,7 +853,7 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                               mainAxisAlignment:
                                   pw.MainAxisAlignment.spaceBetween,
                               children: [
-                                pw.Text(roomName,
+                                pw.Text(groupName,
                                     style: pw.TextStyle(
                                         fontWeight: pw.FontWeight.bold,
                                         fontSize: 12,
@@ -1039,7 +1079,6 @@ Koji Rénovation
                     Text(
                       'Envoyer le Lien',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).brightness == Brightness.dark
@@ -1052,7 +1091,6 @@ Koji Rénovation
                       'Choisissez comment envoyer le lien de signature',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 14,
                         color: const Color(0xFF6B7280),
                       ),
@@ -1171,7 +1209,6 @@ Koji Rénovation
                       child: Text(
                         'Annuler',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF6B7280),
@@ -1244,7 +1281,6 @@ Koji Rénovation
                   Text(
                     title,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).brightness == Brightness.dark
@@ -1256,7 +1292,6 @@ Koji Rénovation
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 13,
                       color: const Color(0xFF6B7280),
                     ),
@@ -1308,7 +1343,6 @@ Koji Rénovation
             Text(
               'Etape 5/5',
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 12,
                 color: AppTheme.textLight,
                 fontWeight: FontWeight.w500,
@@ -1381,7 +1415,6 @@ Koji Rénovation
                       Text(
                         "Devis prêt !",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.darkNavy,
@@ -1392,7 +1425,6 @@ Koji Rénovation
                         textAlign: TextAlign.center,
                         text: TextSpan(
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 14,
                               color: const Color(0xFF6B7280)),
                           children: [
@@ -1415,13 +1447,11 @@ Koji Rénovation
                         children: [
                           Text("PROGRESSION",
                               style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFFA18B73))),
                           Text(_isGenerating ? "90%" : "100%",
                               style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF22C55E))),
@@ -1483,7 +1513,6 @@ Koji Rénovation
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                     textStyle: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         fontWeight: FontWeight.bold),
                   ),
@@ -1544,7 +1573,6 @@ Koji Rénovation
                     Text(
                       title,
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark
@@ -1556,7 +1584,6 @@ Koji Rénovation
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 10,
                         color: AppTheme.textLight,
                       ),
@@ -1587,7 +1614,6 @@ Koji Rénovation
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                   textStyle: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       fontWeight: FontWeight.bold),
                 ),
@@ -1606,7 +1632,6 @@ Koji Rénovation
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                   textStyle: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       fontWeight: FontWeight.bold),
                 ),

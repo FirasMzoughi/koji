@@ -37,7 +37,6 @@ class CustomRoomInput extends StatelessWidget {
               Text(
                 "Ajouter une pièce",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                   color: AppTheme.darkNavy,
@@ -54,7 +53,6 @@ class CustomRoomInput extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: 'Ex: Buanderie, Garage...',
                     hintStyle: TextStyle(
-                      fontFamily: 'Outfit',
                       color: const Color(0xFF9CA3AF),
                       fontSize: 14,
                     ),

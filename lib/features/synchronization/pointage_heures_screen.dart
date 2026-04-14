@@ -125,7 +125,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                           "Sélection d'un Contact",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: darkNavy,
@@ -150,7 +149,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                       onChanged: (val) =>
                           setState(() => _searchQuery = val),
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: darkNavy,
@@ -158,7 +156,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                       decoration: InputDecoration(
                         hintText: "Rechercher un contact...",
                         hintStyle: TextStyle(
-                          fontFamily: 'Outfit',
                           color:
                               const Color(0xFF8B95A5).withValues(alpha: 0.6),
                           fontWeight: FontWeight.w500,
@@ -210,7 +207,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                                   child: Text(
                                     "Aucun contact trouvé.",
                                     style: TextStyle(
-                                      fontFamily: 'Outfit',
                                       color: Colors.grey[400],
                                     ),
                                   ),
@@ -257,7 +253,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                       Text(
                         "Nouveau contact",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -278,7 +273,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
     return Text(
       title,
       style: const TextStyle(
-        fontFamily: 'Outfit',
         fontSize: 11,
         fontWeight: FontWeight.w800,
         color: Color(0xFF8B95A5),
@@ -323,7 +317,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                   : Text(
                       initials,
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: color,
@@ -338,7 +331,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                   Text(
                     "${worker.firstName} ${worker.lastName}",
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: darkNavy,
@@ -348,7 +340,6 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                   Text(
                     worker.profession,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF8B95A5),

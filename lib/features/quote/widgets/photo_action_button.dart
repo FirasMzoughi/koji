@@ -34,7 +34,6 @@ class PhotoActionButton extends StatelessWidget {
         label: Text(
           label,
           style:TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -56,7 +55,6 @@ class PhotoActionButton extends StatelessWidget {
         label: Text(
           label,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),

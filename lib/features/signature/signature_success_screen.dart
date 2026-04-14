@@ -11,7 +11,6 @@ class SignatureSuccessScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Détails de Devis',
             style: TextStyle(
-                fontFamily: 'Outfit',
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F2648))),
         centerTitle: true,
@@ -78,7 +77,6 @@ class SignatureSuccessScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   const Text("Devis prêt !",
                       style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF0F2648))),
@@ -87,7 +85,6 @@ class SignatureSuccessScreen extends StatelessWidget {
                     "Le devis #D-2405 a été signé avec succès.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontFamily: 'Outfit',
                         color: Color(0xFF64748B),
                         fontSize: 14),
                   ),
@@ -99,13 +96,11 @@ class SignatureSuccessScreen extends StatelessWidget {
                     children: [
                       Text("PROGRESSION",
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontWeight: FontWeight.bold,
                               fontSize: 10,
                               color: Color(0xFF94A3B8))),
                       Text("100%",
                           style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontWeight: FontWeight.bold,
                               fontSize: 10,
                               color: Color(0xFF10B981))),
@@ -165,12 +160,10 @@ class SignatureSuccessScreen extends StatelessWidget {
                       children: [
                         Text("Devis_Final_D-2405.pdf",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF0F2648))),
                         Text("1.2 MB • PDF Document",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 11,
                                 color: Color(0xFF94A3B8))),
                       ],
@@ -202,7 +195,6 @@ class SignatureSuccessScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text("Partager le PDF",
                     style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF64748B)
                             .withAlpha((0.8 * 255).round()))),
@@ -235,8 +227,7 @@ class SignatureSuccessScreen extends StatelessWidget {
             Icon(icon, size: 20),
             const SizedBox(width: 8),
             Text(label,
-                style: const TextStyle(
-                    fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
+                style: const TextStyle( fontWeight: FontWeight.bold)),
           ],
         ),
       ),

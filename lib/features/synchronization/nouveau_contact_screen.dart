@@ -135,7 +135,6 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
                           "Nouveau Contact Rapide",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: darkNavy,
@@ -224,7 +223,6 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
                                 child: Text(
                                   "Ce contact sera ajouté à votre carnet d'adresses Kôji et pourra être invité sur vos chantiers immédiatement.",
                                   style: TextStyle(
-                                    fontFamily: 'Outfit',
                                     fontSize: 13,
                                     color: const Color(0xFF2E65F3).withValues(alpha: 0.8),
                                     height: 1.4,
@@ -279,7 +277,6 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
                             Text(
                               "Ajouter le contact",
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -301,7 +298,6 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
       text: TextSpan(
         text: text,
         style: const TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: Color(0xFF0A1227),
@@ -334,7 +330,6 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
         controller: controller,
         keyboardType: keyboardType,
         style: const TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 15,
           fontWeight: FontWeight.w500,
           color: Color(0xFF0A1227),
@@ -342,7 +337,6 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            fontFamily: 'Outfit',
             color: const Color(0xFF8B95A5).withValues(alpha: 0.6),
             fontWeight: FontWeight.w400,
           ),

@@ -51,7 +51,6 @@ class ProjectCard extends StatelessWidget {
                 Text(
                   clientName,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : AppTheme.darkNavy,
@@ -67,7 +66,6 @@ class ProjectCard extends StatelessWidget {
                   child: Text(
                     status,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: statusTextColor,
@@ -80,7 +78,6 @@ class ProjectCard extends StatelessWidget {
             Text(
               projectType,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 13,
                 color: isDark ? Colors.grey[400] : AppTheme.textLight,
               ),
@@ -92,7 +89,6 @@ class ProjectCard extends StatelessWidget {
                 Text(
                   'Progress',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.grey[400] : AppTheme.textLight,
@@ -101,7 +97,6 @@ class ProjectCard extends StatelessWidget {
                 Text(
                   '${(progress * 100).toInt()}%',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : AppTheme.darkNavy,

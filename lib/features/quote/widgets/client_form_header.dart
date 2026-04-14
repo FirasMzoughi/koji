@@ -41,7 +41,6 @@ class ClientFormHeader extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1E3A8A),
@@ -55,7 +54,6 @@ class ClientFormHeader extends StatelessWidget {
         Text(
           description,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 14,
             color: const Color(0xFF6B7280),
           ),

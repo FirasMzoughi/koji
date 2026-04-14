@@ -78,7 +78,6 @@ class WorkerSuccessScreen extends StatelessWidget {
                     "Profil Créé avec Succès!",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                       color: darkNavy,
@@ -91,7 +90,6 @@ class WorkerSuccessScreen extends StatelessWidget {
                     "Le nouveau collaborateur a été ajouté\nà votre base de données",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: Colors.grey[400],
                       height: 1.5,
@@ -137,7 +135,6 @@ class WorkerSuccessScreen extends StatelessWidget {
                                 Text(
                                   "${worker!.firstName} ${worker!.lastName}",
                                   style: const TextStyle(
-                                    fontFamily: 'Outfit',
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
                                     color: darkNavy,
@@ -158,7 +155,6 @@ class WorkerSuccessScreen extends StatelessWidget {
                                     Text(
                                       "${worker!.profession} - ${worker!.status}",
                                       style: TextStyle(
-                                        fontFamily: 'Outfit',
                                         fontSize: 12,
                                         color: Colors.grey[400],
                                       ),
@@ -196,7 +192,6 @@ class WorkerSuccessScreen extends StatelessWidget {
                           Text(
                             "Affecter à un chantier",
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -230,7 +225,6 @@ class WorkerSuccessScreen extends StatelessWidget {
                       child: const Text(
                         "Voir la liste des ouvriers",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: darkNavy,

@@ -22,9 +22,9 @@ class AppTheme {
   static const Color surfaceDark =
       Color(0xFF1E1E1E); // Slightly lighter for cards in dark mode
 
-  // Google Fonts - Outfit
-  static TextStyle outfitTextStyle({FontWeight? fontWeight}) {
-    return GoogleFonts.outfit(
+  // Google Fonts - Inter
+  static TextStyle defaultTextStyle({FontWeight? fontWeight}) {
+    return GoogleFonts.inter(
       fontWeight: fontWeight ?? FontWeight.normal,
     );
   }
@@ -32,7 +32,7 @@ class AppTheme {
   // Text Styles - Responsive
   static TextStyle headingStyle(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GoogleFonts.outfit(
+    return GoogleFonts.inter(
       fontSize: context.responsive.fontSize(28),
       fontWeight: FontWeight.bold,
       color: isDark ? Colors.white : darkNavy,
@@ -42,14 +42,14 @@ class AppTheme {
 
   static TextStyle bodyStyle(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GoogleFonts.outfit(
+    return GoogleFonts.inter(
       fontSize: context.responsive.fontSize(16),
       color: isDark ? Colors.grey[400] : textLight,
       height: 1.5,
     );
   }
 
-  static TextStyle buttonTextStyle(BuildContext context) => GoogleFonts.outfit(
+  static TextStyle buttonTextStyle(BuildContext context) => GoogleFonts.inter(
         fontSize: context.responsive.fontSize(16),
         fontWeight: FontWeight.w600,
         color: Colors.white,
@@ -58,7 +58,7 @@ class AppTheme {
   // Light Theme
   static ThemeData lightThemeData(BuildContext context) {
     final responsive = context.responsive;
-    final textTheme = GoogleFonts.outfitTextTheme(Theme.of(context).textTheme);
+    final textTheme = GoogleFonts.interTextTheme(Theme.of(context).textTheme);
 
     return ThemeData(
       useMaterial3: true,
@@ -93,7 +93,7 @@ class AppTheme {
   static ThemeData darkThemeData(BuildContext context) {
     final responsive = context.responsive;
     final textTheme =
-        GoogleFonts.outfitTextTheme(Theme.of(context).textTheme).apply(
+        GoogleFonts.interTextTheme(Theme.of(context).textTheme).apply(
       bodyColor: Colors.white,
       displayColor: Colors.white,
     );

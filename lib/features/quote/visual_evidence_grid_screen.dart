@@ -164,7 +164,6 @@ class _VisualEvidenceGridScreenState
                         Text(
                           'Ajouter des notes',
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.darkNavy,
@@ -179,7 +178,6 @@ class _VisualEvidenceGridScreenState
                       decoration: InputDecoration(
                         hintText: 'Rajouter votre texte...',
                         hintStyle: TextStyle(
-                          fontFamily: 'Outfit',
                           color: const Color(0xFF9CA3AF),
                           fontSize: 14,
                         ),
@@ -223,7 +221,6 @@ class _VisualEvidenceGridScreenState
                     selectedColor: AppTheme.darkNavy,
                     checkmarkColor: Colors.white,
                     labelStyle: TextStyle(
-                      fontFamily: 'Outfit',
                       color:
                           isSelected ? Colors.white : const Color(0xFF6B7280),
                       fontWeight: FontWeight.w500,
@@ -275,7 +272,6 @@ class _VisualEvidenceGridScreenState
                     Text(
                       'Confirmer et Attacher',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
@@ -323,7 +319,6 @@ class _VisualEvidenceGridScreenState
               Text(
                 'Ajouter Photo',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   color: const Color(0xFF9CA3AF),
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
@@ -376,8 +371,7 @@ class _VisualEvidenceGridScreenState
                 const SizedBox(width: 4),
                 Text(
                   "Agrandir",
-                  style: TextStyle(
-                      fontFamily: 'Outfit', color: Colors.white, fontSize: 10),
+                  style: TextStyle( color: Colors.white, fontSize: 10),
                 )
               ],
             ),

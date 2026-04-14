@@ -101,7 +101,6 @@ class WorkerDetailScreen extends StatelessWidget {
                   Text(
                     "${worker.firstName} ${worker.lastName}",
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -111,7 +110,6 @@ class WorkerDetailScreen extends StatelessWidget {
                   Text(
                     "${worker.profession} - ${worker.status}",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: Colors.white.withAlpha((0.8 * 255).round()),
                     ),
@@ -217,7 +215,6 @@ class WorkerDetailScreen extends StatelessWidget {
                         const Text(
                           "Rénovation Appartement T3",
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF0F3995),
@@ -227,7 +224,6 @@ class WorkerDetailScreen extends StatelessWidget {
                         Text(
                           "Peinture & Finitions",
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.blue[300],
@@ -240,7 +236,6 @@ class WorkerDetailScreen extends StatelessWidget {
                             const Text(
                               "65%",
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF0F3995),
@@ -249,7 +244,6 @@ class WorkerDetailScreen extends StatelessWidget {
                             Text(
                               "8 jours restants",
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 12,
                                 color: Colors.blue[300],
                               ),
@@ -399,7 +393,6 @@ class WorkerDetailScreen extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Color(0xFF0F3995),
@@ -409,7 +402,6 @@ class WorkerDetailScreen extends StatelessWidget {
           Text(
             trailing,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 12,
               color: Colors.grey[400],
             ),
@@ -451,7 +443,6 @@ class WorkerDetailScreen extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Color(0xFF0F3995),
@@ -460,7 +451,6 @@ class WorkerDetailScreen extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 12,
               color: Colors.grey[400],
             ),
@@ -493,7 +483,6 @@ class WorkerDetailScreen extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: Colors.blue[300],
@@ -523,7 +512,6 @@ class WorkerDetailScreen extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 12,
                   color: Colors.grey[400],
                 ),
@@ -531,7 +519,6 @@ class WorkerDetailScreen extends StatelessWidget {
               Text(
                 value,
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F3995),

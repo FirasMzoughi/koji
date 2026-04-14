@@ -40,7 +40,6 @@ class QuoteAppBar extends StatelessWidget implements PreferredSizeWidget {
           Text(
             title,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1E3A8A),
@@ -50,7 +49,6 @@ class QuoteAppBar extends StatelessWidget implements PreferredSizeWidget {
             Text(
               stepText!,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 12,
                 color: AppTheme.textLight,
               ),

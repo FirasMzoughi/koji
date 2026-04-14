@@ -64,7 +64,6 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                       Text(
                         'Ajouter une tâche',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -93,7 +92,6 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                             child: Text(
                               'Aucune tâche pour le moment',
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 16,
                                 color: Color(0xFF64748B),
                               ),
@@ -137,7 +135,6 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                                 Text(
                                   'Archives (${archivedTasks.length})',
                                   style: const TextStyle(
-                                    fontFamily: 'Outfit',
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF64748B),
@@ -202,7 +199,6 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
           const Text(
             'À faire',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: _kDark,
@@ -258,7 +254,6 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                   Text(
                     task['label'] as String,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: isDone ? const Color(0xFF94A3B8) : _kDark,
@@ -284,8 +279,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Nouvelle tâche',
-          style: TextStyle(
-              fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: _kDark),
+          style: TextStyle( fontWeight: FontWeight.bold, color: _kDark),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -295,9 +289,9 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
               autofocus: true,
               decoration: const InputDecoration(
                 hintText: 'Titre de la tâche',
-                hintStyle: TextStyle(fontFamily: 'Outfit'),
+                hintStyle: TextStyle(),
               ),
-              style: const TextStyle(fontFamily: 'Outfit'),
+              style: const TextStyle(),
             ),
           ],
         ),
@@ -306,7 +300,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler',
                 style:
-                    TextStyle(fontFamily: 'Outfit', color: Color(0xFF64748B))),
+                    TextStyle( color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -335,7 +329,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
               elevation: 0,
             ),
             child: const Text('Ajouter',
-                style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+                style: TextStyle( color: Colors.white)),
           ),
         ],
       ),

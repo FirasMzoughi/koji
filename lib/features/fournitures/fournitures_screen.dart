@@ -8,7 +8,8 @@ import 'package:koji/features/fournitures/fournisseur_detail_screen.dart';
 import 'package:koji/features/fournitures/add_fourniture_screen.dart';
 
 class FournituresScreen extends ConsumerStatefulWidget {
-  const FournituresScreen({super.key});
+  final bool selectionMode;
+  const FournituresScreen({super.key, this.selectionMode = false});
 
   @override
   ConsumerState<FournituresScreen> createState() => _FournituresScreenState();
@@ -21,7 +22,11 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: 0,
+    );
   }
 
   @override
@@ -99,12 +104,10 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
                 labelColor: Colors.white,
                 unselectedLabelColor: AppTheme.textLight,
                 labelStyle: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
                 unselectedLabelStyle: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
                 ),
@@ -124,9 +127,9 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _RecentsTab(),
-                  _DiversTab(),
-                  _FournisseursTab(),
+                  _RecentsTab(selectionMode: widget.selectionMode),
+                  _DiversTab(selectionMode: widget.selectionMode),
+                  _FournisseursTab(selectionMode: widget.selectionMode),
                 ],
               ),
             ),
@@ -199,7 +202,7 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Nouveau Fournisseur',
-            style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
+            style: TextStyle( fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -247,6 +250,9 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
 // ─── RÉCENTS TAB ────────────────────────────
 
 class _RecentsTab extends ConsumerWidget {
+  final bool selectionMode;
+  const _RecentsTab({this.selectionMode = false});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncData = ref.watch(recentFournituresProvider);
@@ -264,7 +270,8 @@ class _RecentsTab extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: items.length,
-          itemBuilder: (context, index) => _FournitureCard(item: items[index]),
+          itemBuilder: (context, index) =>
+              _FournitureCard(item: items[index], selectionMode: selectionMode),
         );
       },
     );
@@ -274,6 +281,9 @@ class _RecentsTab extends ConsumerWidget {
 // ─── DIVERS TAB ─────────────────────────────
 
 class _DiversTab extends ConsumerWidget {
+  final bool selectionMode;
+  const _DiversTab({this.selectionMode = false});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncData = ref.watch(diversFournituresProvider);
@@ -291,7 +301,8 @@ class _DiversTab extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: items.length,
-          itemBuilder: (context, index) => _FournitureCard(item: items[index]),
+          itemBuilder: (context, index) =>
+              _FournitureCard(item: items[index], selectionMode: selectionMode),
         );
       },
     );
@@ -301,6 +312,9 @@ class _DiversTab extends ConsumerWidget {
 // ─── FOURNISSEURS TAB ───────────────────────
 
 class _FournisseursTab extends ConsumerWidget {
+  final bool selectionMode;
+  const _FournisseursTab({required this.selectionMode});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncData = ref.watch(fournisseursProvider);
@@ -320,7 +334,10 @@ class _FournisseursTab extends ConsumerWidget {
           itemCount: fournisseurs.length,
           itemBuilder: (context, index) {
             final f = fournisseurs[index];
-            return _FournisseurCard(fournisseur: f);
+            return _FournisseurCard(
+              fournisseur: f,
+              selectionMode: selectionMode,
+            );
           },
         );
       },
@@ -332,16 +349,31 @@ class _FournisseursTab extends ConsumerWidget {
 
 class _FournitureCard extends StatelessWidget {
   final Fourniture item;
-  const _FournitureCard({required this.item});
+  final bool selectionMode;
+  const _FournitureCard({required this.item, this.selectionMode = false});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: selectionMode
+          ? () => Navigator.pop(context, {
+                'id': item.id,
+                'name': item.name,
+                'fournisseur': item.fournisseurName ?? '',
+                'unitPrice': item.prixVenteHT,
+                'quantity': 1.0,
+                'conditionnement': item.conditionnement ?? '',
+              })
+          : null,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: selectionMode
+            ? Border.all(color: const Color(0xFF1D74FF).withOpacity(0.3))
+            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -383,7 +415,6 @@ class _FournitureCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.darkNavy,
@@ -402,7 +433,6 @@ class _FournitureCard extends StatelessWidget {
                       child: Text(
                         item.category,
                         style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF3B82F6),
@@ -414,7 +444,6 @@ class _FournitureCard extends StatelessWidget {
                       Text(
                         item.conditionnement!,
                         style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 11,
                           color: Color(0xFF94A3B8),
                         ),
@@ -427,7 +456,6 @@ class _FournitureCard extends StatelessWidget {
                   Text(
                     item.fournisseurName!,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 11,
                       color: Color(0xFF94A3B8),
                     ),
@@ -444,7 +472,6 @@ class _FournitureCard extends StatelessWidget {
               Text(
                 '${item.prixVenteHT.toStringAsFixed(2)} €',
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.darkNavy,
@@ -453,7 +480,6 @@ class _FournitureCard extends StatelessWidget {
               const Text(
                 'H.T',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 10,
                   color: Color(0xFF94A3B8),
                 ),
@@ -462,13 +488,15 @@ class _FournitureCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }
 
 class _FournisseurCard extends StatelessWidget {
   final Fournisseur fournisseur;
-  const _FournisseurCard({required this.fournisseur});
+  final bool selectionMode;
+  const _FournisseurCard({required this.fournisseur, required this.selectionMode});
 
   @override
   Widget build(BuildContext context) {
@@ -478,7 +506,10 @@ class _FournisseurCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (_) =>
-                FournisseurDetailScreen(fournisseur: fournisseur),
+                FournisseurDetailScreen(
+                  fournisseur: fournisseur,
+                  selectionMode: selectionMode,
+                ),
           ),
         );
       },
@@ -547,7 +578,6 @@ class _FournisseurCard extends StatelessWidget {
                   Text(
                     fournisseur.name,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.darkNavy,
@@ -557,7 +587,6 @@ class _FournisseurCard extends StatelessWidget {
                   const Text(
                     'Voir les fournitures →',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 12,
                       color: Color(0xFF3B82F6),
                       fontWeight: FontWeight.w500,
@@ -618,14 +647,12 @@ class _OptionTile extends StatelessWidget {
                 children: [
                   Text(label,
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.darkNavy,
                       )),
                   Text(subtitle,
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 12,
                         color: Color(0xFF94A3B8),
                       )),
@@ -672,7 +699,6 @@ class _EmptyState extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.darkNavy,
@@ -683,7 +709,6 @@ class _EmptyState extends StatelessWidget {
               subtitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 14,
                 color: Color(0xFF94A3B8),
               ),

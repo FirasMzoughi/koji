@@ -107,7 +107,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                     child: Text(
                       "Sélectionner des\nparticipants",
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: darkNavy,
@@ -134,7 +133,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                       child: const Text(
                         "Valider",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -159,7 +157,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                 child: TextField(
                   onChanged: (val) => setState(() => _searchQuery = val),
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: darkNavy,
@@ -167,7 +164,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                   decoration: InputDecoration(
                     hintText: "Rechercher un participant...",
                     hintStyle: TextStyle(
-                      fontFamily: 'Outfit',
                       color: Colors.grey[400],
                       fontWeight: FontWeight.w400,
                       fontSize: 15,
@@ -220,7 +216,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                               Text(
                                 "Aucun participant trouvé",
                                 style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 16,
                                   color: Colors.grey[400],
                                 ),
@@ -276,7 +271,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                   label: const Text(
                     "Ajouter",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -315,7 +309,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : const Color(0xFF8B95A5),
@@ -333,7 +326,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       child: Text(
         title,
         style: const TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: Color(0xFF8B95A5),
@@ -377,7 +369,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                               child: Text(
                                 _getInitials(worker),
                                 style: const TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF5A6478),
@@ -390,7 +381,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                           child: Text(
                             _getInitials(worker),
                             style: const TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF5A6478),
@@ -426,7 +416,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                   Text(
                     "${worker.firstName} ${worker.lastName}",
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: darkNavy,
@@ -436,7 +425,6 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                   Text(
                     worker.profession,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
                       color: Color(0xFF8B95A5),

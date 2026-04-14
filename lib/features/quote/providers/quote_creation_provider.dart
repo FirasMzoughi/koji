@@ -46,6 +46,7 @@ class QuoteCreationState {
   final Map<String, dynamic> roomTasks;
   final String? userProfession;
   final Map<String, RealityFactors> roomContexts;
+  final String? chantierId;
 
   QuoteCreationState({
     ClientInfo? clientInfo,
@@ -55,6 +56,7 @@ class QuoteCreationState {
     this.roomTasks = const {},
     this.userProfession,
     this.roomContexts = const {},
+    this.chantierId,
   }) : clientInfo = clientInfo ?? const ClientInfo();
 
   QuoteCreationState copyWith({
@@ -65,6 +67,7 @@ class QuoteCreationState {
     Map<String, dynamic>? roomTasks,
     String? userProfession,
     Map<String, RealityFactors>? roomContexts,
+    String? chantierId,
   }) {
     return QuoteCreationState(
       clientInfo: clientInfo ?? this.clientInfo,
@@ -74,6 +77,7 @@ class QuoteCreationState {
       roomTasks: roomTasks ?? this.roomTasks,
       userProfession: userProfession ?? this.userProfession,
       roomContexts: roomContexts ?? this.roomContexts,
+      chantierId: chantierId ?? this.chantierId,
     );
   }
 
@@ -85,6 +89,7 @@ class QuoteCreationState {
       'expenses': roomEstimations,
       'tasks': roomTasks,
       'profession': userProfession,
+      if (chantierId != null) 'chantier_id': chantierId,
     };
   }
 }
@@ -123,6 +128,10 @@ class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
 
   void setProfession(String profession) {
     state = state.copyWith(userProfession: profession);
+  }
+
+  void setChantierId(String chantierId) {
+    state = state.copyWith(chantierId: chantierId);
   }
 
   void updateRoomContext(String roomId, RealityFactors context) {

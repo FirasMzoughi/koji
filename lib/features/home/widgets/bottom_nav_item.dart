@@ -36,7 +36,6 @@ class BottomNavItem extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 10,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
             color: isActive ? effectiveActiveColor : inactiveColor,

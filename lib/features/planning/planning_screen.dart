@@ -150,7 +150,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
               "Planning individuelle",
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: darkNavy,
@@ -196,7 +195,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   child: Text(
                     "Jour",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: _isDayView ? Colors.white : darkNavy,
@@ -218,7 +216,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   child: Text(
                     "Mois",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: !_isDayView ? Colors.white : darkNavy,
@@ -259,7 +256,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
               Text(
                 "Semaine du ${weekStart.day} $monthName",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: darkNavy,
@@ -270,7 +266,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   Text(
                     "$monthName ${_selectedDate.year}",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: const Color(0xFF8B95A5),
                       fontWeight: FontWeight.w500,
@@ -301,7 +296,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                     Text(
                       weekDays[index],
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isSelected
@@ -321,7 +315,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                       child: Text(
                         "${date.day}",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: isSelected ? Colors.white : darkNavy,
@@ -343,7 +336,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
               Text(
                 "Missions du jour",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: darkNavy,
@@ -352,7 +344,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
               Text(
                 "${_tasks.length} Chantiers",
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 14,
                   color: Color(0xFF8B95A5),
                   fontWeight: FontWeight.w500,
@@ -431,7 +422,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 Text(
                   startTime,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: color,
@@ -440,7 +430,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 Text(
                   duration,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 13,
                     color: Color(0xFF8B95A5),
                   ),
@@ -479,7 +468,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   Text(
                     task.taskName,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF0A1227),
@@ -494,7 +482,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                       Text(
                         task.roomName,
                         style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 13,
                           color: Color(0xFF8B95A5),
                         ),
@@ -534,7 +521,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 Text(
                   time,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: color,
@@ -543,7 +529,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 Text(
                   duration,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 13,
                     color: Color(0xFF8B95A5),
                   ),
@@ -582,7 +567,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF0A1227),
@@ -597,7 +581,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                       Text(
                         client,
                         style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 13,
                           color: Color(0xFF8B95A5),
                         ),
@@ -641,7 +624,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                             Text(
                               tag,
                               style: const TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 12,
                                 color: Color(0xFF8B95A5),
                               ),
@@ -660,7 +642,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                           child: const Text(
                             "Pointer",
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
@@ -671,7 +652,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         Text(
                           status,
                           style: const TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 12,
                             color: Color(0xFF8B95A5),
                             fontWeight: FontWeight.w500,
@@ -712,7 +692,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   Text(
                     "$monthName ${_currentMonth.year}",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: darkNavy,
@@ -776,7 +755,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
           Text(
             "Aperçu du mois",
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: darkNavy,
@@ -814,7 +792,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
           Text(
             "Chantiers principaux",
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: darkNavy,
@@ -869,7 +846,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
         child: Text(
           d,
           style: const TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: Color(0xFF8B95A5),
@@ -887,7 +863,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
         child: Text(
           "${prevMonthEnd - i + 1}",
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 14,
             color: const Color(0xFF8B95A5).withValues(alpha: 0.4),
           ),
@@ -923,7 +898,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
               Text(
                 "$day",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: isToday ? Colors.white : darkNavy,
@@ -953,7 +927,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
           child: Text(
             "$i",
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 14,
               color: const Color(0xFF8B95A5).withValues(alpha: 0.4),
             ),
@@ -1013,7 +986,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 12,
               color: Color(0xFF8B95A5),
             ),
@@ -1022,7 +994,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
           Text(
             value,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: darkNavy,
@@ -1067,7 +1038,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: darkNavy,
@@ -1077,7 +1047,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 13,
                     color: Color(0xFF8B95A5),
                   ),

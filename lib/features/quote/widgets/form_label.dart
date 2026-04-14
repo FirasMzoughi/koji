@@ -17,7 +17,6 @@ class FormLabel extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: const Color(0xFF1F2937),

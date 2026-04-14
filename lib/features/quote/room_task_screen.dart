@@ -9,11 +9,10 @@ import 'package:koji/core/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koji/features/quote/profession_tasks_data.dart'; // Still using for categories structure
 import 'package:koji/features/quote/models/quote_models.dart';
-import 'package:koji/features/quote/product_details_screen.dart';
-import 'package:koji/features/quote/product_selection_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
 import 'package:koji/features/quote/repository/product_repository.dart';
+import 'package:koji/features/fournitures/fournitures_screen.dart';
 
 import 'package:koji/features/auth/repository/auth_repository.dart';
 import 'package:koji/features/quote/providers/quote_creation_provider.dart';
@@ -24,8 +23,6 @@ import 'package:koji/features/quote/repository/task_repository.dart';
 import 'package:koji/features/quote/model/custom_task.dart';
 import 'package:koji/features/quote/create_task_screen.dart';
 import 'package:koji/features/pricing/models/pricing_models.dart';
-import 'package:koji/features/quote/domain/pricing_engine.dart';
-import 'package:koji/features/quote/data/pricing_data.dart';
 import 'package:koji/features/pricing/repository/pricing_repository.dart';
 
 class RoomTaskScreen extends ConsumerStatefulWidget {
@@ -181,11 +178,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                if (custom.description != null) newState.note = custom.description!;
                // Add images (URLs)
                newState.photoPaths.addAll(custom.imageUrls);
-               // Add products
-               // Need to copy map
-               if (custom.defaultProducts.isNotEmpty) {
-                  newState.selectedProducts.addAll(custom.defaultProducts.map((k,v) => MapEntry(k, (v as num).toDouble())));
-               }
              }
            } catch(e) {/* ignore */}
 
@@ -219,7 +211,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
               title: Text(
                 'État des supports - $label',
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -350,14 +341,10 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
 
   double _calculateTotal(RoomTaskState state) {
     double total = 0;
-    
-    state.selectedProducts.forEach((prodId, qty) {
-       // Lookup product
-       final allProds = getAllProducts();
-       final prod = allProds.firstWhere((p) => p.id == prodId, orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: ''));
-       if(prod.id != 'err') {
-         total += prod.priceHT * qty;
-       }
+    state.selectedFournitures.forEach((_, data) {
+      final qty = (data['quantity'] as num?)?.toDouble() ?? 1;
+      final unitPrice = (data['unitPrice'] as num?)?.toDouble() ?? 0;
+      total += unitPrice * qty;
     });
     return total;
   }
@@ -461,26 +448,14 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     }
 
     final currentRoom = _roomIds[_selectedRoomTab];
-    
-    // Merge Custom Tasks AND Standard Pricing Tasks
-    var tasksForTrade = List<TaskCategory>.from(getTasksForProfession(_selectedTrade));
-    
-    // Insert Standard Tasks if Peintre (as per Prompt requirement to use Pricing Engine tasks)
-    // We wrap SmartTasks into TaskItems for UI compatibility
-    if (_selectedTrade == 'Peintre') {
-       final smartTasksAsync = ref.watch(smartTasksProvider('Peintre'));
-       final smartTasks = smartTasksAsync.valueOrNull ?? [];
-       if (smartTasks.isNotEmpty) {
-         final taskItems = smartTasks.map((t) => TaskItem(id: t.id, label: t.label)).toList();
-         tasksForTrade.add(TaskCategory(title: "TÂCHES STANDARDS (CALCULÉES)", tasks: taskItems));
-       }
-    }
-    
-    // Insert Custom Tasks from Supabase
-    if (_customTasks.isNotEmpty) {
-      final customTaskItems = _customTasks.map((t) => TaskItem(id: t.id, label: t.title)).toList();
-      tasksForTrade.add(TaskCategory(title: "TÂCHES PERSONNALISÉES", tasks: customTaskItems));
-    }
+
+    // Only use tasks from the backend (Supabase)
+    final backendTaskItems = _customTasks
+        .map((t) => TaskItem(id: t.id, label: t.title))
+        .toList();
+    final tasksForTrade = backendTaskItems.isNotEmpty
+        ? [TaskCategory(title: _selectedTrade.toUpperCase(), tasks: backendTaskItems)]
+        : <TaskCategory>[];
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -557,7 +532,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                              Text(
                                _getRoomLabel(id), 
                                style: TextStyle(
-                                 fontFamily: 'Outfit',
                                  color: isSelected ? Colors.white : const Color(0xFF0F2648), 
                                  fontWeight: FontWeight.bold,
                                  fontSize: 14,
@@ -597,7 +571,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                       selectedColor: const Color(0xFFE0E7FF),
                       backgroundColor: Colors.white,
                       labelStyle: TextStyle(
-                        fontFamily: 'Outfit',
                         color: isSelected ? const Color(0xFF1D74FF) : Colors.grey[700],
                         fontWeight: FontWeight.bold,
                       ),
@@ -686,8 +659,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                           SizedBox(width: 8),
                           Text(
                             'Créer une nouvelle tâche',
-                            style: TextStyle(
-                              fontFamily: 'Outfit', 
+                            style: TextStyle( 
                               color: Color(0xFF1D74FF),
                               fontWeight: FontWeight.bold,
                             ),
@@ -699,7 +671,29 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  // Grouped Tasks
+                  // Tasks from backend
+                  if (tasksForTrade.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Aucune tâche pour $_selectedTrade',
+                              style: TextStyle(fontSize: 15, color: Colors.grey[500]),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Créez une tâche via le bouton ci-dessus.',
+                              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
                   ...tasksForTrade.map((category) => _buildCategorySection(category, currentRoom)),
                   
                   const SizedBox(height: 100),
@@ -754,14 +748,10 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
        for (var taskState in tasks) {
           // Calculate Product Cost
           double totalProductCost = 0;
-          taskState.selectedProducts.forEach((prodId, qty) {
-             final product = getAllProducts().firstWhere(
-               (p) => p.id == prodId, 
-               orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: '')
-             );
-             if (product.id != 'err') {
-               totalProductCost += product.priceHT * qty;
-             }
+          taskState.selectedFournitures.forEach((_, data) {
+             final qty = (data['quantity'] as num?)?.toDouble() ?? 1;
+             final unitPrice = (data['unitPrice'] as num?)?.toDouble() ?? 0;
+             totalProductCost += unitPrice * qty;
           });
 
           // Determine Quantity (e.g. Surface)
@@ -770,76 +760,46 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
              quantity = (taskState.inputs['surface'] as num).toDouble();
           }
 
-          // Determine Labor Cost & Material Cost via Pricing Engine
+          // Determine Labor Cost & Material Cost
           double laborUnitCost = 0.0;
           double materialUnitCost = 0.0;
-          
-          // Try to find SmartTask from cached provider data
-          final smartTasksAsync = ref.read(smartTasksProvider(_selectedTrade));
-          final smartTasks = smartTasksAsync.valueOrNull ?? [];
-          final smartTask = smartTasks.cast<SmartTask?>().firstWhere(
-            (t) => t?.id == taskState.taskId, 
-            orElse: () => null
-          );
-          
-          // Get pricing from USER's business profile (not backend admin)
+
+          // Get hourly rate from user's business profile
           final user = ref.read(authRepositoryProvider).currentUser;
-          double dailyRate = 350.0; // Default fallback
-          double hoursPerDay = 7.0; //Default fallback
-          
+          double dailyRate = 350.0;
+          double hoursPerDay = 7.0;
+
           if (user != null) {
             final userData = await ref.read(userRepositoryProvider).getUser(user.id);
             final businessInfo = userData?['business_info'] as Map<String, dynamic>?;
-            
             if (businessInfo != null) {
               dailyRate = (businessInfo['dailyRate'] as num?)?.toDouble() ?? 350.0;
               hoursPerDay = (businessInfo['hoursPerDay'] as num?)?.toDouble() ?? 7.0;
             }
           }
-          
-          // Create pricing profile from user's business info
-          final pricingProfile = PricingProfile(
-            id: 'user-profile',
-            profession: _selectedTrade,
-            dailyRateHT: dailyRate,
-            hoursPerDay: hoursPerDay,
-          );
-          
-          if (smartTask != null) {
-             // Calculate using Engine
-             final selectedProdsList = taskState.selectedProducts.keys.map((id) {
-                return getAllProducts().firstWhere((p) => p.id == id, orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: '', category: ''));
-             }).where((p) => p.id != 'err').toList();
-             
-             final breakdown = PricingEngine.calculateTaskPrice(
-               task: smartTask,
-               quantity: quantity,
-               realityFactors: _roomContexts[roomId] ?? const RealityFactors(),
-               pricingProfile: pricingProfile,
-               selectedProducts: selectedProdsList,
-             );
-             
-             // Convert total costs to Unit costs for ExpenseItem storage
-             // ExpenseItem total = (labor + material) * quantity
-             // So Unit Labor = Total Labor / Quantity
-             if (quantity > 0) {
-                laborUnitCost = breakdown.laborCost / quantity;
-                materialUnitCost = breakdown.materialCost / quantity;
-             }
+
+          final hourlyRate = hoursPerDay > 0 ? dailyRate / hoursPerDay : dailyRate / 7.0;
+          final conditionCoeff = _roomContexts[roomId]?.condition ?? 1.0;
+          final hours = taskState.hours;
+
+          // Labor = hours × hourly rate × condition coefficient
+          // Stored as unit cost (per quantity unit), so divide by quantity
+          if (hours > 0) {
+            final totalLabor = hours * hourlyRate * conditionCoeff;
+            laborUnitCost = quantity > 0 ? totalLabor / quantity : totalLabor;
+          }
+
+          // Material cost from fournitures
+          if (quantity > 0) {
+            materialUnitCost = totalProductCost / quantity;
           } else {
-             // Fallback for custom tasks or non-smart tasks
-             // Keep existing logic: materialUnitCost derived from products, labor 0
-             if (quantity > 0) {
-               materialUnitCost = totalProductCost / quantity;
-             } else {
-               materialUnitCost = totalProductCost;
-             }
+            materialUnitCost = totalProductCost;
           }
 
           expenseItems.add(ExpenseItem(
              id: taskState.taskId,
              title: taskState.label,
-             subtitle: smartTask != null ? 'Calculé automatiquement' : (totalProductCost > 0 ? 'Fournitures incluses' : 'Main d\'oeuvre'),
+             subtitle: hours > 0 ? '${hours.toStringAsFixed(1)}h × ${hourlyRate.toStringAsFixed(2)} €/h' : (totalProductCost > 0 ? 'Fournitures incluses' : 'Main d\'oeuvre'),
              quantity: quantity,
              laborCost: laborUnitCost,
              materialCost: materialUnitCost,
@@ -858,6 +818,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
              'label': taskState.label,
              'inputs': taskState.inputs,
              'selectedProducts': taskState.selectedProducts,
+             'selectedFournitures': taskState.selectedFournitures,
              'note': taskState.note,
              'photoPaths': taskState.photoPaths,
            };
@@ -887,7 +848,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
           child: Text(
             category.title.toUpperCase(),
             style: const TextStyle(
-              fontFamily: 'Outfit',
               color: Color(0xFF9CA3AF),
               fontWeight: FontWeight.bold,
               fontSize: 12,
@@ -963,7 +923,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                     child: Text(
                       taskItem.label,
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                         fontSize: 15,
                         color: const Color(0xFF1F2937),
@@ -1005,12 +964,12 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                            onChanged: (val) => state.note = val,
                            decoration: const InputDecoration(
                              hintText: 'Ajouter une note, une remarque importante...',
-                               hintStyle: TextStyle(fontFamily: 'Outfit', fontSize: 13, color: Color(0xFF94A3B8)),
+                               hintStyle: TextStyle( fontSize: 13, color: Color(0xFF94A3B8)),
                                border: InputBorder.none,
                                isDense: true,
                            ),
                            maxLines: 3,
-                           style: const TextStyle(fontFamily: 'Outfit', fontSize: 14),
+                           style: const TextStyle( fontSize: 14),
                          ),
                          const SizedBox(height: 8),
                          Row(
@@ -1080,24 +1039,30 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                    
                    const SizedBox(height: 20),
                    
-                   // Products List
-                   ...state.selectedProducts.entries.map((entry) {
-                      final allProds = getAllProducts();
-                      final prod = allProds.firstWhere(
-                        (p) => p.id == entry.key, 
-                        orElse: () => const Product(id: '?', name: '?', imageUrl: '', priceHT: 0, unit: '')
+                   // Fournitures List
+                   ...state.selectedFournitures.entries.map((entry) {
+                      return _buildFournitureRow(
+                        entry.value,
+                        (newQty) {
+                          setState(() {
+                            state.selectedFournitures[entry.key]!['quantity'] = newQty;
+                          });
+                        },
+                        () {
+                          setState(() {
+                            state.selectedFournitures.remove(entry.key);
+                          });
+                        },
                       );
-                      
-                      return _buildProductRow(prod, entry.value, (newQty) {
-                        setState(() {
-                          state.selectedProducts[entry.key] = newQty;
-                        });
-                      });
                    }),
                    
+                   // ── Hours Input ─────────────────────────────
+                   const SizedBox(height: 16),
+                   _buildHoursInput(roomId, taskItem.id, state),
+
                    // Total Calculated Bar
                    Container(
-                     margin: const EdgeInsets.only(top: 8),
+                     margin: const EdgeInsets.only(top: 12),
                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                      decoration: BoxDecoration(
                        color: const Color(0xFFEFF6FF), // Light blue bg
@@ -1106,8 +1071,8 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                      child: Row(
                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                        children: [
-                         const Text('Total Calculé', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
-                         Text('${_calculateTotal(state).toStringAsFixed(2)} €', style: const TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A))),
+                         const Text('Total Calculé', style: TextStyle( fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+                         Text('${_calculateTotal(state).toStringAsFixed(2)} €', style: const TextStyle( fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A))),
                        ],
                      ),
                    ),
@@ -1141,7 +1106,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                child: Column(
                  crossAxisAlignment: CrossAxisAlignment.start,
                  children: [
-                   Text(field.label, style: const TextStyle(fontFamily: 'Outfit', fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+                   Text(field.label, style: const TextStyle( fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
                    const SizedBox(height: 6),
                    Container(
                      height: 48,
@@ -1157,14 +1122,14 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                            child: TextField(
                              keyboardType: TextInputType.numberWithOptions(decimal: true),
                              decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                             style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                             style: const TextStyle(fontWeight: FontWeight.bold,),
                              controller: TextEditingController.fromValue(TextEditingValue(text: currentVal, selection: TextSelection.collapsed(offset: currentVal.length))),
                              onChanged: (val) {
                                _updateInput(roomId, taskId, field.id, double.tryParse(val) ?? 0.0);
                              },
                            ),
                          ),
-                         Text(field.suffix, style: const TextStyle(fontFamily: 'Outfit', color: Color(0xFF94A3B8))),
+                         Text(field.suffix, style: const TextStyle( color: Color(0xFF94A3B8))),
                        ],
                      ),
                    ),
@@ -1182,6 +1147,162 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     );
   }
   
+  Widget _buildHoursInput(String roomId, String taskId, RoomTaskState state) {
+    final key = _getKey(roomId, taskId);
+    final condition = _roomContexts[roomId]?.condition ?? 1.0;
+    String conditionLabel;
+    if (condition == 1.40) {
+      conditionLabel = 'Dégradé ×1,40';
+    } else if (condition == 1.20) {
+      conditionLabel = 'Moyen ×1,20';
+    } else {
+      conditionLabel = 'Sain ×1,00';
+    }
+
+    final hoursVal = state.hours > 0 ? state.hours.toStringAsFixed(1) : '';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF86EFAC)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.access_time, color: Color(0xFF16A34A), size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                'Main d\'œuvre',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF15803D),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  conditionLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF166534),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Nombre d\'heures',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF4B5563),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF86EFAC)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                isDense: true,
+                                hintText: '0',
+                                hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                              ),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: Color(0xFF15803D),
+                              ),
+                              controller: TextEditingController.fromValue(
+                                TextEditingValue(
+                                  text: hoursVal,
+                                  selection: TextSelection.collapsed(offset: hoursVal.length),
+                                ),
+                              ),
+                              onChanged: (val) {
+                                if (_taskStates.containsKey(key)) {
+                                  setState(() {
+                                    _taskStates[key]!.hours = double.tryParse(val) ?? 0.0;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const Text(
+                            'h',
+                            style: TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => _showRealityFactorsDialog(roomId, taskId, state.label),
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF86EFAC)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.tune, color: Color(0xFF16A34A), size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'État',
+                        style: TextStyle(
+                          color: Color(0xFF15803D),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAddProductButton(String roomId, String taskId) {
     return GestureDetector(
        onTap: () => _showAddProductModal(roomId, taskId),
@@ -1198,23 +1319,25 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
            children: [
              Icon(Icons.add_circle, color: Color(0xFF3B82F6), size: 20),
              SizedBox(width: 8),
-             Text('Fourniture', style: TextStyle(fontFamily: 'Outfit', color: Color(0xFF3B82F6), fontWeight: FontWeight.w600)),
+             Text('Fourniture', style: TextStyle( color: Color(0xFF3B82F6), fontWeight: FontWeight.w600)),
            ],
          ),
        ),
     );
   }
 
-  Widget _buildProductRow(Product prod, double quantity, Function(double) onQtyChanged) {
-     return InkWell(
-       onTap: () async {
-          final newQty = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: prod, initialQuantity: quantity)),
-          );
-          if (newQty != null) onQtyChanged(newQty);
-       },
-       child: Container(
+  Widget _buildFournitureRow(
+    Map<String, dynamic> item,
+    Function(double) onQtyChanged,
+    VoidCallback onDelete,
+  ) {
+     final name = (item['name'] ?? 'Fourniture').toString();
+     final fournisseur = (item['fournisseur'] ?? 'Sans fournisseur').toString();
+     final quantity = (item['quantity'] as num?)?.toDouble() ?? 1;
+     final unitPrice = (item['unitPrice'] as num?)?.toDouble() ?? 0;
+     final conditionnement = (item['conditionnement'] ?? '').toString();
+
+     return Container(
          margin: const EdgeInsets.only(bottom: 12),
          padding: const EdgeInsets.all(8),
          decoration: BoxDecoration(
@@ -1227,107 +1350,97 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
          ),
          child: Row(
            children: [
-             // Thumb
              Container(
                width: 50, height: 50,
                decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
-               child: prod.imageUrl.isNotEmpty 
-
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: prod.imageUrl.startsWith('http')
-                        ? Image.network(prod.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.image, size: 24, color: Colors.grey))
-                        : Image.asset(prod.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.image, size: 24, color: Colors.grey))
-                    )
-                  : const Icon(Icons.image, size: 24, color: Colors.grey),
+               child: const Icon(Icons.inventory_2_outlined, size: 24, color: Colors.grey),
              ),
              const SizedBox(width: 12),
              Expanded(
                child: Column(
                  crossAxisAlignment: CrossAxisAlignment.start,
                  children: [
-                   Text(prod.name, style: const TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)), maxLines: 2, overflow: TextOverflow.ellipsis),
+                   Text(name, style: const TextStyle( fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)), maxLines: 2, overflow: TextOverflow.ellipsis),
                    const SizedBox(height: 2),
-                   Text('${prod.priceHT} € / ${prod.unit}', style: const TextStyle(fontFamily: 'Outfit', color: Color(0xFF64748B), fontSize: 11)),
+                   Text('$fournisseur${conditionnement.isNotEmpty ? ' • $conditionnement' : ''}', style: const TextStyle( color: Color(0xFF64748B), fontSize: 11)),
+                   Text('${unitPrice.toStringAsFixed(2)} € / u', style: const TextStyle( color: Color(0xFF64748B), fontSize: 11)),
                  ],
                ),
              ),
-             // Stepper Pill
-             Container(
-               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-               decoration: BoxDecoration(
-                 color: const Color(0xFFF8FAFC),
-                 borderRadius: BorderRadius.circular(8),
-                 border: Border.all(color: const Color(0xFFE2E8F0)),
-               ),
-               child: Row(
-                 mainAxisSize: MainAxisSize.min,
-                 children: [
-                   GestureDetector(
-                     onTap: () => onQtyChanged(max(0, quantity - 1)),
-                     child: Container(
-                       padding: const EdgeInsets.all(4),
-                       decoration: const BoxDecoration(color: Color(0xFFEEF2FF), shape: BoxShape.circle),
-                       child: const Icon(Icons.remove, size: 14, color: Color(0xFF1E3A8A)),
-                     ),
+             Column(
+               crossAxisAlignment: CrossAxisAlignment.end,
+               children: [
+                 Text(
+                   '${(quantity * unitPrice).toStringAsFixed(2)} €',
+                   style: const TextStyle( fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
+                 ),
+                 const SizedBox(height: 6),
+                 Container(
+                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                   decoration: BoxDecoration(
+                     color: const Color(0xFFF8FAFC),
+                     borderRadius: BorderRadius.circular(8),
+                     border: Border.all(color: const Color(0xFFE2E8F0)),
                    ),
-                   Padding(
-                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                     child: Text('${quantity.toInt().toString().padLeft(2, '0')}', style: const TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E3A8A))),
+                   child: Row(
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
+                       GestureDetector(
+                         onTap: () => onQtyChanged(max(1, quantity - 1)),
+                         child: Container(
+                           padding: const EdgeInsets.all(4),
+                           decoration: const BoxDecoration(color: Color(0xFFEEF2FF), shape: BoxShape.circle),
+                           child: const Icon(Icons.remove, size: 14, color: Color(0xFF1E3A8A)),
+                         ),
+                       ),
+                       Padding(
+                         padding: const EdgeInsets.symmetric(horizontal: 10),
+                         child: Text('${quantity.toInt().toString().padLeft(2, '0')}', style: const TextStyle( fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E3A8A))),
+                       ),
+                       GestureDetector(
+                         onTap: () => onQtyChanged(quantity + 1),
+                         child: Container(
+                           padding: const EdgeInsets.all(4),
+                           decoration: const BoxDecoration(color: Color(0xFFEEF2FF), shape: BoxShape.circle),
+                           child: const Icon(Icons.add, size: 14, color: Color(0xFF1E3A8A)),
+                         ),
+                       ),
+                     ],
                    ),
-                   GestureDetector(
-                     onTap: () => onQtyChanged(quantity + 1),
-                     child: Container(
-                       padding: const EdgeInsets.all(4),
-                       decoration: const BoxDecoration(color: Color(0xFFEEF2FF), shape: BoxShape.circle),
-                       child: const Icon(Icons.add, size: 14, color: Color(0xFF1E3A8A)),
-                     ),
-                   ),
-                 ],
-               ),
+                 ),
+                 const SizedBox(height: 4),
+                 GestureDetector(
+                   onTap: onDelete,
+                   child: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                 ),
+               ],
              )
            ],
          ),
-       ),
-     );
+       );
   }
   
 
   Future<void> _showAddProductModal(String roomId, String taskId) async {
-    // Determine category filter from SmartTask if available
-    String? categoryFilter;
-    final smartTask = PricingData.getTaskById(taskId);
-    if (smartTask != null && smartTask.materialRequirements.isNotEmpty) {
-       // Ideally we might let user choose if multiple, but for now pick the first primary one
-       categoryFilter = smartTask.materialRequirements.first.productCategory;
-    }
-  
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ProductSelectionScreen(
-          roomId: roomId, 
-          taskId: taskId,
-          categoryFilter: categoryFilter,
-        ),
+        builder: (_) => const FournituresScreen(selectionMode: true),
       ),
     );
+    if (result == null || result is! Map<String, dynamic>) return;
 
-    if (result != null && result is Map) {
-      final product = result['product'] as Product;
-      final quantity = result['quantity'] as double;
-      
-      final key = _getKey(roomId, taskId);
-      setState(() {
-        if (!_taskStates.containsKey(key)) {
-           // Should ideally be initialized by task selection but if somehow not:
-           _taskStates[key] = RoomTaskState(taskId: taskId, roomId: roomId, label: '', selectedProducts: {});
-        }
-        
-        // Add or Update product
-        _taskStates[key]!.selectedProducts[product.id] = quantity;
-      });
-    }
+    final key = _getKey(roomId, taskId);
+    final itemId = (result['id'] ?? '').toString();
+    if (itemId.isEmpty) return;
+
+    setState(() {
+      _taskStates.putIfAbsent(
+        key,
+        () => RoomTaskState(taskId: taskId, roomId: roomId, label: ''),
+      );
+      _taskStates[key]!.selectedFournitures[itemId] = Map<String, dynamic>.from(result);
+    });
   }
   
 

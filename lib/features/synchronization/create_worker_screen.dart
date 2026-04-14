@@ -73,7 +73,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Color(0xFF2E65F3)),
                 title: const Text('Prendre une photo',
-                    style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.w600)),
+                    style: TextStyle( fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(context);
                   final picked = await ImagePicker().pickImage(
@@ -89,7 +89,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Color(0xFF2E65F3)),
                 title: const Text('Choisir depuis la galerie',
-                    style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.w600)),
+                    style: TextStyle( fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(context);
                   final picked = await ImagePicker().pickImage(
@@ -124,7 +124,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Color(0xFF2E65F3)),
                 title: const Text('Scanner avec la caméra',
-                    style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.w600)),
+                    style: TextStyle( fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(context);
                   final picked = await ImagePicker().pickImage(
@@ -143,7 +143,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Color(0xFF2E65F3)),
                 title: const Text('Importer une image',
-                    style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.w600)),
+                    style: TextStyle( fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(context);
                   final picked = await ImagePicker().pickImage(
@@ -162,7 +162,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
               ListTile(
                 leading: const Icon(Icons.attach_file, color: Color(0xFF2E65F3)),
                 title: const Text('Importer un fichier (PDF, etc.)',
-                    style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.w600)),
+                    style: TextStyle( fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(context);
                   final result = await FilePicker.platform.pickFiles(
@@ -326,7 +326,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                           "Nouveau Ouvrier",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: darkNavy,
@@ -410,7 +409,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                             child: Text(
                               "Photo de l'ouvrier",
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 13,
                                 color: greyText,
                                 fontWeight: FontWeight.w500,
@@ -491,7 +489,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                               const Text(
                                 "Facultatif",
                                 style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 12,
                                   color: greyText,
                                   fontWeight: FontWeight.w500,
@@ -530,7 +527,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                                         Text(
                                           "Scanner ou importer un document",
                                           style: TextStyle(
-                                            fontFamily: 'Outfit',
                                             fontSize: 13,
                                             color: Color(0xFFCBD5E1),
                                             fontWeight: FontWeight.w500,
@@ -590,7 +586,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                       : const Text(
                           "Enregistrer le profil",
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -633,7 +628,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                     Text(
                       _pickedDocumentName ?? 'Document',
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF0A1227),
@@ -671,7 +665,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
     return Text(
       text,
       style: const TextStyle(
-        fontFamily: 'Outfit',
         fontSize: 14,
         fontWeight: FontWeight.w700,
         color: Color(0xFF0A1227),
@@ -696,7 +689,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
         keyboardType: keyboardType,
         validator: validator,
         style: const TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 15,
           fontWeight: FontWeight.w500,
           color: Color(0xFF0A1227),
@@ -704,7 +696,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            fontFamily: 'Outfit',
             color: const Color(0xFF8B95A5).withValues(alpha: 0.5),
             fontWeight: FontWeight.w400,
           ),
@@ -730,7 +721,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
           hint: Text(
             "Sélectionner un métier",
             style: TextStyle(
-              fontFamily: 'Outfit',
               color: const Color(0xFF8B95A5).withValues(alpha: 0.5),
               fontWeight: FontWeight.w400,
               fontSize: 15,
@@ -742,7 +732,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
           dropdownColor: Colors.white,
           borderRadius: BorderRadius.circular(14),
           style: const TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: Color(0xFF0A1227),

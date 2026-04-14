@@ -63,7 +63,6 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
         title: Text(
           widget.project.title,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: darkBlue,
@@ -80,7 +79,6 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
               Text(
                 "Missions du chantier",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: darkBlue,
@@ -99,7 +97,7 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                       return Center(
                         child: Text(
                           "Aucune mission pour ce chantier",
-                          style: TextStyle(fontFamily: 'Outfit', color: Colors.grey),
+                          style: TextStyle( color: Colors.grey),
                         ),
                       );
                     }
@@ -154,7 +152,6 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                 Text(
                   startTime,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: darkBlue,
@@ -163,7 +160,6 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                 Text(
                   duration,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 12,
                     color: Colors.grey,
                   ),
@@ -186,7 +182,6 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                   Text(
                     task.taskName,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: darkBlue,
@@ -200,7 +195,6 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
                       Text(
                         task.roomName,
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 12,
                           color: Colors.grey,
                         ),
@@ -248,7 +242,7 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
             final dateFormat = DateFormat('dd/MM/yyyy');
             
             return AlertDialog(
-              title: const Text("Planifier la mission", style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
+              title: const Text("Planifier la mission", style: TextStyle( fontWeight: FontWeight.bold)),
               content: SizedBox(
                 width: double.maxFinite,
                 child: SingleChildScrollView(

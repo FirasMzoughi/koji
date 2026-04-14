@@ -45,7 +45,6 @@ class SynchronizationScreen extends StatelessWidget {
                   Text(
                     "État de synchronisation",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: darkText,
@@ -55,7 +54,6 @@ class SynchronizationScreen extends StatelessWidget {
                   Text(
                     "Assurez-vous que toutes les heures sont à jour",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: greyText,
                     ),
@@ -125,7 +123,6 @@ class SynchronizationScreen extends StatelessWidget {
                             Text(
                               "Aujourd'hui",
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
                                 color: darkText,
@@ -134,7 +131,6 @@ class SynchronizationScreen extends StatelessWidget {
                             Text(
                               "Janvier 2026",
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 14,
                                 color: greyText,
                                 fontWeight: FontWeight.w500,
@@ -159,7 +155,6 @@ class SynchronizationScreen extends StatelessWidget {
                                   const Text(
                                     "Total heures équipe",
                                     style: TextStyle(
-                                      fontFamily: 'Outfit',
                                       fontSize: 14,
                                       color: Color(0xFFB3B9C5),
                                     ),
@@ -168,7 +163,6 @@ class SynchronizationScreen extends StatelessWidget {
                                   const Text(
                                     "123.4 h",
                                     style: TextStyle(
-                                      fontFamily: 'Outfit',
                                       fontSize: 32,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
@@ -262,7 +256,6 @@ class SynchronizationScreen extends StatelessWidget {
             "Synchronisation",
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: darkText,
@@ -354,7 +347,6 @@ class SynchronizationScreen extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: darkText,
@@ -388,7 +380,6 @@ class SynchronizationScreen extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 14,
               color: greyText,
               fontWeight: FontWeight.w500,
@@ -398,7 +389,6 @@ class SynchronizationScreen extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: valueSize,
               fontWeight: FontWeight.w700,
               color: darkText,

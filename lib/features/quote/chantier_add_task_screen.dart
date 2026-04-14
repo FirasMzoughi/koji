@@ -93,7 +93,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                         Text(
                           'Ajouter une tâche',
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -148,7 +147,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
           const Text(
             'Ajouter tâche',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: _kDark,
@@ -181,7 +179,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
           child: Text(
             'Aucune tâche',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 15,
               color: Color(0xFF94A3B8),
             ),
@@ -257,7 +254,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: _kDark,
@@ -269,7 +265,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 13,
                       color: Color(0xFF64748B),
                     ),
@@ -319,7 +314,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                         ? '${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.year}'
                         : '10/27/2023',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: _selectedDate != null
                           ? _kDark
@@ -350,8 +344,7 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down_rounded,
                     color: Color(0xFF94A3B8)),
-                style: const TextStyle(
-                    fontFamily: 'Outfit', fontSize: 14, color: _kDark),
+                style: const TextStyle( fontSize: 14, color: _kDark),
                 items: _lierAOptions
                     .map((o) => DropdownMenuItem(value: o, child: Text(o)))
                     .toList(),
@@ -383,12 +376,10 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                       isDense: true,
                       hintText: 'Sélectionner un contact',
                       hintStyle: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 14,
                           color: Color(0xFF94A3B8)),
                     ),
-                    style: const TextStyle(
-                        fontFamily: 'Outfit', fontSize: 14, color: _kDark),
+                    style: const TextStyle( fontSize: 14, color: _kDark),
                   ),
                 ),
               ],
@@ -413,12 +404,10 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                     EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 hintText: 'Ajouter des détails...',
                 hintStyle: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: Color(0xFF94A3B8)),
               ),
-              style: const TextStyle(
-                  fontFamily: 'Outfit', fontSize: 14, color: _kDark),
+              style: const TextStyle( fontSize: 14, color: _kDark),
             ),
           ),
           const SizedBox(height: 32),
@@ -440,7 +429,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                 : const Text(
                 'Enregistrer',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -461,7 +449,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
           Text(
             text,
             style: const TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: _kDark,
@@ -472,7 +459,6 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
             const Text(
               '*',
               style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 14,
                   color: Color(0xFFEF4444),
                   fontWeight: FontWeight.bold),
@@ -498,11 +484,10 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           hintText: hint,
-          hintStyle: const TextStyle(
-              fontFamily: 'Outfit', fontSize: 14, color: Color(0xFF94A3B8)),
+          hintStyle: const TextStyle( fontSize: 14, color: Color(0xFF94A3B8)),
         ),
         style:
-            const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: _kDark),
+            const TextStyle( fontSize: 14, color: _kDark),
       ),
     );
   }
@@ -547,7 +532,7 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur Supabase: $e', style: const TextStyle(fontFamily: 'Outfit')),
+            content: Text('Erreur Supabase: $e', style: const TextStyle()),
             backgroundColor: const Color(0xFFEF4444),
             duration: const Duration(seconds: 5),
           ),

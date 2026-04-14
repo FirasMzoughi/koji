@@ -75,7 +75,6 @@ class OnboardingNavigationControls extends StatelessWidget {
                   Text(
                     'Passer cette étape',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(16),
                       color: AppTheme
                           .primaryBlueDark, // Light blueish per screenshot, or use primaryBlueLight

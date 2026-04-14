@@ -95,7 +95,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
               'Infos Chantier',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F172A),
@@ -141,7 +140,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                     Text(
                       'Client Du Chantier',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF0F172A),
@@ -150,7 +148,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                     Text(
                       'Client De Chantier',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 13,
                         color: Color(0xFF94A3B8),
                       ),
@@ -190,7 +187,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                   child: Text(
                     _fullAddress,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: Color(0xFF334155),
                       height: 1.4,
@@ -208,7 +204,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                 const Text(
                   'Adresse non renseignée',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     fontStyle: FontStyle.italic,
                     color: Color(0xFF94A3B8),
@@ -255,7 +250,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                   const Text(
                     'Chantier',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
@@ -274,7 +268,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                 child: const Text(
                   'En Cours',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF15803D),
@@ -295,7 +288,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                     const Text(
                       'Date De Début',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 11,
                         color: Color(0xFF94A3B8),
                         fontWeight: FontWeight.w500,
@@ -310,7 +302,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                         Text(
                           _formatDate(DateTime.now()),
                           style: const TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF0F172A),
@@ -328,7 +319,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                     const Text(
                       'Fin Estimée',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 11,
                         color: Color(0xFF94A3B8),
                         fontWeight: FontWeight.w500,
@@ -344,7 +334,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                           _formatDate(
                               DateTime.now().add(const Duration(days: 90))),
                           style: const TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF0F172A),
@@ -362,7 +351,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
           const Text(
             'Description',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 12,
               color: Color(0xFF94A3B8),
               fontWeight: FontWeight.w500,
@@ -373,7 +361,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
             'Référence: $_reference\n'
             'Type de bien: ${widget.data['propertyType'] ?? '–'}',
             style: const TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 14,
               color: Color(0xFF334155),
               height: 1.5,
@@ -400,7 +387,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
               const Text(
                 "L'équipe Kôji",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),
@@ -441,7 +427,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                         Text(
                           'Ajouter un contact',
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF0F172A),
@@ -450,7 +435,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                         Text(
                           'Artisans ou partenaires',
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 12,
                             color: Color(0xFF94A3B8),
                           ),
@@ -494,7 +478,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
               child: Text(
                 (member['name'] as String).substring(0, 1).toUpperCase(),
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),
@@ -510,7 +493,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                 Text(
                   member['name'] as String,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF0F172A),
@@ -519,7 +501,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                 Text(
                   member['role'] as String,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 12,
                     color: Color(0xFF94A3B8),
                   ),
@@ -584,7 +565,6 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
         title: const Text(
           'Ajouter un contact',
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontWeight: FontWeight.bold,
             color: Color(0xFF0F172A),
           ),
@@ -596,18 +576,18 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
               controller: nameCtrl,
               decoration: const InputDecoration(
                 hintText: 'Nom',
-                hintStyle: TextStyle(fontFamily: 'Outfit'),
+                hintStyle: TextStyle(),
               ),
-              style: const TextStyle(fontFamily: 'Outfit'),
+              style: const TextStyle(),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: roleCtrl,
               decoration: const InputDecoration(
                 hintText: 'Rôle (ex: Architecte)',
-                hintStyle: TextStyle(fontFamily: 'Outfit'),
+                hintStyle: TextStyle(),
               ),
-              style: const TextStyle(fontFamily: 'Outfit'),
+              style: const TextStyle(),
             ),
           ],
         ),
@@ -616,7 +596,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler',
                 style:
-                    TextStyle(fontFamily: 'Outfit', color: Color(0xFF64748B))),
+                    TextStyle( color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -639,7 +619,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
               elevation: 0,
             ),
             child: const Text('Ajouter',
-                style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+                style: TextStyle( color: Colors.white)),
           ),
         ],
       ),

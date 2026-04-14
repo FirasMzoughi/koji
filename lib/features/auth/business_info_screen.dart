@@ -187,7 +187,6 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                   child: Text(
                     'K Ô J I',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 6,
@@ -366,7 +365,6 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                             Text(
                               'Créer mon compte',
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -388,7 +386,6 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                     child: RichText(
                       text: TextSpan(
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 14,
                           color: AppTheme.textLight,
                         ),
@@ -433,14 +430,12 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
         keyboardType: keyboardType,
         onChanged: onChanged,
         style: TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 16,
           color: AppTheme.darkNavy,
         ),
         decoration: InputDecoration(
           hintText: label,
           hintStyle: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 16,
             color: AppTheme.textLight,
           ),

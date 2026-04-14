@@ -42,17 +42,61 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _termsAccepted;
   }
 
+  bool _awaitingEmailConfirmation = false;
+
   void _handleSignup() async {
     if (!_isFormValid) return;
 
     // Get isPro from provider (default to false if not set)
     final isPro = ref.read(accountTypeProvider) ?? false;
 
-    await ref.read(authProvider.notifier).signUpWithEmailAndPassword(
+    // Set the flag BEFORE awaiting so ref.listen is blocked from the start
+    setState(() => _awaitingEmailConfirmation = true);
+
+    final needsConfirmation = await ref.read(authProvider.notifier).signUpWithEmailAndPassword(
           _emailController.text.trim(),
           _passwordController.text,
           isPro: isPro,
         );
+
+    if (needsConfirmation && mounted) {
+      final email = _emailController.text.trim();
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Vérifiez votre e-mail',
+            style: AppTheme.headingStyle(context).copyWith(fontSize: 20),
+          ),
+          content: Text(
+            'Un e-mail de confirmation a été envoyé à $email. Veuillez cliquer sur le lien pour activer votre compte.',
+            style: TextStyle(color: AppTheme.textLight, fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'J\'ai compris',
+                style: TextStyle(
+                  color: AppTheme.primaryBlue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (mounted) {
+        setState(() => _awaitingEmailConfirmation = false);
+        context.go('/login');
+      }
+    } else {
+      // No confirmation needed (auto-login) — unblock the listener
+      if (mounted) setState(() => _awaitingEmailConfirmation = false);
+    }
   }
 
   void _handleGoogleSignup() async {
@@ -69,8 +113,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     ref.listen(authProvider, (previous, next) {
       next.when(
         data: (user) {
+          // Don't navigate if we're about to show (or are showing) the email
+          // confirmation dialog — the dialog's own callback handles routing.
+          if (_awaitingEmailConfirmation) return;
           if (user != null && previous?.value == null) {
-            // User just signed up successfully, go to profession selection
+            // User just signed up and was immediately confirmed (no email
+            // verification required), go to profession selection.
             context.go('/profession-selection');
           }
         },
@@ -114,7 +162,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   child: Text(
                     'K Ô J I',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 6,
@@ -157,7 +204,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   label: Text(
                     'Continuer avec Google',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -175,7 +221,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       child: Text(
                         'Ou',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           color: AppTheme.textLight,
                           fontSize: 14,
                         ),
@@ -255,7 +300,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       icon: const Icon(Icons.keyboard_arrow_down,
                           color: AppTheme.darkNavy),
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         color: AppTheme.darkNavy,
                       ),
@@ -315,7 +359,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       child: RichText(
                         text: TextSpan(
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 13,
                             color: AppTheme.textLight,
                             height: 1.4,
@@ -389,7 +432,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             Text(
                               'Suivant',
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -411,7 +453,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     child: RichText(
                       text: TextSpan(
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 14,
                           color: AppTheme.textLight,
                         ),
@@ -459,14 +500,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         keyboardType: keyboardType,
         onChanged: onChanged,
         style: TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 16,
           color: AppTheme.darkNavy,
         ),
         decoration: InputDecoration(
           hintText: label,
           hintStyle: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 16,
             color: AppTheme.textLight,
           ),
@@ -504,7 +543,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           child: Text(
             text,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 13,
               color: AppTheme.textLight,
               height: 1.4,

@@ -181,7 +181,7 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         "Définissez les postes de dépenses et les estimations pour cette pièce ou bien ajouter une poste personnalisée.",
-                        style: TextStyle(fontFamily: 'Outfit', color: Color(0xFF64748B), fontSize: 13),
+                        style: TextStyle( color: Color(0xFF64748B), fontSize: 13),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -225,7 +225,7 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
                 const SizedBox(height: 2),
                 const Text(
                   'Etape 5/6',
-                  style: TextStyle(fontFamily: 'Outfit', color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+                  style: TextStyle( color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -265,8 +265,7 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
                     const SizedBox(width: 8),
                     Text(
                       _getRoomLabel(id),
-                      style: TextStyle(
-                        fontFamily: 'Outfit', 
+                      style: TextStyle( 
                         fontWeight: FontWeight.bold,
                         color: isSelected ? Colors.white : AppTheme.darkNavy,
                       ),
@@ -311,12 +310,12 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
         children: [
           const Text(
             'Total estimé de la pièce',
-            style: TextStyle(fontFamily: 'Outfit', color: Colors.white70, fontSize: 13),
+            style: TextStyle( color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(height: 8),
           Text(
             '${total.toStringAsFixed(2)} €',
-            style: const TextStyle(fontFamily: 'Outfit', color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+            style: const TextStyle( color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           // Real MO/Mat ratio visualization
@@ -338,7 +337,7 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontFamily: 'Outfit', color: Colors.white70, fontSize: 11)),
+        Text(label, style: const TextStyle( color: Colors.white70, fontSize: 11)),
       ],
     );
   }
@@ -371,8 +370,8 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
                    child: Column(
                      crossAxisAlignment: CrossAxisAlignment.start,
                      children: [
-                       Text(item.title, style: const TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A))),
-                       Text(item.subtitle, style: const TextStyle(fontFamily: 'Outfit', fontSize: 12, color: Color(0xFF64748B))),
+                       Text(item.title, style: const TextStyle( fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A))),
+                       Text(item.subtitle, style: const TextStyle( fontSize: 12, color: Color(0xFF64748B))),
                      ],
                    ),
                  ),
@@ -476,7 +475,7 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
              child: Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                  const Text('Taxe sur la valeur ajoutée (TVA)', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E3A8A))),
+                  const Text('Taxe sur la valeur ajoutée (TVA)', style: TextStyle( fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E3A8A))),
                   Container(
                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                      decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)),
@@ -494,7 +493,7 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontFamily: 'Outfit', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+        Text(label, style: const TextStyle( fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
         const SizedBox(height: 6),
         Container(
           height: 48,
@@ -508,12 +507,12 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
             children: [
               Expanded(
                 child: isReadOnly 
-                ? Align(alignment: Alignment.centerLeft, child: Text(value ?? '', style: const TextStyle(fontFamily: 'Outfit', fontSize: 14)))
+                ? Align(alignment: Alignment.centerLeft, child: Text(value ?? '', style: const TextStyle( fontSize: 14)))
                 : TextField(
                     controller: TextEditingController.fromValue(TextEditingValue(text: value ?? '', selection: TextSelection.collapsed(offset: (value ?? '').length))),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                    style: const TextStyle(fontFamily: 'Outfit', fontSize: 14),
+                    style: const TextStyle( fontSize: 14),
                     onChanged: onChanged,
                   ),
               ),

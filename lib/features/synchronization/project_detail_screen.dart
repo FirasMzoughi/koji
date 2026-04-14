@@ -122,7 +122,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 Text(
                   taskName,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F3995),
@@ -133,7 +132,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   Text(
                     roomName,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: Colors.grey[600],
                     ),
@@ -151,7 +149,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             child: Text(
               status,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: statusColor,
@@ -229,7 +226,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           title: Text(
             "Détails du chantier",
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: darkBlue,
@@ -275,7 +271,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         title: Text(
           "Détails du chantier",
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: darkBlue,
@@ -325,7 +320,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   label: const Text(
                     'Assigner des ouvriers',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -410,7 +404,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       child: Text(
                         _project!.status,
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: statusText,
@@ -421,7 +414,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     Text(
                       _project!.title,
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: darkBlue,
@@ -463,7 +455,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         Text(
           title,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: darkBlue,
@@ -478,7 +469,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           child: Text(
             count.toString(),
             style: const TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1D74FF),
@@ -523,7 +513,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 Text(
                   '${worker.firstName} ${worker.lastName}',
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F3995),
@@ -533,7 +522,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 Text(
                   worker.profession,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: Colors.grey[600],
                   ),
@@ -559,7 +547,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           child: Text(
             text,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 14,
               color: Colors.grey[600],
             ),
@@ -585,7 +572,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             Text(
               message,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 14,
                 color: Colors.grey[500],
               ),
@@ -602,17 +588,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       builder: (context) => AlertDialog(
         title: const Text(
           'Retirer l\'ouvrier',
-          style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold),
+          style: TextStyle( fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Voulez-vous retirer ${worker.firstName} ${worker.lastName} de ce chantier?',
-          style: const TextStyle(fontFamily: 'Outfit'),
+          style: const TextStyle(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child:
-                const Text('Annuler', style: TextStyle(fontFamily: 'Outfit')),
+                const Text('Annuler', style: TextStyle()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -621,7 +607,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Retirer',
-                style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+                style: TextStyle( color: Colors.white)),
           ),
         ],
       ),

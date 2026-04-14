@@ -7,8 +7,13 @@ import 'package:koji/features/fournitures/add_fourniture_screen.dart';
 
 class FournisseurDetailScreen extends ConsumerWidget {
   final Fournisseur fournisseur;
+  final bool selectionMode;
 
-  const FournisseurDetailScreen({super.key, required this.fournisseur});
+  const FournisseurDetailScreen({
+    super.key,
+    required this.fournisseur,
+    this.selectionMode = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -103,7 +108,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
                         Text(
                           fournisseur.name,
                           style: const TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -114,7 +118,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
                           data: (items) => Text(
                             '${items.length} fournitures',
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 13,
                               color: Colors.white.withOpacity(0.7),
                             ),
@@ -157,7 +160,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
                             const Text(
                               'Aucune fourniture',
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                                 color: AppTheme.darkNavy,
@@ -168,7 +170,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
                               'Ajoutez des fournitures à ce fournisseur.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 14,
                                 color: Color(0xFF94A3B8),
                               ),
@@ -184,6 +185,13 @@ class FournisseurDetailScreen extends ConsumerWidget {
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final item = items[index];
+                      if (selectionMode) {
+                        return GestureDetector(
+                          onTap: () => _pickQuantityAndReturn(context, item),
+                          child: _buildItemCard(item),
+                        );
+                      }
+
                       return Dismissible(
                         key: Key(item.id),
                         direction: DismissDirection.endToStart,
@@ -234,6 +242,54 @@ class FournisseurDetailScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _pickQuantityAndReturn(BuildContext context, Fourniture item) async {
+    final qtyController = TextEditingController(text: '1');
+    final qty = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          item.name,
+          style: const TextStyle( fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: qtyController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Quantité',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final parsed = double.tryParse(qtyController.text.trim()) ?? 1;
+              Navigator.pop(ctx, parsed <= 0 ? 1 : parsed);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkNavy),
+            child: const Text('Ajouter', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (qty == null || !context.mounted) return;
+    Navigator.pop(context, {
+      'id': item.id,
+      'name': item.name,
+      'fournisseur': item.fournisseurName ?? fournisseur.name,
+      'fournisseurId': item.fournisseurId ?? fournisseur.id,
+      'unitPrice': item.prixAchatHT,
+      'sellPrice': item.prixVenteHT,
+      'quantity': qty,
+      'conditionnement': item.conditionnement ?? '',
+    });
+  }
+
   Widget _buildItemCard(Fourniture item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -280,7 +336,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.darkNavy,
@@ -299,7 +354,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
                       child: Text(
                         item.category,
                         style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF3B82F6),
@@ -311,7 +365,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
                       Text(
                         item.conditionnement!,
                         style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 10,
                           color: Color(0xFF94A3B8),
                         ),
@@ -328,7 +381,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
               Text(
                 '${item.prixAchatHT.toStringAsFixed(2)} €',
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 11,
                   color: Color(0xFF94A3B8),
                 ),
@@ -336,7 +388,6 @@ class FournisseurDetailScreen extends ConsumerWidget {
               Text(
                 '${item.prixVenteHT.toStringAsFixed(2)} €',
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.darkNavy,
@@ -355,10 +406,10 @@ class FournisseurDetailScreen extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Supprimer ce fournisseur ?',
-            style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
+            style: TextStyle( fontWeight: FontWeight.bold)),
         content: Text(
             'Toutes les fournitures de "${fournisseur.name}" seront supprimées.',
-            style: const TextStyle(fontFamily: 'Outfit')),
+            style: const TextStyle()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),

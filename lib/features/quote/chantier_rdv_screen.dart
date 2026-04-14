@@ -56,7 +56,6 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                       Text(
                         'Ajouter un rendez-vous',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -100,7 +99,6 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
           const Text(
             'Prochain rendez-vous',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: _kDark,
@@ -132,7 +130,6 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
           child: Text(
             'Aucun rendez-vous planifié',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 15,
               color: Color(0xFF94A3B8),
             ),
@@ -183,7 +180,6 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                 Text(
                   '$day $month',
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: _kDark,
@@ -193,7 +189,6 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                 Text(
                   time,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 13,
                     color: Color(0xFF64748B),
                   ),
@@ -216,7 +211,6 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: _kDark,
@@ -232,7 +226,6 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                       Text(
                         person,
                         style: const TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 13,
                           color: Color(0xFF64748B),
                         ),
@@ -262,7 +255,6 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
           title: const Text(
             'Nouveau rendez-vous',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontWeight: FontWeight.bold,
               color: _kDark,
             ),
@@ -276,16 +268,16 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                 autofocus: true,
                 decoration: const InputDecoration(
                     hintText: 'Ex: Installation Pompe à chaleur',
-                    hintStyle: TextStyle(fontFamily: 'Outfit')),
-                style: const TextStyle(fontFamily: 'Outfit'),
+                    hintStyle: TextStyle()),
+                style: const TextStyle(),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: personCtrl,
                 decoration: const InputDecoration(
                     hintText: 'Ex: M. Robert Durand',
-                    hintStyle: TextStyle(fontFamily: 'Outfit')),
-                style: const TextStyle(fontFamily: 'Outfit'),
+                    hintStyle: TextStyle()),
+                style: const TextStyle(),
               ),
               const SizedBox(height: 10),
               GestureDetector(
@@ -312,8 +304,7 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '${selectedDate.day} / ${selectedDate.month} / ${selectedDate.year}',
-                        style: const TextStyle(
-                            fontFamily: 'Outfit', fontSize: 14, color: _kDark),
+                        style: const TextStyle( fontSize: 14, color: _kDark),
                       ),
                     ],
                   ),
@@ -325,8 +316,7 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Annuler',
-                  style: TextStyle(
-                      fontFamily: 'Outfit', color: Color(0xFF64748B))),
+                  style: TextStyle( color: Color(0xFF64748B))),
             ),
             ElevatedButton(
               onPressed: () {
@@ -371,7 +361,7 @@ class _ChantierRdvScreenState extends State<ChantierRdvScreen> {
                 elevation: 0,
               ),
               child: const Text('Ajouter',
-                  style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+                  style: TextStyle( color: Colors.white)),
             ),
           ],
         ),

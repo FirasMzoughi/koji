@@ -28,7 +28,6 @@ class CreateProjectButton extends StatelessWidget {
                 const Text(
                   'Créer un premier chantier',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F172A),

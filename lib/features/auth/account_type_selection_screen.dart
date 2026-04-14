@@ -65,7 +65,6 @@ class _AccountTypeSelectionScreenState
                       Text(
                         'Bienvenue sur Kôji !',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: responsive.fontSize(28),
                           fontWeight: FontWeight.bold,
                           color: _selectedType == 'entreprise'
@@ -78,7 +77,6 @@ class _AccountTypeSelectionScreenState
                       Text(
                         'Choisissez votre type de compte pour\ncommencer l\'expérience',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: responsive.fontSize(15),
                           color: _selectedType == 'entreprise'
                               ? Colors.white.withValues(alpha: 0.9)
@@ -156,7 +154,6 @@ class _AccountTypeSelectionScreenState
                         Text(
                           'Suivant',
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: responsive.fontSize(16),
                             fontWeight: FontWeight.w600,
                           ),
@@ -247,7 +244,6 @@ class _AccountTypeSelectionScreenState
                   Text(
                     title,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(18),
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : AppTheme.darkNavy,
@@ -257,7 +253,6 @@ class _AccountTypeSelectionScreenState
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(13),
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.9)
@@ -269,7 +264,6 @@ class _AccountTypeSelectionScreenState
                   Text(
                     tagline,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: responsive.fontSize(12),
                       fontWeight: FontWeight.w600,
                       color: isSelected ? Colors.white : AppTheme.primaryBlue,

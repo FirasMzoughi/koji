@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/features/auth/provider/auth_provider.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const darkNavy = Color(0xFF0A1227);
 
     return Drawer(
@@ -59,7 +61,7 @@ class AppDrawer extends StatelessWidget {
                 label: 'Calendrier',
                 onTap: () {
                   Navigator.of(context).pop();
-                  context.push('/planning');
+                  context.push('/calendrier');
                 },
               ),
               _DrawerItem(
@@ -128,9 +130,12 @@ class AppDrawer extends StatelessWidget {
               _DrawerItem(
                 icon: Icons.logout_rounded,
                 label: 'Déconnexion',
-                isDisabled: true,
-                onTap: () {
+                onTap: () async {
                   Navigator.of(context).pop();
+                  await ref.read(authProvider.notifier).signOut();
+                  if (context.mounted) {
+                    context.go('/login');
+                  }
                 },
               ),
 
@@ -147,7 +152,6 @@ class _DrawerItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
-  final bool isDisabled;
   final VoidCallback onTap;
 
   const _DrawerItem({
@@ -155,27 +159,20 @@ class _DrawerItem extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isActive = false,
-    this.isDisabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
     const darkNavy = Color(0xFF0A1227);
 
-    final Color iconColor = isDisabled
-        ? const Color(0xFFCBD5E1)
-        : isActive
-            ? darkNavy
-            : const Color(0xFF475569);
+    final Color iconColor = isActive
+        ? darkNavy
+        : const Color(0xFF475569);
 
-    final Color textColor = isDisabled
-        ? const Color(0xFFCBD5E1)
-        : isActive
-            ? darkNavy
-            : darkNavy;
+    const Color textColor = darkNavy;
 
     return InkWell(
-      onTap: isDisabled ? null : onTap,
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
         child: Row(
@@ -185,7 +182,6 @@ class _DrawerItem extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 16,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 color: textColor,

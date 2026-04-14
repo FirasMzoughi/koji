@@ -11,31 +11,39 @@ class QuoteFournitureListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(quoteCreationProvider);
 
-    // Extract and aggregate fournitures (materials)
+    // Extract products from selectedFournitures in roomTasks
     final Map<String, List<Map<String, dynamic>>> fournituresByRoom = {};
     double totalMaterialCost = 0.0;
     int totalItemsCount = 0;
 
-    state.roomEstimations.forEach((roomId, items) {
-      if (items is List) {
+    state.roomTasks.forEach((roomId, taskDetails) {
+      if (taskDetails is Map) {
         final List<Map<String, dynamic>> roomFournitures = [];
-        for (var item in items) {
-          // Identify materials cost
-          final qty = (item.quantity as num).toDouble();
-          final materialUnitPrice = (item.materialCost as num).toDouble();
-          
-          if (materialUnitPrice > 0) {
-            final totalLine = qty * materialUnitPrice;
-            roomFournitures.add({
-              'title': item.title,
-              'quantity': qty,
-              'unitPrice': materialUnitPrice,
-              'total': totalLine,
-            });
-            totalMaterialCost += totalLine;
-            totalItemsCount++;
+        taskDetails.forEach((taskId, taskData) {
+          if (taskData is Map) {
+            final selectedFournitures = taskData['selectedFournitures'];
+            if (selectedFournitures is Map) {
+              selectedFournitures.forEach((_, productData) {
+                if (productData is Map) {
+                  final name = productData['name']?.toString() ?? productData['title']?.toString() ?? 'Produit';
+                  final qty = (productData['quantity'] as num?)?.toDouble() ?? 1.0;
+                  final unitPrice = (productData['unitPrice'] as num?)?.toDouble() ?? 0.0;
+                  if (unitPrice > 0 || qty > 0) {
+                    final totalLine = qty * unitPrice;
+                    roomFournitures.add({
+                      'title': name,
+                      'quantity': qty,
+                      'unitPrice': unitPrice,
+                      'total': totalLine,
+                    });
+                    totalMaterialCost += totalLine;
+                    totalItemsCount++;
+                  }
+                }
+              });
+            }
           }
-        }
+        });
         if (roomFournitures.isNotEmpty) {
           fournituresByRoom[roomId] = roomFournitures;
         }
@@ -68,7 +76,6 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                     Text(
                       "Aucune fourniture nécessaire",
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         color: Colors.grey[600],
                         fontWeight: FontWeight.w500,
@@ -94,12 +101,12 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                       children: [
                         const Text(
                           'Total estimé des matériaux',
-                          style: TextStyle(fontFamily: 'Outfit', color: Colors.white70, fontSize: 13),
+                          style: TextStyle( color: Colors.white70, fontSize: 13),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${totalMaterialCost.toStringAsFixed(2)} €',
-                          style: const TextStyle(fontFamily: 'Outfit', color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                          style: const TextStyle( color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -110,7 +117,7 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                           ),
                           child: Text(
                             '$totalItemsCount éléments',
-                            style: const TextStyle(fontFamily: 'Outfit', color: Colors.white, fontSize: 12),
+                            style: const TextStyle( color: Colors.white, fontSize: 12),
                           ),
                         )
                       ],
@@ -134,7 +141,6 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                               child: Text(
                                 _getRoomLabel(roomId),
                                 style: const TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: AppTheme.darkNavy,
@@ -210,7 +216,6 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                 Text(
                   item['title'],
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: AppTheme.darkNavy,
@@ -220,7 +225,6 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                 Text(
                   '${item['quantity']} × ${item['unitPrice'].toStringAsFixed(2)} €',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 12,
                     color: Colors.grey[600],
                   ),
@@ -231,7 +235,6 @@ class QuoteFournitureListScreen extends ConsumerWidget {
           Text(
             '${item['total'].toStringAsFixed(2)} €',
             style: const TextStyle(
-              fontFamily: 'Outfit',
               fontWeight: FontWeight.w800,
               fontSize: 14,
               color: Color(0xFF3B82F6),

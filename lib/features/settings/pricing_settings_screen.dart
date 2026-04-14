@@ -33,7 +33,6 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
         title: const Text(
           'Tarification par Métier',
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontWeight: FontWeight.bold,
             color: Color(0xFF1E3A8A),
           ),
@@ -109,7 +108,6 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                   Text(
                     profile.profession,
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1E3A8A),
@@ -160,7 +158,6 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 14,
             color: Colors.grey[600],
           ),
@@ -177,7 +174,6 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
           child: Text(
             value,
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 14,
               fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w600,
               color: isHighlighted ? const Color(0xFF1E3A8A) : Colors.black87,
@@ -249,7 +245,6 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                   Text(
                     'Modifier ${profile.profession}',
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -310,7 +305,6 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                               Text(
                                 'Coût horaire',
                                 style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -321,7 +315,6 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
                                 ? '${hourlyRate.toStringAsFixed(2)} € / h'
                                 : '-- € / h',
                             style: const TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E3A8A),

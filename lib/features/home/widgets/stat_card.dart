@@ -60,7 +60,6 @@ class StatCard extends StatelessWidget {
                 Text(
                   number,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -73,7 +72,6 @@ class StatCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: isDark ? Colors.grey[400] : const Color(0xFF64748B),

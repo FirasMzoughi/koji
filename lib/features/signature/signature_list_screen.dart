@@ -20,7 +20,6 @@ class SignatureListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Signer un devis',
             style: TextStyle(
-                fontFamily: 'Outfit',
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F2648))),
         centerTitle: true,
@@ -132,7 +131,6 @@ class _SignatureQuoteCard extends StatelessWidget {
                     Text(
                       "Devis N° #${quote['quoteNumber'] ?? '??'}",
                       style: const TextStyle(
-                          fontFamily: 'Outfit',
                           color: Color(0xFF94A3B8),
                           fontWeight: FontWeight.bold),
                     ),
@@ -155,7 +153,6 @@ class _SignatureQuoteCard extends StatelessWidget {
                             const SizedBox(width: 4),
                           Text(statusLabel,
                               style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   color: statusColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12)),
@@ -171,7 +168,6 @@ class _SignatureQuoteCard extends StatelessWidget {
                       ? "Rénovation ${quote['client']?['name']?.split(' ').first}"
                       : "Rénovation",
                   style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: Color(0xFF0F2648)),
@@ -183,8 +179,7 @@ class _SignatureQuoteCard extends StatelessWidget {
                         size: 16, color: Color(0xFF94A3B8)),
                     const SizedBox(width: 6),
                     Text(client['name'] ?? 'Client Inconnu',
-                        style: const TextStyle(
-                            fontFamily: 'Outfit', color: Color(0xFF64748B))),
+                        style: const TextStyle( color: Color(0xFF64748B))),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -194,8 +189,7 @@ class _SignatureQuoteCard extends StatelessWidget {
                         size: 16, color: Color(0xFF94A3B8)),
                     const SizedBox(width: 6),
                     Text("Crée le ${quote['date'] ?? '??'}",
-                        style: const TextStyle(
-                            fontFamily: 'Outfit', color: Color(0xFF64748B))),
+                        style: const TextStyle( color: Color(0xFF64748B))),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -209,13 +203,11 @@ class _SignatureQuoteCard extends StatelessWidget {
                       children: [
                         const Text("Total TTC",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 10,
                                 color: Color(0xFF94A3B8))),
                         Text(
                             "${(totalTTC as num).toDouble().toStringAsFixed(2)} €",
                             style: const TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: Color(0xFF0F2648))),
@@ -225,7 +217,6 @@ class _SignatureQuoteCard extends StatelessWidget {
                       children: [
                         const Text("Détails",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1D3557))),
                         const SizedBox(width: 4),

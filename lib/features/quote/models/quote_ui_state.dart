@@ -24,6 +24,12 @@ class RoomTaskState {
   /// Selected products for this task, keyed by product ID with quantity.
   final Map<String, double> selectedProducts;
 
+  /// Selected fournitures for this task, keyed by fourniture ID.
+  final Map<String, Map<String, dynamic>> selectedFournitures;
+
+  /// Number of hours the user will work on this task.
+  double hours;
+
   RoomTaskState({
     required this.taskId,
     required this.roomId,
@@ -33,9 +39,12 @@ class RoomTaskState {
     this.note,
     List<String>? photoPaths,
     Map<String, double>? selectedProducts,
+    Map<String, Map<String, dynamic>>? selectedFournitures,
+    this.hours = 0.0,
   })  : inputs = inputs ?? {},
         photoPaths = photoPaths ?? [],
-        selectedProducts = selectedProducts ?? {};
+        selectedProducts = selectedProducts ?? {},
+        selectedFournitures = selectedFournitures ?? {};
 
   RoomTaskState copyWith({
     bool? isExpanded,
@@ -43,6 +52,8 @@ class RoomTaskState {
     String? note,
     List<String>? photoPaths,
     Map<String, double>? selectedProducts,
+    Map<String, Map<String, dynamic>>? selectedFournitures,
+    double? hours,
   }) {
     return RoomTaskState(
       taskId: taskId,
@@ -57,6 +68,10 @@ class RoomTaskState {
       selectedProducts: selectedProducts != null
           ? Map.from(selectedProducts)
           : Map.from(this.selectedProducts),
+      selectedFournitures: selectedFournitures != null
+          ? Map.from(selectedFournitures)
+          : Map.from(this.selectedFournitures),
+      hours: hours ?? this.hours,
     );
   }
 }

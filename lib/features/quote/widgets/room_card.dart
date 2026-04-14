@@ -52,7 +52,6 @@ class RoomCard extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     color: isSelected ? Colors.white : AppTheme.darkNavy,
                     fontWeight: FontWeight.w700,
                     fontSize: 16,

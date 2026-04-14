@@ -346,4 +346,9 @@ class QuoteRepository {
           }).toList();
         });
   }
+
+  /// Update Quote Status
+  Future<void> updateQuoteStatus(String quoteId, String status) async {
+    await _supabase.from('quotes').update({'status': status}).eq('id', quoteId);
+  }
 }

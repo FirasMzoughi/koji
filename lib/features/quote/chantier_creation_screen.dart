@@ -135,7 +135,6 @@ class _ChantierCreationScreenState
                         'Nouveau chantier',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF0F172A),
@@ -239,7 +238,6 @@ class _ChantierCreationScreenState
                                   Text(
                                     'Suivant',
                                     style: TextStyle(
-                                      fontFamily: 'Outfit',
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
@@ -271,7 +269,6 @@ class _ChantierCreationScreenState
     return Text(
       text,
       style: const TextStyle(
-        fontFamily: 'Outfit',
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: Color(0xFF0F172A),
@@ -288,14 +285,12 @@ class _ChantierCreationScreenState
       controller: controller,
       keyboardType: keyboardType,
       style: const TextStyle(
-        fontFamily: 'Outfit',
         fontSize: 15,
         color: Color(0xFF0F172A),
       ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 15,
           color: const Color(0xFF0F172A).withValues(alpha: 0.35),
         ),
@@ -343,7 +338,6 @@ class _ChantierCreationScreenState
                 Text(
                   _selectedPropertyType,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF0F172A),
@@ -400,7 +394,6 @@ class _ChantierCreationScreenState
                     child: Text(
                       type,
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 15,
                         color: isSelected
                             ? const Color(0xFF0F172A)

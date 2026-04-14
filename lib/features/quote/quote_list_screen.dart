@@ -77,7 +77,7 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                   decoration: InputDecoration(
                     hintText: "Rechercher un devis...",
                     hintStyle:
-                        TextStyle(fontFamily: 'Outfit', color: Colors.grey),
+                        TextStyle( color: Colors.grey),
                     prefixIcon: const SizedBox
                         .shrink(), // No prefix icon used in design, search icon is suffix
                     suffixIcon:
@@ -168,7 +168,6 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                         const SizedBox(height: 16),
                         Text("Aucun devis trouvé",
                             style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 18,
                                 color: AppTheme.textLight)),
                       ],
@@ -216,7 +215,6 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
         child: Text(
           label,
           style: TextStyle(
-            fontFamily: 'Outfit',
             color: isSelected
                 ? (isDark ? Colors.black : Colors.white)
                 : const Color(0xFF9CA3AF),
@@ -297,7 +295,6 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                     Text(
                       client['name'] ?? 'Client Inconnu',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                         color: isDark ? Colors.white : AppTheme.darkNavy,
@@ -313,7 +310,6 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                       child: Text(
                         _formatDateForBadge(dateStr),
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFA18B73),
@@ -327,7 +323,6 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                 Text(
                   "$projectType • $displayQuoteNumber",
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     color: AppTheme.textLight,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -368,7 +363,6 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                           Text(
                             statusLabel,
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontWeight: FontWeight.w600,
                               color: statusTextColor,
                               fontSize: 12,
@@ -382,7 +376,6 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                     Text(
                       "${(totals['ttc'] ?? 0).toStringAsFixed(2).replaceAll('.', ',')} €", // European format roughly
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                         color: isDark ? Colors.white : AppTheme.darkNavy,

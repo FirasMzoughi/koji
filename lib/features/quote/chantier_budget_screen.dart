@@ -112,7 +112,6 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
           const Text(
             'Budget',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: _kDark,
@@ -149,7 +148,6 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
           const Text(
             'Budget',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 17,
               fontWeight: FontWeight.bold,
               color: _kDark,
@@ -204,7 +202,6 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
               Text(
                 label,
                 style: const TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: _kDark,
@@ -213,7 +210,6 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
               Text(
                 '$realStr / $estStr €',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: overBudget ? const Color(0xFFEF4444) : _kDark,
@@ -248,8 +244,7 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Modifier $title',
-          style: const TextStyle(
-              fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: _kDark),
+          style: const TextStyle( fontWeight: FontWeight.bold, color: _kDark),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -259,9 +254,9 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Budget Estimé (€)',
-                labelStyle: TextStyle(fontFamily: 'Outfit'),
+                labelStyle: TextStyle(),
               ),
-              style: const TextStyle(fontFamily: 'Outfit'),
+              style: const TextStyle(),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -269,9 +264,9 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Coût Réel (€)',
-                labelStyle: TextStyle(fontFamily: 'Outfit'),
+                labelStyle: TextStyle(),
               ),
-              style: const TextStyle(fontFamily: 'Outfit'),
+              style: const TextStyle(),
             ),
           ],
         ),
@@ -280,7 +275,7 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler',
                 style:
-                    TextStyle(fontFamily: 'Outfit', color: Color(0xFF64748B))),
+                    TextStyle( color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -319,7 +314,7 @@ class _ChantierBudgetScreenState extends State<ChantierBudgetScreen> {
               elevation: 0,
             ),
             child: const Text('Enregistrer',
-                style: TextStyle(fontFamily: 'Outfit', color: Colors.white)),
+                style: TextStyle( color: Colors.white)),
           ),
         ],
       ),

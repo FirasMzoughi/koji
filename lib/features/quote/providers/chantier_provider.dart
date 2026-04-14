@@ -18,6 +18,11 @@ final chantierBudgetProvider = StreamProvider.family<Map<String, dynamic>?, Stri
   return ref.watch(chantierRepositoryProvider).streamBudget(chantierId);
 });
 
+final openChantierTasksProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, userId) {
+  return ref.watch(chantierRepositoryProvider).getOpenTasksForUser(userId);
+});
+
 // --- Documents ---
 final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
   return DocumentRepository();
@@ -25,4 +30,8 @@ final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
 
 final chantierDocumentsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, chantierId) {
   return ref.watch(documentRepositoryProvider).streamChantierDocuments(chantierId);
+});
+
+final chantierQuotesProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, chantierId) {
+  return ref.watch(chantierRepositoryProvider).streamChantierQuotes(chantierId);
 });

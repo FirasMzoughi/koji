@@ -170,7 +170,6 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
         title: const Text(
           'Profil Entreprise',
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontWeight: FontWeight.bold,
             color: Color(0xFF1E3A8A),
           ),
@@ -254,7 +253,6 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                       child: Text(
                         'Changer le logo',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 14,
                           color: Color(0xFF64748B),
                         ),
@@ -296,7 +294,6 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                           : const Text(
                               'Enregistrer',
                               style: TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -315,7 +312,6 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       child: Text(
         title,
         style: const TextStyle(
-          fontFamily: 'Outfit',
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Color(0xFF1E3A8A),
@@ -403,7 +399,6 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                       Text(
                         'Coût horaire',
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -412,7 +407,6 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                   Text(
                     _calculateHourlyRate(),
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1E3A8A),

@@ -132,7 +132,6 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                               Text(
                                 "Ajouter une pièce ",
                                 style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
                                   color: AppTheme.darkNavy,
@@ -149,7 +148,6 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                                   decoration: InputDecoration(
                                     hintText: 'Ex: Buanderie, Garage...',
                                     hintStyle: TextStyle(
-                                      fontFamily: 'Outfit',
                                       color: const Color(0xFF9CA3AF),
                                       fontSize: 14,
                                     ),
@@ -203,7 +201,6 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                           child: Text(
                             "Suggestions Rapides",
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               color: const Color(0xFF9CA3AF),
                               fontSize: 14,
                             ),
@@ -267,7 +264,6 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                     Text(
                       'Continuer (${_selectedRoomIds.length} sélectionnés)',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -323,7 +319,6 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                 Text(
                   room.label,
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     color: isSelected ? Colors.white : AppTheme.darkNavy,
                     fontWeight: FontWeight.w700,
                     fontSize: 16,

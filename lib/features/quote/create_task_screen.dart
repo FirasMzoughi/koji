@@ -2,12 +2,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:koji/core/theme.dart';
-import 'package:koji/features/quote/product_selection_screen.dart';
 import 'package:koji/features/quote/repository/task_repository.dart';
-import 'package:koji/features/quote/models/quote_models.dart';
-import 'package:koji/features/quote/repository/product_repository.dart'; // For Product model if needed
 
 class CreateTaskScreen extends ConsumerStatefulWidget {
   final String profession;
@@ -39,20 +37,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   }
 
   void _addProduct() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ProductSelectionScreen(roomId: 'temp', taskId: 'temp'),
-      ),
-    );
-
-    if (result != null && result is Map) {
-      final Product product = result['product'];
-      final double qty = result['quantity'];
-      setState(() {
-        _selectedProducts[product.id] = qty;
-      });
-    }
+    context.push('/fournitures');
   }
 
   void _saveTask() async {
@@ -86,7 +71,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Créer une tâche', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold, color: Color(0xFF0F2648))),
+        title: const Text('Créer une tâche', style: TextStyle( fontWeight: FontWeight.bold, color: Color(0xFF0F2648))),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF0F2648)),
@@ -102,7 +87,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               TextFormField(
                 controller: _titleController,
                 validator: (v) => v!.isEmpty ? 'Titre requis' : null,
-                style: const TextStyle(fontFamily: 'Outfit', fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle( fontSize: 18, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   labelText: 'Nom de la tâche',
                   hintText: 'ex: Pose de fenêtre spéciale',
@@ -116,7 +101,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
-                style: const TextStyle(fontFamily: 'Outfit', fontSize: 14),
+                style: const TextStyle( fontSize: 14),
                 decoration: InputDecoration(
                   labelText: 'Notes / Description',
                   hintText: 'Détails techniques, instructions...',
@@ -176,46 +161,24 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               
               const SizedBox(height: 24),
               
-              // Products
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Produits par défaut', style: AppTheme.headingStyle(context).copyWith(fontSize: 16)),
+                  Text('Fournitures', style: AppTheme.headingStyle(context).copyWith(fontSize: 16)),
                   TextButton.icon(
                     onPressed: _addProduct,
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Ajouter'),
+                    label: const Text('Ouvrir'),
                   ),
                 ],
               ),
-              if (_selectedProducts.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: Text('Aucun produit sélectionné', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'Gérez vos fournitures depuis l’outil Fournitures.',
+                  style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
                 ),
-              
-              ..._selectedProducts.entries.map((e) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  leading: const Icon(Icons.inventory_2_outlined, color: AppTheme.darkNavy),
-                  title: FutureBuilder(
-                    future: ref.read(productRepositoryProvider).getProducts(), // Correct method name
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return Text(e.key); // Fallback ID
-                      final prod = (snapshot.data as List<Product>).firstWhere((p) => p.id == e.key, orElse: () => Product(id: e.key, name: 'Produit inconnu', imageUrl: '', priceHT: 0, unit: ''));
-                      return Text(prod.name);
-                    },
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                       Text('x${e.value}'),
-                       IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => setState(() => _selectedProducts.remove(e.key)))
-                    ],
-                  ),
-                ),
-              )),
+              ),
               
               const SizedBox(height: 40),
               

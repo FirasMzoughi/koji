@@ -23,11 +23,10 @@ class FormTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       style: TextStyle(
-        fontFamily: 'Outfit',
       ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontFamily: 'Outfit', color: Colors.grey[400]),
+        hintStyle: TextStyle( color: Colors.grey[400]),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(

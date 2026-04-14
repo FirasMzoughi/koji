@@ -66,7 +66,6 @@ class AssignmentSuccessScreen extends StatelessWidget {
                   const Text(
                     "Affectation Confirmée!",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: darkNavy,
@@ -80,7 +79,6 @@ class AssignmentSuccessScreen extends StatelessWidget {
                     "Les artisans ont été notifiés par SMS\net sur leur application",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 16,
                       color: Colors.grey[400],
                       height: 1.5,
@@ -109,7 +107,6 @@ class AssignmentSuccessScreen extends StatelessWidget {
                           Text(
                             "Voir le planning",
                             style: TextStyle(
-                              fontFamily: 'Outfit',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -131,7 +128,6 @@ class AssignmentSuccessScreen extends StatelessWidget {
                     child: const Text(
                       "Retour à l'accueil",
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: darkNavy,

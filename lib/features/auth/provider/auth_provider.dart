@@ -21,12 +21,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       : super(const AsyncValue.loading()) {
     _logger.i('🔧 AuthNotifier initialized');
     _authRepository.authStateChanges.listen((authState) async {
-      final user = authState.session?.user;
+      // Only update state when there is an active session.
+      // During email-confirmation signup Supabase fires authStateChange with a
+      // user object but NO session — we must ignore that event so the signup
+      // screen can show the "check your email" dialog without being interrupted.
+      final session = authState.session;
+      final user = session?.user;
       if (user != null) {
-        _logger.i('✅ Auth state changed: User logged in');
+        _logger.i('✅ Auth state changed: User logged in (session active)');
         state = AsyncValue.data(user);
       } else {
-        _logger.i('🚪 Auth state changed: User logged out');
+        _logger.i('🚪 Auth state changed: No active session');
         state = const AsyncValue.data(null);
       }
     });
@@ -45,23 +50,31 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
-  Future<void> signUpWithEmailAndPassword(String email, String password,
+  Future<bool> signUpWithEmailAndPassword(String email, String password,
       {bool isPro = false}) async {
     _logger.i('📝 Attempting email/password signup (isPro: $isPro)');
     state = const AsyncValue.loading();
     try {
       final response = await _authRepository.createUserWithEmailAndPassword(
-          email: email, password: password);
+          email: email, password: password, isPro: isPro);
       _logger.i('✅ Supabase Auth account created');
 
-      if (response.user != null) {
-        _logger.i('💾 Saving user to Supabase');
-        await _userRepository.saveUser(response.user!.id, email, isPro: isPro);
-        _logger.i('✅ User saved to Supabase successfully');
+      // The DB trigger handle_new_user() inserts the row into public.users
+      // automatically on auth.users INSERT — no client-side insert needed.
+      // Attempting it here would fail RLS because the session is null until
+      // the user clicks the confirmation email.
+
+      if (response.session == null) {
+        _logger.i('📧 Email confirmation required — trigger will create user row');
+        state = const AsyncValue.data(null);
+        return true;
       }
+
+      return false;
     } catch (e, st) {
       _logger.e('❌ Signup failed', error: e, stackTrace: st);
       state = AsyncValue.error(e, st);
+      return false;
     }
   }
 

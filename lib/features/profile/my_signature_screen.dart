@@ -134,7 +134,6 @@ class _MySignatureScreenState extends ConsumerState<MySignatureScreen> {
       appBar: AppBar(
         title: const Text('Ma Signature',
             style: TextStyle(
-                fontFamily: 'Outfit',
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F2648))),
         centerTitle: true,
@@ -156,7 +155,6 @@ class _MySignatureScreenState extends ConsumerState<MySignatureScreen> {
             const Text(
               "Configuration de la signature",
               style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1E3A8A)),
@@ -165,7 +163,6 @@ class _MySignatureScreenState extends ConsumerState<MySignatureScreen> {
             const Text(
               "Cette signature sera automatiquement apposée sur vos devis générés et les documents envoyés à vos clients.",
               style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 14,
                   color: Color(0xFF64748B),
                   height: 1.5),
@@ -176,7 +173,6 @@ class _MySignatureScreenState extends ConsumerState<MySignatureScreen> {
               children: [
                 const Text("Dessinez votre signature",
                     style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF0F2648))),
                 IconButton(
@@ -221,14 +217,13 @@ class _MySignatureScreenState extends ConsumerState<MySignatureScreen> {
                         child: Image.network(
                           _existingSignatureUrl!,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Text("Erreur de chargement", style: TextStyle(fontFamily: 'Outfit')),
+                          errorBuilder: (_, __, ___) => const Text("Erreur de chargement", style: TextStyle()),
                         ),
                       )
                     else if (_points.isEmpty)
                       const Center(
                           child: Text("Zone de signature tactile",
                               style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   color: Color(0xFFCBD5E1),
                                   fontSize: 14))),
                     GestureDetector(
@@ -284,7 +279,6 @@ class _MySignatureScreenState extends ConsumerState<MySignatureScreen> {
                     Text(
                       _isSaving ? "Enregistrement..." : "Sauvegarder",
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),

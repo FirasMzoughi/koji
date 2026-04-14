@@ -116,7 +116,6 @@ class _ProductSelectionScreenState
                               : "Recherche des Fournitures",
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: darkNavy,
@@ -191,7 +190,6 @@ class _ProductSelectionScreenState
               onChanged: (val) =>
                   setState(() => _searchQuery = val),
               style: const TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
                 color: Color(0xFF0A1227),
@@ -199,7 +197,6 @@ class _ProductSelectionScreenState
               decoration: InputDecoration(
                 hintText: "Peinture, Enduit, Outillage...",
                 hintStyle: TextStyle(
-                  fontFamily: 'Outfit',
                   color: Colors.grey[400],
                   fontWeight: FontWeight.w400,
                 ),
@@ -240,7 +237,6 @@ class _ProductSelectionScreenState
               Text(
                 '${filteredProducts.length} Résultats trouvés',
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 13,
                   color: Colors.grey[500],
                   fontWeight: FontWeight.w500,
@@ -251,7 +247,6 @@ class _ProductSelectionScreenState
                   Text(
                     'Tirer par',
                     style: const TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 13,
                       color: Color(0xFF0A1227),
                       fontWeight: FontWeight.w700,
@@ -303,7 +298,6 @@ class _ProductSelectionScreenState
         child: Text(
           label,
           style: TextStyle(
-            fontFamily: 'Outfit',
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: isActive ? Colors.white : Colors.grey[500],
@@ -330,7 +324,6 @@ class _ProductSelectionScreenState
                 child: Text(
                   g,
                   style: const TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -354,7 +347,6 @@ class _ProductSelectionScreenState
             Text(
               _selectedGamme ?? 'Gamme',
               style: TextStyle(
-                fontFamily: 'Outfit',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: isActive ? Colors.white : Colors.grey[500],
@@ -456,7 +448,6 @@ class _ProductSelectionScreenState
                             Text(
                               "${product.brand.toUpperCase()} PREMIUM",
                               style: const TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF8B95A5),
@@ -492,7 +483,6 @@ class _ProductSelectionScreenState
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: darkNavy,
@@ -508,7 +498,6 @@ class _ProductSelectionScreenState
                             Text(
                               '10m²/L • 15L',
                               style: const TextStyle(
-                                fontFamily: 'Outfit',
                                 fontSize: 11,
                                 color: Color(0xFF8B95A5),
                               ),
@@ -528,7 +517,6 @@ class _ProductSelectionScreenState
                                 text:
                                     '${product.priceHT.toStringAsFixed(2)}€',
                                 style: const TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 17,
                                   fontWeight: FontWeight.w800,
                                   color: darkNavy,
@@ -537,7 +525,6 @@ class _ProductSelectionScreenState
                               const TextSpan(
                                 text: ' HT/U',
                                 style: TextStyle(
-                                  fontFamily: 'Outfit',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                   color: Color(0xFF8B95A5),
@@ -587,8 +574,7 @@ class _ProductSelectionScreenState
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20)),
             title: const Text("Nouveau Produit",
-                style: TextStyle(
-                    fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
+                style: TextStyle( fontWeight: FontWeight.bold)),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,

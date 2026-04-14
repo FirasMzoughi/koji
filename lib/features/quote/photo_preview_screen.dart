@@ -166,7 +166,6 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                 child: Text(
                   '${_currentIndex + 1}/${_images.length}',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: AppTheme.textLight,
                   ),
@@ -185,7 +184,6 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                 child: Text(
                   'Passer',
                   style: TextStyle(
-                    fontFamily: 'Outfit',
                     fontSize: 14,
                     color: AppTheme.darkNavy,
                     fontWeight: FontWeight.w600,
@@ -199,8 +197,7 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
               child: _images.isEmpty
                   ? Center(
                       child: Text("Aucune image",
-                          style: TextStyle(
-                              fontFamily: 'Outfit', color: AppTheme.textLight)))
+                          style: TextStyle( color: AppTheme.textLight)))
                   : PageView.builder(
                       controller: _pageController,
                       itemCount: _images.length,
@@ -278,7 +275,6 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                     Text(
                       'Suivant',
                       style: TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -308,7 +304,6 @@ class _PhotoPreviewScreenState extends ConsumerState<PhotoPreviewScreen> {
                   label: Text(
                     'Reprendre la photo',
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                       color: AppTheme.textLight,
                       fontWeight: FontWeight.w500,

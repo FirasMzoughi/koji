@@ -123,7 +123,6 @@ class HomeGridItem extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: isDark

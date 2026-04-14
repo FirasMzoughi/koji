@@ -35,7 +35,6 @@ class ContinueButton extends StatelessWidget {
           Text(
             '$label ($count sélectionnés)',
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),

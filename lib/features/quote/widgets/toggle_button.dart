@@ -49,7 +49,6 @@ class ToggleButton extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   color: fg,
                   fontWeight: FontWeight.w600,
                 ),

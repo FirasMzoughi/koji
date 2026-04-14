@@ -129,7 +129,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                           "Affectation aux chantiers",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Outfit',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: darkNavy,
@@ -157,7 +156,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                       onChanged: (val) =>
                           setState(() => _searchQuery = val),
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: darkNavy,
@@ -165,7 +163,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                       decoration: InputDecoration(
                         hintText: "Rechercher un chantier...",
                         hintStyle: TextStyle(
-                          fontFamily: 'Outfit',
                           color: Colors.grey[400],
                           fontWeight: FontWeight.w400,
                         ),
@@ -187,7 +184,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                   child: Text(
                     "Sélection du chantier",
                     style: TextStyle(
-                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: darkNavy,
@@ -250,7 +246,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                       Text(
                         "Continuer (${_selectedProjectIds.length} sélectionnés)",
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: _selectedProjectIds.isNotEmpty
@@ -339,7 +334,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                       child: Text(
                         project.status,
                         style: TextStyle(
-                          fontFamily: 'Outfit',
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: statusText,
@@ -350,7 +344,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                     Text(
                       project.title,
                       style: const TextStyle(
-                        fontFamily: 'Outfit',
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                         color: darkNavy,
@@ -414,7 +407,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                     ? "✓ Sélectionné"
                     : "Sélectionner ce chantier",
                 style: TextStyle(
-                  fontFamily: 'Outfit',
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: isSelected
@@ -438,7 +430,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
           child: Text(
             text,
             style: const TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 13,
               color: Color(0xFF8B95A5),
             ),
@@ -461,7 +452,6 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
           Text(
             "Aucun chantier trouvé",
             style: TextStyle(
-              fontFamily: 'Outfit',
               fontSize: 16,
               color: Colors.grey[400],
             ),
