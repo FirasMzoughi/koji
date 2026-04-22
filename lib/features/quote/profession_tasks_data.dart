@@ -9,7 +9,36 @@ class TaskItem {
   final String id;
   final String label;
 
-  TaskItem({required this.id, required this.label});
+  // KOJI Banque de Temps fields (null for legacy tasks)
+  final String? code;
+  final String? famille;
+  final String? unite;
+  final double? tempsHU;
+  final String? typePoste;  // 'POSTE' or 'SOUS-POSTE'
+  final String? parentId;
+  final List<TaskItem> subTasks;
+  final bool isGlobal; // user_id IS NULL
+
+  TaskItem({
+    required this.id,
+    required this.label,
+    this.code,
+    this.famille,
+    this.unite,
+    this.tempsHU,
+    this.typePoste,
+    this.parentId,
+    this.subTasks = const [],
+    this.isGlobal = false,
+  });
+
+  bool get isParent => subTasks.isNotEmpty || typePoste == 'POSTE';
+  bool get isChild  => parentId != null;
+
+  double get effectiveTempsHU {
+    if (subTasks.isNotEmpty) return subTasks.fold(0.0, (s, t) => s + (t.tempsHU ?? 0));
+    return tempsHU ?? 0;
+  }
 }
 
 // Profession-specific task data

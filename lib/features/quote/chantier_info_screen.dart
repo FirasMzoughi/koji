@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/features/synchronization/data/project_repository.dart';
 
-class ChantierInfoScreen extends StatefulWidget {
+class ChantierInfoScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
 
   const ChantierInfoScreen({super.key, required this.data});
 
   @override
-  State<ChantierInfoScreen> createState() => _ChantierInfoScreenState();
+  ConsumerState<ChantierInfoScreen> createState() => _ChantierInfoScreenState();
 }
 
-class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
-  // Sample team members
-  final List<Map<String, dynamic>> _team = [];
+class _ChantierInfoScreenState extends ConsumerState<ChantierInfoScreen> {
+  final ProjectRepository _projectRepo = ProjectRepository();
+  List<Map<String, dynamic>> _team = [];
+  bool _loadingTeam = false;
 
   String get _reference =>
       widget.data['reference'] as String? ?? 'Nouveau chantier';
@@ -20,9 +23,67 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
   String get _postalCode => widget.data['postalCode'] as String? ?? '';
   String get _city => widget.data['city'] as String? ?? '';
 
+  // Client info from data (set when a chantier is linked to a quote)
+  String get _clientName =>
+      widget.data['clientName'] as String? ??
+      widget.data['client_name'] as String? ??
+      'Client du chantier';
+  String get _clientPhone =>
+      widget.data['clientPhone'] as String? ??
+      widget.data['client_phone'] as String? ??
+      '';
+  String get _clientEmail =>
+      widget.data['clientEmail'] as String? ??
+      widget.data['client_email'] as String? ??
+      '';
+
+  String get _startDate =>
+      widget.data['startDate'] as String? ??
+      widget.data['start_date'] as String? ??
+      '';
+  String get _endDate =>
+      widget.data['endDate'] as String? ??
+      widget.data['end_date'] as String? ??
+      '';
+  String get _status =>
+      widget.data['status'] as String? ?? 'En Cours';
+  String get _propertyType =>
+      widget.data['propertyType'] as String? ?? '–';
+
   String get _fullAddress {
     final parts = [_street, _postalCode, _city].where((s) => s.isNotEmpty);
     return parts.join(', ');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTeam();
+  }
+
+  Future<void> _loadTeam() async {
+    final projectId = widget.data['id'] as String?;
+    if (projectId == null) return;
+
+    setState(() => _loadingTeam = true);
+    try {
+      final assignments =
+          await _projectRepo.fetchAssignmentsForProject(projectId);
+      if (mounted) {
+        setState(() {
+          _team = assignments
+              .map((a) => {
+                    'name': 'Ouvrier ${a.workerId.substring(0, 6)}',
+                    'role': a.role ?? 'Artisan',
+                  })
+              .toList();
+        });
+      }
+    } catch (_) {
+      // Leave _team empty if fetch fails
+    } finally {
+      if (mounted) setState(() => _loadingTeam = false);
+    }
   }
 
   @override
@@ -118,7 +179,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
           // Avatar + name + contact icons
           Row(
             children: [
-              // Avatar
+              // Avatar with initial
               Container(
                 width: 52,
                 height: 52,
@@ -126,48 +187,59 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                   color: const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(26),
                 ),
-                child: const Icon(
-                  Icons.person_outline_rounded,
-                  color: Color(0xFF64748B),
-                  size: 28,
+                child: Center(
+                  child: Text(
+                    _clientName.isNotEmpty
+                        ? _clientName[0].toUpperCase()
+                        : 'C',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Client Du Chantier',
-                      style: TextStyle(
+                      _clientName,
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF0F172A),
                       ),
                     ),
-                    Text(
-                      'Client De Chantier',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF94A3B8),
+                    if (_clientEmail.isNotEmpty)
+                      Text(
+                        _clientEmail,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF94A3B8),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
               // Phone icon
-              _buildContactIcon(Icons.phone_rounded, () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Appel en cours...')),
-                );
-              }),
-              const SizedBox(width: 8),
+              if (_clientPhone.isNotEmpty)
+                _buildContactIcon(Icons.phone_rounded, () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text('Appel : $_clientPhone')),
+                  );
+                }),
+              if (_clientPhone.isNotEmpty) const SizedBox(width: 8),
               // Email icon
-              _buildContactIcon(Icons.mail_outline_rounded, () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Email en cours...')),
-                );
-              }),
+              if (_clientEmail.isNotEmpty)
+                _buildContactIcon(Icons.mail_outline_rounded, () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Email : $_clientEmail')),
+                  );
+                }),
             ],
           ),
 
@@ -175,7 +247,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
           const Divider(color: Color(0xFFF1F5F9), height: 1),
           const SizedBox(height: 14),
 
-          // Address
+          // Site address
           if (_fullAddress.isNotEmpty)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,11 +269,11 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
             )
           else
             Row(
-              children: [
-                const Icon(Icons.location_on_outlined,
+              children: const [
+                Icon(Icons.location_on_outlined,
                     size: 16, color: Color(0xFF64748B)),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Adresse non renseignée',
                   style: TextStyle(
                     fontSize: 14,
@@ -235,6 +307,29 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
   // CHANTIER DETAILS CARD
   // ────────────────────────────────────────────────────────────
   Widget _buildChantierDetailsCard() {
+    final startDisplay = _startDate.isNotEmpty ? _startDate : _formatDate(DateTime.now());
+    final endDisplay = _endDate.isNotEmpty
+        ? _endDate
+        : _formatDate(DateTime.now().add(const Duration(days: 90)));
+
+    // Status badge color
+    Color badgeColor;
+    Color badgeTextColor;
+    switch (_status.toLowerCase()) {
+      case 'terminé':
+      case 'termine':
+        badgeColor = const Color(0xFFDCFCE7);
+        badgeTextColor = const Color(0xFF15803D);
+        break;
+      case 'en attente':
+        badgeColor = const Color(0xFFFEF9C3);
+        badgeTextColor = const Color(0xFFCA8A04);
+        break;
+      default:
+        badgeColor = const Color(0xFFDCFCE7);
+        badgeTextColor = const Color(0xFF15803D);
+    }
+
     return _buildCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,11 +338,11 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                children: [
-                  const Icon(Icons.description_outlined,
+                children: const [
+                  Icon(Icons.description_outlined,
                       size: 18, color: Color(0xFF0F172A)),
-                  const SizedBox(width: 8),
-                  const Text(
+                  SizedBox(width: 8),
+                  Text(
                     'Chantier',
                     style: TextStyle(
                       fontSize: 16,
@@ -262,15 +357,15 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: badgeColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'En Cours',
+                child: Text(
+                  _status,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF15803D),
+                    color: badgeTextColor,
                   ),
                 ),
               ),
@@ -300,7 +395,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                             size: 13, color: Color(0xFF64748B)),
                         const SizedBox(width: 4),
                         Text(
-                          _formatDate(DateTime.now()),
+                          startDisplay,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -331,8 +426,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                             size: 13, color: Color(0xFF64748B)),
                         const SizedBox(width: 4),
                         Text(
-                          _formatDate(
-                              DateTime.now().add(const Duration(days: 90))),
+                          endDisplay,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -359,7 +453,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
           const SizedBox(height: 6),
           Text(
             'Référence: $_reference\n'
-            'Type de bien: ${widget.data['propertyType'] ?? '–'}',
+            'Type de bien: $_propertyType',
             style: const TextStyle(
               fontSize: 14,
               color: Color(0xFF334155),
@@ -380,11 +474,10 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              const Icon(Icons.group_outlined,
-                  size: 20, color: Color(0xFF0F172A)),
-              const SizedBox(width: 8),
-              const Text(
+            children: const [
+              Icon(Icons.group_outlined, size: 20, color: Color(0xFF0F172A)),
+              SizedBox(width: 8),
+              Text(
                 "L'équipe Kôji",
                 style: TextStyle(
                   fontSize: 16,
@@ -396,72 +489,96 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Team members
-          ..._team.map((member) => _buildTeamMemberRow(member)),
+          if (_loadingTeam)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: CircularProgressIndicator(
+                    color: Color(0xFF0F172A), strokeWidth: 2),
+              ),
+            )
+          else ...[
+            // Team members
+            ..._team.map((member) => _buildTeamMemberRow(member)),
 
-          // Add contact button
-          GestureDetector(
-            onTap: _onAddContact,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                    child: const Icon(
-                      Icons.person_add_outlined,
-                      size: 20,
-                      color: Color(0xFF64748B),
-                    ),
+            if (_team.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Aucun membre assigné',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF94A3B8),
+                    fontStyle: FontStyle.italic,
                   ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Ajouter un contact',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF0F172A),
+                ),
+              ),
+
+            // Add contact button
+            GestureDetector(
+              onTap: _onAddContact,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: const Icon(
+                        Icons.person_add_outlined,
+                        size: 20,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ajouter un contact',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
-                        ),
-                        Text(
-                          'Artisans ou partenaires',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF94A3B8),
+                          Text(
+                            'Artisans ou partenaires',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF94A3B8),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF0F172A)),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF0F172A)),
+                      ),
+                      child: const Icon(Icons.add,
+                          size: 16, color: Color(0xFF0F172A)),
                     ),
-                    child: const Icon(Icons.add,
-                        size: 16, color: Color(0xFF0F172A)),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildTeamMemberRow(Map<String, dynamic> member) {
+    final name = member['name'] as String? ?? 'Ouvrier';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -476,7 +593,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
             ),
             child: Center(
               child: Text(
-                (member['name'] as String).substring(0, 1).toUpperCase(),
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -491,7 +608,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  member['name'] as String,
+                  name,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -499,7 +616,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
                   ),
                 ),
                 Text(
-                  member['role'] as String,
+                  member['role'] as String? ?? 'Artisan',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF94A3B8),
@@ -539,18 +656,8 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan',
-      'Fév',
-      'Mar',
-      'Avr',
-      'Mai',
-      'Juin',
-      'Juil',
-      'Aoû',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Déc'
+      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
+      'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -574,20 +681,13 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
           children: [
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(
-                hintText: 'Nom',
-                hintStyle: TextStyle(),
-              ),
-              style: const TextStyle(),
+              decoration: const InputDecoration(hintText: 'Nom'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: roleCtrl,
               decoration: const InputDecoration(
-                hintText: 'Rôle (ex: Architecte)',
-                hintStyle: TextStyle(),
-              ),
-              style: const TextStyle(),
+                  hintText: 'Rôle (ex: Architecte)'),
             ),
           ],
         ),
@@ -595,8 +695,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler',
-                style:
-                    TextStyle( color: Color(0xFF64748B))),
+                style: TextStyle(color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -619,7 +718,7 @@ class _ChantierInfoScreenState extends State<ChantierInfoScreen> {
               elevation: 0,
             ),
             child: const Text('Ajouter',
-                style: TextStyle( color: Colors.white)),
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

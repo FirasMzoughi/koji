@@ -20,13 +20,14 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
     "En cours",
     "Acceptés",
     "Refusés",
+    "Archives",
   ];
 
   // Tab controller setup
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this); // 5 tabs
     _tabController.addListener(() {
       setState(() {});
     });
@@ -161,19 +162,28 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                 data: (chantiers) {
                   // Filter logic based on tabs
                   final filtered = chantiers.where((c) {
-                    if (_tabController.index == 0) return true; // Tous
-
                     final status = c['status']?.toString().toLowerCase() ?? '';
+
+                    final isArchived = status == 'termine' ||
+                        status == 'terminé' ||
+                        status == 'completed' ||
+                        status == 'done' ||
+                        status == 'archived';
+
+                    if (_tabController.index == 0) return !isArchived; // Tous (actifs)
                     if (_tabController.index == 1 &&
                         (status == 'en cours' || status == 'en attente')) {
                       return true; // En cours
                     }
-                    if (_tabController.index == 2 && 
-                         (status == 'accepté' || status == 'terminé')) {
+                    if (_tabController.index == 2 &&
+                        (status == 'accepté' || status == 'accepte')) {
                       return true; // Acceptés
                     }
                     if (_tabController.index == 3 && status == 'refusé') {
                       return true; // Refusés
+                    }
+                    if (_tabController.index == 4 && isArchived) {
+                      return true; // Archives (terminé + archived)
                     }
                     return false;
                   }).toList();
@@ -234,8 +244,9 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
   String _formatStatusForUI(String? dbStatus) {
     if (dbStatus == null) return 'En cours';
     final s = dbStatus.toLowerCase();
-    if (s.contains('accepté')) return 'Accepté';
-    if (s.contains('terminé')) return 'Terminé';
+    if (s.contains('accepté') || s.contains('accepte')) return 'Accepté';
+    if (s == 'termine' || s == 'terminé' || s == 'completed' || s == 'done') return 'Terminé';
+    if (s == 'archived') return 'Archivé';
     if (s.contains('refusé')) return 'Refusé';
     return 'En cours';
   }
@@ -364,6 +375,11 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
         bgColor = const Color(0xFFECFDF5);
         textColor = const Color(0xFF10B981);
         icon = Icons.check_circle;
+        break;
+      case 'Archivé':
+        bgColor = const Color(0xFFF1F5F9);
+        textColor = const Color(0xFF64748B);
+        icon = Icons.archive_outlined;
         break;
       case 'Refusé':
         bgColor = const Color(0xFFFEF2F2);

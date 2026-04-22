@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:koji/core/theme.dart';
-import 'package:koji/core/responsive_helper.dart';
-import 'package:koji/features/quote/model/expense_item.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koji/features/auth/provider/auth_provider.dart';
@@ -11,6 +8,42 @@ import 'package:koji/features/quote/repository/quote_repository.dart';
 import 'package:koji/features/quote/providers/quote_task_provider.dart';
 import 'package:intl/intl.dart';
 
+// ─── Data model for one editable line ─────────────────────────────────────────
+class _DevisLine {
+  String taskId;
+  String label;
+  String code;
+  String famille;
+  String unite;
+
+  double qty;          // editable
+  double tempsHU;      // editable – temps h/u
+  double tauxHoraire;  // from profile
+  double conditionCoeff;
+
+  double fournituresUnitPrice; // editable – fournitures €/u
+
+  // derived
+  double get moUnitPrice   => tempsHU * tauxHoraire * conditionCoeff;
+  double get totalMO       => moUnitPrice * qty;
+  double get totalFournitures => fournituresUnitPrice * qty;
+  double get totalLigne    => totalMO + totalFournitures;
+
+  _DevisLine({
+    required this.taskId,
+    required this.label,
+    this.code = '',
+    this.famille = '',
+    this.unite = 'u',
+    this.qty = 1.0,
+    this.tempsHU = 0.0,
+    this.tauxHoraire = 0.0,
+    this.conditionCoeff = 1.0,
+    this.fournituresUnitPrice = 0.0,
+  });
+}
+
+// ─── Screen ────────────────────────────────────────────────────────────────────
 class QuoteDetailScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
 
@@ -21,114 +54,127 @@ class QuoteDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
-  bool _isEditing = false;
-  late Map<String, List<ExpenseItem>> _expensesByRoom;
-  late List<String> _rooms;
-  Map<String, dynamic> _roomTasks = {};
+  bool _isSaving = false;
   bool _isLoadingDetails = false;
 
-  // Header State Variables
-  String _companyName = "Koji ";
-  String _companyAddress = "8 Av. des artisans, Paris";
-  String _companyPhone = "01 42 55 000 77";
-  String _companyEmail = "Contact@Koji.fr";
-
-  String _clientName = "M. Dubois";
-  String _clientAddress = "12 Rue de la Paix, 75001 Paris";
-  String _clientEmail = "client@email.com";
-
-  String _quoteNumber = "D - 29 - 2025";
-  String _quoteDate = "12 Oct 2023";
-  String _quoteValidity = "30 Jours";
-
-  String _siteAddress = "12 Rue de la Paix, 75001 Paris";
-
+  // Header
+  String _companyName    = 'Koji';
+  String _companyAddress = '8 Av. des artisans, Paris';
+  String _companyPhone   = '01 42 55 000 77';
+  String _companyEmail   = 'Contact@Koji.fr';
+  String _clientName     = 'Client';
+  String _clientAddress  = '';
+  String _clientEmail    = '';
+  String _quoteNumber    = '';
+  String _quoteDate      = '';
+  String _quoteValidity  = '30 Jours';
+  String _siteAddress    = '';
   String? _logoPath;
+  double _hourlyRate     = 0.0;
+
+  // KOJI devis lines grouped by room
+  // Map<roomId, List<_DevisLine>>
+  final Map<String, List<_DevisLine>> _linesByRoom = {};
+  final List<String> _roomOrder = [];
 
   @override
   void initState() {
     super.initState();
+    _quoteNumber = 'D-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    _quoteDate   = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
-    // Check if editing existing quote (has ID)
-    final isExisting = widget.data.containsKey('id');
-
-    if (isExisting) {
+    if (widget.data.containsKey('id')) {
       _loadExistingQuote();
     } else {
-      _initializeNewQuote();
+      _initFromProvider();
     }
-  }
-
-  void _initializeNewQuote() {
-    // Standard initialization from potential previous steps
-    _expensesByRoom = {};
-    if (widget.data['expenses'] != null) {
-      (widget.data['expenses'] as Map<String, dynamic>).forEach((key, value) {
-        if (value is List && value.isNotEmpty && value.first is ExpenseItem) {
-          _expensesByRoom[key] = List<ExpenseItem>.from(value);
-        }
-      });
-    }
-    _rooms = _expensesByRoom.keys.toList();
-
-    // Initialize Client Info from data if available
-    if (widget.data['client'] != null) {
-      final client = widget.data['client'] as Map<String, dynamic>;
-      _clientName = client['name'] ?? _clientName;
-      _clientAddress = client['address'] ?? _clientAddress;
-      _clientEmail = client['email'] ?? _clientEmail;
-      // Add other fields if QuoteDetailScreen supports them
-    }
-
-    if (widget.data['tasks'] != null) {
-      _roomTasks = widget.data['tasks'] as Map<String, dynamic>;
-    }
-
-    // Default values
-    _quoteNumber =
-        'D-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-    _quoteDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
-
-    // Fetch user business info
     _fetchBusinessInfo();
   }
 
-  void _loadExistingQuote() {
-    final data = widget.data;
-    _quoteNumber = data['quoteNumber'] ?? '';
-    _quoteDate = data['date'] ?? '';
-    _quoteValidity = data['validity'] ?? '30 Jours';
+  // ── Initialize from new quote flow ──────────────────────────────────────────
+  void _initFromProvider() {
+    final tasks = widget.data['tasks'] as Map<String, dynamic>?;
+    if (tasks == null) return;
 
-    // Helper function to safely convert Maps
-    Map<String, dynamic> _safeMapConvert(dynamic field) {
-      if (field == null) return {};
-      if (field is Map<String, dynamic>) return field;
-      if (field is Map) return Map<String, dynamic>.from(field);
+    final client = widget.data['client'] as Map<String, dynamic>?;
+    if (client != null) {
+      _clientName    = client['name']    ?? _clientName;
+      _clientAddress = client['address'] ?? _clientAddress;
+      _clientEmail   = client['email']   ?? _clientEmail;
+    }
+    _siteAddress = widget.data['siteAddress'] ?? '';
+
+    tasks.forEach((roomId, roomTasksRaw) {
+      if (roomTasksRaw is! Map) return;
+      final roomTasks = roomTasksRaw as Map<String, dynamic>;
+      final lines = <_DevisLine>[];
+
+      roomTasks.forEach((_, taskDataRaw) {
+        if (taskDataRaw is! Map) return;
+        final td = taskDataRaw as Map<String, dynamic>;
+
+        // Compute fournitures unit price from selectedFournitures
+        double fournituresTotalCost = 0.0;
+        final sf = td['selectedFournitures'];
+        if (sf is Map) {
+          sf.forEach((_, pd) {
+            if (pd is Map) {
+              final pqty     = (pd['quantity']  as num?)?.toDouble() ?? 1.0;
+              final pPrice   = (pd['unitPrice'] as num?)?.toDouble() ?? 0.0;
+              fournituresTotalCost += pqty * pPrice;
+            }
+          });
+        }
+        final qty = (td['quantity'] as num?)?.toDouble() ?? 1.0;
+
+        lines.add(_DevisLine(
+          taskId:              td['taskId']?.toString() ?? '',
+          label:               td['label']?.toString()  ?? '',
+          code:                td['code']?.toString()   ?? '',
+          famille:             td['famille']?.toString() ?? '',
+          unite:               td['unite']?.toString()  ?? 'u',
+          qty:                 qty,
+          tempsHU:             (td['hours']         as num?)?.toDouble() ?? 0.0,
+          tauxHoraire:         (td['tauxHoraire']   as num?)?.toDouble() ?? _hourlyRate,
+          conditionCoeff:      (td['conditionCoeff'] as num?)?.toDouble() ?? 1.0,
+          fournituresUnitPrice: qty > 0 ? fournituresTotalCost / qty : fournituresTotalCost,
+        ));
+      });
+
+      if (lines.isNotEmpty) {
+        _linesByRoom[roomId] = lines;
+        _roomOrder.add(roomId);
+      }
+    });
+  }
+
+  // ── Load existing saved quote ────────────────────────────────────────────────
+  void _loadExistingQuote() {
+    final d = widget.data;
+    _quoteNumber  = d['quoteNumber'] ?? _quoteNumber;
+    _quoteDate    = d['date']        ?? _quoteDate;
+    _quoteValidity = d['validity']   ?? _quoteValidity;
+
+    Map<String, dynamic> safe(dynamic v) {
+      if (v is Map<String, dynamic>) return v;
+      if (v is Map) return Map<String, dynamic>.from(v);
       return {};
     }
 
-    final client = _safeMapConvert(data['client']);
-    _clientName = client['name'] ?? '';
+    final client  = safe(d['client']);
+    _clientName   = client['name']    ?? '';
     _clientAddress = client['address'] ?? '';
-    _clientEmail = client['email'] ?? '';
+    _clientEmail  = client['email']   ?? '';
 
-    final company = _safeMapConvert(data['company']);
-    _companyName = company['name'] ?? _companyName;
+    final company   = safe(d['company']);
+    _companyName    = company['name']    ?? _companyName;
     _companyAddress = company['address'] ?? _companyAddress;
-    _companyPhone = company['phone'] ?? _companyPhone;
-    _companyEmail = company['email'] ?? _companyEmail;
+    _companyPhone   = company['phone']   ?? _companyPhone;
+    _companyEmail   = company['email']   ?? _companyEmail;
+    _siteAddress    = d['siteAddress']   ?? '';
 
-    _siteAddress = data['siteAddress'] ?? '';
-
-    // We start loading the deep relations from DB instead of relying on the flat map
-    setState(() {
-      _isLoadingDetails = true;
-      _expensesByRoom = {};
-      _roomTasks = {};
-      _rooms = [];
-    });
-
-    _fetchDetails(data['id'] as String);
+    setState(() => _isLoadingDetails = true);
+    _fetchDetails(d['id'] as String);
   }
 
   Future<void> _fetchDetails(String quoteId) async {
@@ -136,1355 +182,812 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
       final repo = ref.read(quoteTaskRepositoryProvider);
       final roomsData = await repo.getQuoteRooms(quoteId);
 
-      for (var r in roomsData) {
+      for (final r in roomsData) {
         final roomId = r['name'] as String;
-        _rooms.add(roomId);
-        _expensesByRoom[roomId] = [];
-        _roomTasks[roomId] = {};
+        _roomOrder.add(roomId);
+        _linesByRoom[roomId] = [];
 
         final tasksData = await repo.getQuoteTasks(r['id'] as String);
-
-        for (var t in tasksData) {
-          final expense = ExpenseItem(
-            id: t['task_id'],
-            title: t['label'],
-            subtitle: t['note'] ?? '',
-            icon: Icons.circle,
-            laborCost: (t['unit_price_ht'] as num?)?.toDouble() ?? 0.0,
-            materialCost: (t['total_price_ht'] as num?)?.toDouble() ?? 0.0,
-            quantity: 1.0, // Quantity embedded in inputs or defaults to 1 for generic tasks
-          );
-          _expensesByRoom[roomId]!.add(expense);
-
-          _roomTasks[roomId][t['task_id']] = {
-            'taskId': t['task_id'],
-            'label': t['label'],
-            'inputs': t['inputs'] ?? {},
-            'selectedProducts': t['selected_products'] ?? {},
-            'note': t['note'] ?? '',
-            'photoPaths': List<String>.from(t['photo_paths'] ?? []),
-          };
+        for (final t in tasksData) {
+          _linesByRoom[roomId]!.add(_DevisLine(
+            taskId:  t['task_id']?.toString() ?? '',
+            label:   t['label']?.toString()   ?? '',
+            qty:     1.0,
+            tauxHoraire: _hourlyRate,
+            fournituresUnitPrice: (t['total_price_ht'] as num?)?.toDouble() ?? 0.0,
+          ));
         }
       }
     } catch (e) {
-      debugPrint("Error loading quote details: $e");
+      debugPrint('Error loading quote: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingDetails = false;
-        });
-      }
+      if (mounted) setState(() => _isLoadingDetails = false);
     }
   }
 
   Future<void> _fetchBusinessInfo() async {
     final user = ref.read(authProvider).value;
-    if (user != null) {
-      final userData = await ref.read(userRepositoryProvider).getUser(user.id);
+    if (user == null) return;
+    final userData = await ref.read(userRepositoryProvider).getUser(user.id);
+    if (userData == null || !mounted) return;
 
-      if (userData != null) {
-        // Get logo URL from Supabase
-        final logoUrl = userData['logo_url'] as String?;
+    final logoUrl = userData['logo_url'] as String?;
+    final biz     = userData['business_info'] as Map<String, dynamic>?;
 
-        // Get business info
-        final biz = userData['business_info'] as Map<String, dynamic>?;
-
-        if (mounted) {
-          setState(() {
-            _logoPath = logoUrl; // Now stores URL instead of local path
-            if (biz != null) {
-              _companyName = biz['raisonSociale'] ?? _companyName;
-              _companyAddress = biz['address'] ?? _companyAddress;
-              _companyPhone = biz['phone'] ?? _companyPhone;
-              _companyEmail = biz['emailPro'] ?? _companyEmail;
+    setState(() {
+      _logoPath = logoUrl;
+      if (biz != null) {
+        _companyName    = biz['raisonSociale'] ?? _companyName;
+        _companyAddress = biz['address']       ?? _companyAddress;
+        _companyPhone   = biz['phone']         ?? _companyPhone;
+        _companyEmail   = biz['emailPro']      ?? _companyEmail;
+        final daily  = (biz['dailyRate']   as num?)?.toDouble() ?? 0.0;
+        final hpd    = (biz['hoursPerDay'] as num?)?.toDouble() ?? 8.0;
+        if (daily > 0 && hpd > 0) {
+          _hourlyRate = daily / hpd;
+          // Backfill tauxHoraire on lines that still have 0
+          for (final lines in _linesByRoom.values) {
+            for (final l in lines) {
+              if (l.tauxHoraire == 0) l.tauxHoraire = _hourlyRate;
             }
-          });
+          }
         }
       }
-    }
-  }
-
-  void _toggleEditMode() {
-    setState(() {
-      _isEditing = !_isEditing;
     });
   }
 
-  void _saveChanges() {
-    // Here you would typically save to backend or pass back
-    _toggleEditMode();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text("Modifications enregistrées"),
-          backgroundColor: Color(0xFF22C55E)),
-    );
-  }
+  // ── Totals ───────────────────────────────────────────────────────────────────
+  double get _grandTotalMO => _linesByRoom.values
+      .expand((l) => l)
+      .fold(0.0, (s, l) => s + l.totalMO);
 
-  void _cancelChanges() {
-    // Revert changes
-    setState(() {
-      _expensesByRoom = {};
-      if (widget.data['expenses'] != null) {
-        (widget.data['expenses'] as Map<String, List<ExpenseItem>>)
-            .forEach((key, value) {
-          _expensesByRoom[key] = List.from(value);
-        });
-      }
-      _rooms = _expensesByRoom.keys.toList();
+  double get _grandTotalFournitures => _linesByRoom.values
+      .expand((l) => l)
+      .fold(0.0, (s, l) => s + l.totalFournitures);
 
-      // Note: We might want to revert header changes too if we stored original values
-      // For now, assuming header changes persist for session convenience or separate tracking
+  double get _grandTotalHT  => _grandTotalMO + _grandTotalFournitures;
+  double get _tva20         => _grandTotalHT * 0.20;
+  double get _grandTotalTTC => _grandTotalHT + _tva20;
 
-      _isEditing = false;
-    });
-  }
-
-  void _addRoom() {
-    setState(() {
-      String newRoomId = "pièce_${_rooms.length + 1}";
-      _rooms.add(newRoomId);
-      _expensesByRoom[newRoomId] = [];
-    });
-  }
-
-  void _deleteRoom(String roomId) {
-    setState(() {
-      _rooms.remove(roomId);
-      _expensesByRoom.remove(roomId);
-    });
-  }
-
-  void _addTask(String room) {
-    setState(() {
-      _expensesByRoom[room]?.add(ExpenseItem(
-        id: DateTime.now().toString(),
-        title: "Nouvelle tâche",
-        subtitle: "Description...",
-        icon: Icons.build_circle_outlined,
-        laborCost: 0,
-        materialCost: 0,
-        quantity: 1,
-      ));
-    });
-  }
-
-  void _deleteTask(String room, ExpenseItem item) {
-    setState(() {
-      _expensesByRoom[room]?.remove(item);
-    });
-  }
-
+  // ── Save ─────────────────────────────────────────────────────────────────────
   Future<void> _generateQuote() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
     final user = ref.read(authProvider).value;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Erreur: Utilisateur non connecté")));
+          const SnackBar(content: Text('Utilisateur non connecté')));
+      setState(() => _isSaving = false);
       return;
     }
 
-    // Identify total amount
-    double totalHT = 0;
-    _expensesByRoom.forEach((_, items) {
-      for (var item in items) {
-        totalHT += item.total;
-      }
+    // Convert lines back to ExpenseItem format for saving
+    final expensesMap = <String, List<Map<String, dynamic>>>{};
+    _linesByRoom.forEach((roomId, lines) {
+      expensesMap[roomId] = lines.map((l) => {
+        'id':           l.taskId,
+        'title':        l.label,
+        'laborCost':    l.moUnitPrice,
+        'materialCost': l.fournituresUnitPrice,
+        'quantity':     l.qty,
+        'unite':        l.unite,
+        'code':         l.code,
+        'famille':      l.famille,
+        'tempsHU':      l.tempsHU,
+        'tauxHoraire':  l.tauxHoraire,
+      }).toList();
     });
-    double tva = totalHT * 0.10;
-    double totalTTC = totalHT + tva;
 
-    // Prepare Data
     final quoteData = {
       'quoteNumber': _quoteNumber,
-      'createdAt': DateTime.now().toIso8601String(),
-      'validity': _quoteValidity,
-      'date': _quoteDate,
-
-      'client': {
-        'name': _clientName,
-        'address': _clientAddress,
-        'email': _clientEmail,
-      },
-      'company': {
-        'name': _companyName,
-        'address': _companyAddress,
-        'phone': _companyPhone,
-        'email': _companyEmail,
-      },
+      'createdAt':   DateTime.now().toIso8601String(),
+      'validity':    _quoteValidity,
+      'date':        _quoteDate,
+      'client':   {'name': _clientName, 'address': _clientAddress, 'email': _clientEmail},
+      'company':  {'name': _companyName, 'address': _companyAddress, 'phone': _companyPhone, 'email': _companyEmail},
       'siteAddress': _siteAddress,
-
-      'expenses': _expensesByRoom.map((key, value) => MapEntry(
-          key,
-          value
-              .map((e) => {
-                    'id': e.id,
-                    'title': e.title,
-                    'subtitle': e.subtitle,
-                    // 'icon': e.icon.codePoint, // Store icon code point if needed, or skip
-                    'laborCost': e.laborCost,
-                    'materialCost': e.materialCost,
-                    'quantity': e.quantity,
-                  })
-              .toList())),
-
-      'tasks': _roomTasks, // Persist rich task data including selected products
-
+      'expenses':    expensesMap,
       'totals': {
-        'ht': totalHT,
-        'tva': tva,
-        'ttc': totalTTC,
+        'moHT':           _grandTotalMO,
+        'fournituresHT':  _grandTotalFournitures,
+        'ht':             _grandTotalHT,
+        'tva':            _tva20,
+        'ttc':            _grandTotalTTC,
       },
-      if (widget.data['chantier_id'] != null)
-        'chantier_id': widget.data['chantier_id'],
+      if (widget.data['chantier_id'] != null) 'chantier_id': widget.data['chantier_id'],
     };
 
     try {
-      // Save to Supabase
-      String? existingId = widget.data['id'];
+      final existingId = widget.data['id'] as String?;
       final quoteId = await ref
           .read(quoteRepositoryProvider)
           .saveQuote(user.id, quoteData, quoteId: existingId);
 
       if (mounted) {
         context.go('/quote/success', extra: {
-          'quoteId': quoteId,
-          'quoteData': {...quoteData, 'id': quoteId}
+          'quoteId':   quoteId,
+          'quoteData': {...quoteData, 'id': quoteId},
         });
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Erreur lors de la sauvegarde: $e")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Erreur: $e')));
       }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
-  void _updateItem(String room, ExpenseItem oldItem,
-      {String? title, double? qty, double? labor, double? material}) {
-    setState(() {
-      final index = _expensesByRoom[room]?.indexOf(oldItem) ?? -1;
-      if (index != -1) {
-        _expensesByRoom[room]?[index] = ExpenseItem(
-          id: oldItem.id,
-          title: title ?? oldItem.title,
-          subtitle: oldItem.subtitle,
-          icon: oldItem.icon,
-          quantity: qty ?? oldItem.quantity,
-          laborCost: labor ?? oldItem.laborCost,
-          materialCost: material ?? oldItem.materialCost,
-        );
-      }
-    });
+  // ─────────────────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: const BoxDecoration(color: Color(0xFFF1F5F9), shape: BoxShape.circle),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A), size: 20),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        centerTitle: true,
+        title: const Text(
+          'Récapitulatif de votre devis',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF0F172A)),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE2E8F0)),
+        ),
+      ),
+      body: _isLoadingDetails
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Info banner ───────────────────────────────────────
+                  _buildInfoBanner(),
+                  const SizedBox(height: 20),
+
+                  // ── Header card ───────────────────────────────────────
+                  _buildHeaderCard(),
+                  const SizedBox(height: 24),
+
+                  // ── KOJI devis table ──────────────────────────────────
+                  if (_linesByRoom.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Text('Aucune tâche ajoutée.',
+                            style: TextStyle(color: Color(0xFF9CA3AF))),
+                      ),
+                    )
+                  else
+                    ..._roomOrder.where((r) => _linesByRoom.containsKey(r)).map(
+                      (roomId) => _buildRoomSection(roomId),
+                    ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Grand totals ──────────────────────────────────────
+                  _buildTotalsCard(),
+                ],
+              ),
+            ),
+      bottomNavigationBar: _buildBottomBar(),
+    );
   }
 
-// ... existing build method ...
+  // ── Info banner ───────────────────────────────────────────────────────────────
+  Widget _buildInfoBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF86EFAC)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.edit_note, size: 16, color: Color(0xFF16A34A)),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Les champs Qté, Temps h/u et Fournitures €/u sont modifiables. Les totaux se recalculent en temps réel.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF15803D)),
+            ),
+          ),
+          if (_hourlyRate > 0) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDCFCE7),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${_hourlyRate.toStringAsFixed(2)} €/h',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
+  // ── Header card ───────────────────────────────────────────────────────────────
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
         children: [
-          // Company Row
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Logo
               Container(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: _logoPath != null ? Colors.white : AppTheme.darkNavy,
-                  borderRadius: BorderRadius.circular(12),
+                  color: _logoPath != null ? Colors.white : const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(10),
                   image: _logoPath != null
-                      ? DecorationImage(
-                          image: NetworkImage(_logoPath!),
-                          fit: BoxFit.cover,
-                        )
+                      ? DecorationImage(image: NetworkImage(_logoPath!), fit: BoxFit.cover)
                       : null,
                 ),
                 child: _logoPath == null
-                    ? const Icon(Icons.edit_note, color: Colors.white)
-                    : null, // Logo placeholder
+                    ? const Icon(Icons.business, color: Colors.white, size: 22)
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildEditableText(_companyName,
-                        isBold: true,
-                        fontSize: 16,
-                        onChanged: (v) => _companyName = v),
-                    const SizedBox(height: 4),
-                    _buildEditableIconText(Icons.location_on_outlined,
-                        _companyAddress, (v) => _companyAddress = v),
-                    _buildEditableIconText(Icons.phone_outlined, _companyPhone,
-                        (v) => _companyPhone = v),
-                    _buildEditableIconText(Icons.email_outlined, _companyEmail,
-                        (v) => _companyEmail = v),
+                    Text(_companyName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 2),
+                    Text(_companyAddress, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                    Text(_companyPhone,   style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
                   ],
                 ),
               ),
+              // Quote number box
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3E5D8),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
                   children: [
-                    Text("DEVIS N°",
-                        style: TextStyle(
-                            fontSize: 8,
-                            color: const Color(0xFFA18B73))),
-                    _buildEditableText(_quoteNumber,
-                        isBold: true,
-                        fontSize: 10,
-                        color: AppTheme.darkNavy,
-                        onChanged: (v) => _quoteNumber = v),
+                    const Text('DEVIS N°', style: TextStyle(fontSize: 8, color: Color(0xFFA18B73))),
+                    Text(_quoteNumber,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF0F172A))),
                   ],
                 ),
-              )
+              ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           const Divider(height: 1, color: Color(0xFFF3F4F6)),
-          const SizedBox(height: 24),
-
-          // Client Row
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.person,
-                            size: 12, color: Color(0xFFA18B73)),
-                        const SizedBox(width: 4),
-                        Text("CLIENT",
-                            style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFA18B73))),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF3E5D8),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                              child: Icon(Icons.person_outline,
-                                  color: Color(0xFFA18B73), size: 18)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildEditableText(_clientName,
-                                  isBold: true,
-                                  fontSize: 14,
-                                  onChanged: (v) => _clientName = v),
-                              _buildEditableText(_clientAddress,
-                                  fontSize: 10,
-                                  color: AppTheme.textLight,
-                                  onChanged: (v) => _clientAddress = v),
-                              const SizedBox(height: 4),
-                              _buildEditableIconText(Icons.email_outlined,
-                                  _clientEmail, (v) => _clientEmail = v),
-                            ],
-                          ),
-                        )
-                      ],
-                    )
-                  ],
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('CLIENT',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFA18B73))),
+                  const SizedBox(height: 4),
+                  Text(_clientName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
+                  if (_clientAddress.isNotEmpty)
+                    Text(_clientAddress, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text("DATE",
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFA18B73))),
-                  _buildEditableText(_quoteDate,
-                      fontSize: 12,
-                      color: AppTheme.darkNavy,
-                      onChanged: (v) => _quoteDate = v),
-                  const SizedBox(height: 8),
-                  Text("VALIDITE",
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFA18B73))),
-                  _buildEditableText(_quoteValidity,
-                      fontSize: 12,
-                      color: AppTheme.darkNavy,
-                      onChanged: (v) => _quoteValidity = v),
+                  const Text('DATE',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFA18B73))),
+                  Text(_quoteDate,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                  const SizedBox(height: 4),
+                  const Text('VALIDITÉ',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFA18B73))),
+                  Text(_quoteValidity,
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF0F172A))),
                 ],
-              )
+              ),
             ],
           ),
+          if (_siteAddress.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBF6),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFF3E5D8)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFFA18B73)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(_siteAddress,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 24),
+  // ── Room section ──────────────────────────────────────────────────────────────
+  Widget _buildRoomSection(String roomId) {
+    final lines = _linesByRoom[roomId] ?? [];
+    final roomTotal  = lines.fold(0.0, (s, l) => s + l.totalLigne);
+    final roomMO     = lines.fold(0.0, (s, l) => s + l.totalMO);
+    final roomFourns = lines.fold(0.0, (s, l) => s + l.totalFournitures);
 
-          // Location Box
+    // Group lines by famille
+    final byFamille = <String, List<_DevisLine>>{};
+    for (final l in lines) {
+      final fam = l.famille.isEmpty ? 'Général' : l.famille;
+      byFamille.putIfAbsent(fam, () => []).add(l);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Room header
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFBF6),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFF3E5D8)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0F172A),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Row(
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.location_on_outlined,
-                      size: 18, color: Color(0xFFA18B73)),
+                Text(
+                  _getRoomLabel(roomId),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Lieu du chantier",
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: const Color(0xFFA18B73))),
-                      _buildEditableText(_siteAddress,
-                          isBold: true,
-                          fontSize: 12,
-                          onChanged: (v) => _siteAddress = v),
-                    ],
-                  ),
-                )
+                const Spacer(),
+                Text(
+                  '${roomTotal.toStringAsFixed(2)} €',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFEAD8B1)),
+                ),
               ],
             ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEditableText(String value,
-      {bool isBold = false,
-      double fontSize = 14,
-      Color? color,
-      required Function(String) onChanged}) {
-    if (_isEditing) {
-      return TextFormField(
-        initialValue: value,
-        style: TextStyle(
-          fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-          fontSize: fontSize,
-          color: color ?? AppTheme.darkNavy,
-        ),
-        decoration: const InputDecoration(
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-            border: InputBorder.none),
-        onChanged: onChanged,
-      );
-    }
-    return Text(
-      value,
-      style: TextStyle(
-        fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-        fontSize: fontSize,
-        color: color ?? AppTheme.darkNavy,
-      ),
-    );
-  }
-
-  Widget _buildEditableIconText(
-      IconData icon, String text, Function(String) onChanged) {
-    if (_isEditing) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: Row(
-          children: [
-            Icon(icon, size: 12, color: const Color(0xFFA18B73)),
-            const SizedBox(width: 6),
-            Expanded(
-              child: TextFormField(
-                initialValue: text,
-                style: TextStyle(
-                    fontSize: 10,
-                    color: AppTheme.textLight),
-                decoration: const InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                    border: InputBorder.none),
-                onChanged: onChanged,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return _buildIconText(icon, text);
-  }
-
-  Widget _buildIconText(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Row(
-        children: [
-          Icon(icon, size: 12, color: const Color(0xFFA18B73)),
-          const SizedBox(width: 6),
-          Text(text,
-              style: TextStyle(
-                  fontSize: 10,
-                  color: AppTheme.textLight)),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final responsive = context.responsive;
-
-    // Calculate totals
-    double totalHT = 0;
-    _expensesByRoom.forEach((_, items) {
-      for (var item in items) {
-        totalHT += item.total;
-      }
-    });
-    double tva = totalHT * 0.10; // Assuming 10% TVA
-    double totalTTC = totalHT + tva;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
-        elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
           ),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back,
-                color: AppTheme.darkNavy, size: 20),
-            onPressed: () => context.pop(),
-          ),
-        ),
-        centerTitle: true,
-        title: Column(
-          children: [
-            Text(
-              'Récapitulatif de votre devis',
-              style: AppTheme.headingStyle(context).copyWith(fontSize: 18),
+          // MO / Fournitures sub-header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            color: const Color(0xFF1E293B),
+            child: Text(
+              'MO: ${roomMO.toStringAsFixed(2)} € | Fournitures: ${roomFourns.toStringAsFixed(2)} €',
+              style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
             ),
-          ],
-        ),
-      ),
-      body: SafeArea(
-        child: _isLoadingDetails
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: EdgeInsets.all(responsive.width(5)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. Company & Client Card
-              _buildHeaderCard(),
+          ),
 
-              const SizedBox(height: 24),
-
-              // 2. Chantier Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Détails du chantier',
-                    style:
-                        AppTheme.headingStyle(context).copyWith(fontSize: 18),
-                  ),
-                  if (!_isEditing)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3E5D8),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        "${_rooms.length} Pièces",
+          // Lines by famille
+          ...byFamille.entries.map((entry) {
+            final famColor = _familleColor(entry.key);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // LOT label
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: famColor.withValues(alpha: 0.08),
+                  child: Row(
+                    children: [
+                      Container(width: 3, height: 14, color: famColor,
+                          margin: const EdgeInsets.only(right: 8)),
+                      Text(
+                        entry.key.toUpperCase(),
                         style: TextStyle(
-                          color: AppTheme.darkNavy,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontSize: 11, fontWeight: FontWeight.bold,
+                          color: famColor, letterSpacing: 0.5,
                         ),
                       ),
-                    )
-                  else
-                    ElevatedButton.icon(
-                      onPressed: _addRoom,
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text("Ajouter une pièce"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFF3B82F6), // Blue as per design
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
-                        textStyle: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12),
-                      ),
-                    )
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // 3. Rooms Iteration
-              if (_rooms.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Center(
-                      child: Text(
-                    "Aucun détail disponible. Ajoutez une pièce.",
-                    style: TextStyle( color: AppTheme.textLight),
-                  )),
-                ),
-
-              ..._rooms.map((room) {
-                final items = _expensesByRoom[room] ?? [];
-                // Calculate room total
-                double roomTotal =
-                    items.fold(0, (sum, item) => sum + item.total);
-                return _buildRoomAccordion(room, items, roomTotal);
-              }),
-
-              const SizedBox(height: 32),
-
-              // 4. Financial Recap
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Total",
-                      style: TextStyle(
-                        color: AppTheme.darkNavy,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildRecapRow("Total H.T", totalHT),
-                    const SizedBox(height: 8),
-                    _buildRecapRow("TVA (10%)", tva),
-                    const SizedBox(height: 16),
-                    const Divider(height: 1),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Total TTC",
-                              style: TextStyle(
-                                color: const Color(0xFF6B7280),
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              "Payable à la commande",
-                              style: TextStyle(
-                                color: const Color(0xFF9CA3AF),
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          "${totalTTC.toStringAsFixed(2)} €",
-                          style: TextStyle(
-                            color: const Color(0xFF4B4B4B), // Dark grey
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 100),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: _isEditing
-            ?
-            // Edit Mode Footer
-            Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: _saveChanges,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.darkNavy,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.check_circle_outline, size: 20),
-                    label: Text(
-                      "Enregistrer les modifications",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: _cancelChanges,
-                    child: Text(
-                      "Annuler",
-                      style: TextStyle(
-                        color: const Color(0xFF9CA3AF),
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  )
-                ],
-              )
-            :
-            // Default Footer
-            Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _toggleEditMode,
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: Text(
-                        "Modifier",
-                        style: TextStyle( fontWeight: FontWeight.w600),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.darkNavy,
-                        side: const BorderSide(color: AppTheme.darkNavy),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 2, // Bigger button
-                    child: ElevatedButton(
-                      onPressed: _generateQuote,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.darkNavy,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        widget.data.containsKey('id')
-                            ? 'Mettre à jour'
-                            : 'Générer le Devis',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-
-  Widget _buildRecapRow(String label, double value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: const Color(0xFF9CA3AF),
-            fontSize: 14,
-          ),
-        ),
-        Text(
-          "${value.toStringAsFixed(2)} €",
-          style: TextStyle(
-            color: const Color(0xFF4B4B4B),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoomAccordion(
-      String roomName, List<ExpenseItem> items, double roomTotal) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color:
-            const Color(0xFFFFFBF6), // Light beige background like screenshot
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5DCC5)), // Slight border
-      ),
-      child: ExpansionTile(
-        initiallyExpanded: true, // As per screenshot
-        shape: const Border(), // Remove default border
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: _isEditing
-                  ? TextFormField(
-                      initialValue: _getRoomLabel(roomName),
-                      decoration: const InputDecoration(
-                          isDense: true, border: InputBorder.none),
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: AppTheme.darkNavy),
-                      // If we wanted to edit room names, we'd need more complex key management.
-                      // For now, let's keep room names static or simple.
-                      readOnly:
-                          true, // Making readonly for now to simplify key tracking
-                    )
-                  : Text(
-                      _getRoomLabel(roomName),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AppTheme.darkNavy,
-                      ),
-                    ),
-            ),
-            if (_isEditing)
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: () => _deleteRoom(roomName),
-              )
-            else
-              Text(
-                "${roomTotal.toStringAsFixed(2)} €",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: AppTheme.darkNavy,
                 ),
-              ),
-          ],
-        ),
-        subtitle: Text(
-          "${items.length} prestations",
-          style: TextStyle( color: AppTheme.textLight, fontSize: 12),
-        ),
-        children: [
-          // Tasks Inclus Header with Add button if editing
-          if (_isEditing)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Row(
-                children: [
-                  const Spacer(),
-                  InkWell(
-                    onTap: () => _addTask(roomName),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.add,
-                              color: Color(0xFF3B82F6), size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            "Ajouter",
-                            style: TextStyle(
-                                color: const Color(0xFF3B82F6),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12),
-                          )
-                        ],
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            ),
+                ...entry.value.asMap().entries.map((e) {
+                  final lineIndex = lines.indexOf(e.value);
+                  return _buildLineCard(roomId, lineIndex, e.value, famColor);
+                }),
+              ],
+            );
+          }),
 
-          ...items.map((item) => _buildDetailItem(roomName, item)).toList(),
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  Widget _buildDetailItem(String room, ExpenseItem item) {
-    // Replicating the detailed card inside the accordion
+  // ── Task line card (mobile-friendly) ─────────────────────────────────────────
+  Widget _buildLineCard(String roomId, int lineIndex, _DevisLine line, Color famColor) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            )
-          ]),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Title row ───────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+            child: Row(
+              children: [
+                if (line.code.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: famColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(line.code,
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: famColor)),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(
+                    line.label,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${line.totalLigne.toStringAsFixed(2)} €',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Container(height: 1, color: const Color(0xFFF1F5F9)),
+
+          // ── Editable inputs row ──────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                // Qté
+                _inputField(
+                  label: 'Qté',
+                  sublabel: line.unite,
+                  value: line.qty,
+                  onChanged: (v) => setState(() => _linesByRoom[roomId]![lineIndex].qty = v),
+                ),
+                const SizedBox(width: 8),
+                // Temps h/u
+                _inputField(
+                  label: 'Temps h/${line.unite}',
+                  sublabel: 'h',
+                  value: line.tempsHU,
+                  onChanged: (v) => setState(() => _linesByRoom[roomId]![lineIndex].tempsHU = v),
+                ),
+                const SizedBox(width: 8),
+                // Fournitures €/u
+                _inputField(
+                  label: 'Fnt €/${line.unite}',
+                  sublabel: '€',
+                  value: line.fournituresUnitPrice,
+                  onChanged: (v) => setState(() => _linesByRoom[roomId]![lineIndex].fournituresUnitPrice = v),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Computed results row ─────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+            ),
+            child: Row(
+              children: [
+                _resultChip('MO €/u', '${line.moUnitPrice.toStringAsFixed(2)}€', const Color(0xFF1D4ED8)),
+                const SizedBox(width: 8),
+                _resultChip('Tot. MO', '${line.totalMO.toStringAsFixed(2)}€', const Color(0xFF1D4ED8), bold: true),
+                const SizedBox(width: 8),
+                _resultChip('Tot. Fnt', '${line.totalFournitures.toStringAsFixed(2)}€', const Color(0xFF0369A1)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Small labeled input ───────────────────────────────────────────────────────
+  Widget _inputField({
+    required String label,
+    required String sublabel,
+    required double value,
+    required void Function(double) onChanged,
+  }) {
+    final display = value > 0 ? value.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '') : '';
+    return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Title & Total
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _isEditing
-                    ? TextFormField(
-                        initialValue: item.title,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: AppTheme.darkNavy),
-                        decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            border: InputBorder.none,
-                            hintText: "Titre"),
-                        onChanged: (val) => _updateItem(room, item, title: val),
-                      )
-                    : Text(
-                        item.title, // "Démolition carrelage"
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: AppTheme.darkNavy,
-                        ),
+          Text(label,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+          const SizedBox(height: 4),
+          Container(
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF86EFAC)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: TextEditingController.fromValue(
+                      TextEditingValue(
+                        text: display,
+                        selection: TextSelection.collapsed(offset: display.length),
                       ),
-              ),
-              if (_isEditing)
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: const Icon(Icons.delete_outline,
-                      size: 18, color: Colors.grey),
-                  onPressed: () => _deleteTask(room, item),
-                )
-              else
-                Text(
-                  "${item.total.toStringAsFixed(2)} €",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppTheme.darkNavy,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                    ),
+                    onChanged: (v) => onChanged(double.tryParse(v) ?? 0.0),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          if (!_isEditing)
-            // Tag (e.g. Sol)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                _getLocationTag(item.id), // "Sol", "Murs", etc.
-                style: TextStyle(
-                  color: AppTheme.textLight,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Text(sublabel,
+                      style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280), fontWeight: FontWeight.w600)),
                 ),
-              ),
+              ],
             ),
-
-          const SizedBox(height: 16),
-
-          // Tasks Included — show task name and their products
-          if (!_isEditing) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFF3F4F6)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Taches inclus",
-                      style: TextStyle(
-                          fontSize: 10,
-                          color: const Color(0xFF6B7280),
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Builder(builder: (context) {
-                    // Collect task entries for this item
-                    final roomTaskMap = _roomTasks[room];
-                    if (roomTaskMap == null || roomTaskMap is! Map || roomTaskMap.isEmpty) {
-                      return const Text("Aucune tâche spécifique",
-                          style: TextStyle(fontSize: 10, color: Colors.grey));
-                    }
-                    // Find matching task entry by item id or label
-                    final taskEntries = roomTaskMap.entries.where((e) {
-                      final td = e.value;
-                      return td is Map && (td['taskId'] == item.id || td['label'] == item.title);
-                    }).toList();
-
-                    if (taskEntries.isEmpty) {
-                      return const Text("Aucune tâche spécifique",
-                          style: TextStyle(fontSize: 10, color: Colors.grey));
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: taskEntries.map((e) {
-                        final td = e.value as Map;
-                        final label = td['label']?.toString() ?? '';
-                        final selectedFournitures = td['selectedFournitures'];
-                        List<Widget> productRows = [];
-                        if (selectedFournitures is Map) {
-                          selectedFournitures.forEach((_, pd) {
-                            if (pd is Map) {
-                              final name = pd['name']?.toString() ?? pd['title']?.toString() ?? 'Produit';
-                              final qty = (pd['quantity'] as num?)?.toDouble() ?? 1.0;
-                              final unitPrice = (pd['unitPrice'] as num?)?.toDouble() ?? 0.0;
-                              productRows.add(Padding(
-                                padding: const EdgeInsets.only(left: 12, bottom: 4),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.circle, size: 5, color: Color(0xFF9CA3AF)),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        name,
-                                        style: const TextStyle(fontSize: 10, color: AppTheme.darkNavy, fontWeight: FontWeight.w500),
-                                      ),
-                                    ),
-                                    Text(
-                                      '${qty.toStringAsFixed(1)} × ${unitPrice.toStringAsFixed(2)} €',
-                                      style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
-                                    ),
-                                  ],
-                                ),
-                              ));
-                            }
-                          });
-                        }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (label.isNotEmpty) _buildTaskRow(label),
-                            ...productRows,
-                            if (productRows.isNotEmpty) const SizedBox(height: 4),
-                          ],
-                        );
-                      }).toList(),
-                    );
-                  }),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Table Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                  flex: 3,
-                  child: Text("ÉLÉMENT",
-                      style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF9CA3AF)))),
-              Expanded(
-                  flex: 2,
-                  child: Center(
-                      child: Text("QTÉ",
-                          style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF9CA3AF))))),
-              Expanded(
-                  flex: 2,
-                  child: Center(
-                      child: Text(_isEditing ? "PRIX U." : "PRIX U.",
-                          style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF9CA3AF))))),
-              if (!_isEditing)
-                Expanded(
-                    flex: 2,
-                    child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Text("TOTAL",
-                            style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF9CA3AF))))),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Main d'oeuvre Row
-          _buildEditPriceRow(
-            "Main d...",
-            item.quantity,
-            item.laborCost,
-            (val) => _updateItem(room, item, qty: val),
-            (val) => _updateItem(room, item, labor: val),
-          ),
-          const SizedBox(height: 8),
-          // Matériel Row
-          _buildEditPriceRow(
-            "Matériel",
-            item.quantity,
-            item.materialCost,
-            (val) => _updateItem(room, item, qty: val),
-            (val) => _updateItem(room, item, material: val),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEditPriceRow(String label, double qty, double unitPrice,
-      Function(double) onQtyChanged, Function(double) onPriceChanged) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                        color: label.startsWith("Main")
-                            ? const Color(0xFFD97706)
-                            : const Color(0xFFFCD34D),
-                        shape: BoxShape.circle)),
-                const SizedBox(width: 6),
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.darkNavy)),
-              ],
-            )),
-        Expanded(
-            flex: 2,
-            child: Center(
-                child: _isEditing
-                    ? SizedBox(
-                        width: 50,
-                        child: TextFormField(
-                          initialValue: qty.toStringAsFixed(0),
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: AppTheme.darkNavy),
-                          decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                  vertical: 4, horizontal: 2),
-                              border: OutlineInputBorder()),
-                          onChanged: (val) =>
-                              onQtyChanged(double.tryParse(val) ?? 0),
-                        ),
-                      )
-                    : Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                            borderRadius: BorderRadius.circular(4)),
-                        child: Text("${qty.toInt()} m²",
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: AppTheme.textLight)),
-                      ))),
-        Expanded(
-            flex: 2,
-            child: Center(
-                child: _isEditing
-                    ? SizedBox(
-                        width: 50,
-                        child: TextFormField(
-                          initialValue: unitPrice.toStringAsFixed(0),
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: AppTheme.darkNavy),
-                          decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                  vertical: 4, horizontal: 2),
-                              border: OutlineInputBorder()),
-                          onChanged: (val) =>
-                              onPriceChanged(double.tryParse(val) ?? 0),
-                        ),
-                      )
-                    : Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                            borderRadius: BorderRadius.circular(4)),
-                        child: Text("${unitPrice.toInt()} €",
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: AppTheme.textLight)),
-                      ))),
-        if (!_isEditing)
-          Expanded(
-              flex: 2,
-              child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text("${(qty * unitPrice).toStringAsFixed(2)} €",
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.darkNavy)))),
-      ],
-    );
-  }
-
-  Widget _buildTaskRow(String task) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 3),
-          child: Icon(Icons.check_circle,
-              color: Color(0xFF22C55E), size: 10), // Green check
+  // ── Read-only result chip ─────────────────────────────────────────────────────
+  Widget _resultChip(String label, String value, Color color, {bool bold = false}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(7),
         ),
-        const SizedBox(width: 6),
-        Expanded(
-            child: Text(task,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 2),
+            Text(value,
                 style: TextStyle(
-                    fontSize: 10,
-                    color: AppTheme.darkNavy,
-                    fontWeight: FontWeight.w500))),
-      ],
+                    fontSize: 11,
+                    fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+                    color: color)),
+          ],
+        ),
+      ),
     );
   }
 
+  // ── Totals card ───────────────────────────────────────────────────────────────
+  Widget _buildTotalsCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        children: [
+          _totalRow('Total Main d\'Œuvre HT', _grandTotalMO, const Color(0xFF1D4ED8)),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          _totalRow('Total Fournitures HT', _grandTotalFournitures, const Color(0xFF0369A1)),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            height: 1,
+            color: const Color(0xFF0F172A),
+          ),
+          _totalRow('TOTAL DEVIS HT', _grandTotalHT, const Color(0xFF0F172A), bold: true, bigger: true),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          _totalRow('TVA 20%', _tva20, const Color(0xFF6B7280)),
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('TOTAL TTC',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                Text(
+                  '${_grandTotalTTC.toStringAsFixed(2)} €',
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: Color(0xFFEAD8B1)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _totalRow(String label, double value, Color color, {bool bold = false, bool bigger = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: bigger ? 14 : 13,
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+                  color: color)),
+          Text(
+            '${value.toStringAsFixed(2)} €',
+            style: TextStyle(
+                fontSize: bigger ? 16 : 13,
+                fontWeight: FontWeight.bold,
+                color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Bottom bar ────────────────────────────────────────────────────────────────
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, -4)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_back, size: 16),
+                label: const Text('Modifier'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F172A),
+                  side: const BorderSide(color: Color(0xFF0F172A)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _generateQuote,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0F172A),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _isSaving
+                    ? const SizedBox(width: 20, height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Text(
+                        widget.data.containsKey('id') ? 'Mettre à jour' : 'Générer le Devis',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
   String _getRoomLabel(String id) {
     switch (id) {
-      case 'salon':
-        return 'Salon';
-      case 'cuisine':
-        return 'Cuisine';
-      case 'chambre':
-        return 'Chambre';
-      case 'salle_de_bain':
-        return 'Salle de bain';
-      case 'bureau':
-        return 'Bureau';
-      case 'exterieur':
-        return 'Extérieur';
+      case 'salon':       return 'Salon';
+      case 'cuisine':     return 'Cuisine';
+      case 'chambre':     return 'Chambre';
+      case 'salle_de_bain': return 'Salle de bain';
+      case 'bureau':      return 'Bureau';
+      case 'exterieur':   return 'Extérieur';
       default:
-        return id.capitalize();
+        if (id.isEmpty) return 'Pièce';
+        return id[0].toUpperCase() + id.substring(1);
     }
   }
 
-  String _getLocationTag(String id) {
-    if (id.toLowerCase().contains('mur')) return "Murs";
-    if (id.toLowerCase().contains('plafond')) return "Plafond";
-    if (id.toLowerCase().contains('sol')) return "Sol";
-    if (id.toLowerCase().contains('bois')) return "Boiseries";
-    if (id.toLowerCase().contains('elec')) return "Élec";
-    if (id.toLowerCase().contains('plomb')) return "Plomberie";
-    return "Général";
+  Color _familleColor(String famille) {
+    switch (famille.toLowerCase()) {
+      case 'carrelage':   return const Color(0xFFB45309);
+      case 'peinture':    return const Color(0xFF7C3AED);
+      case 'plomberie':   return const Color(0xFF0369A1);
+      case 'electricité':
+      case 'electricite': return const Color(0xFFD97706);
+      case 'menuiserie':  return const Color(0xFF166534);
+      case 'démolition':
+      case 'demolition':  return const Color(0xFFB91C1C);
+      default:            return const Color(0xFF475569);
+    }
   }
 }
 
 extension StringExtension on String {
   String capitalize() {
-    if (isEmpty) return "";
-    return "${this[0].toUpperCase()}${substring(1)}";
+    if (isEmpty) return '';
+    return '${this[0].toUpperCase()}${substring(1)}';
   }
 }

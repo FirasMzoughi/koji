@@ -37,11 +37,21 @@ class _PlanningScreenState extends State<PlanningScreen> {
   Future<void> _loadData() async {
     try {
       final projects = await _repository.fetchProjects();
-      final tasks = await _repository.fetchUserPlanning(_selectedDate);
       if (mounted) {
         setState(() {
           _projects = projects;
-          _tasks = tasks;
+          // Show active chantiers as missions (not date-filtered — all active ones are "in play")
+          _tasks = projects
+              .where((p) => p.status != 'Terminé' && p.status != 'Annulé')
+              .map((p) => TaskItem(
+                    id: p.id,
+                    projectId: p.id,
+                    userId: '',
+                    taskName: p.title,
+                    roomName: p.address ?? p.clientName,
+                    status: p.status,
+                  ))
+              .toList();
           _isLoading = false;
         });
       }
@@ -362,36 +372,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
               return _buildMissionCard(_tasks[index], index);
             }),
 
-          // Mock missions if no real tasks
-          if (_tasks.isEmpty) ...[
-            _buildMockMissionCard(
-              time: "08:30",
-              duration: "2h30",
-              title: "Installation Pompe à chaleur",
-              client: "M. Robert Durand",
-              tag: "Peinture Salon & Entrée",
-              color: _missionColors[0],
-              hasPointer: true,
-            ),
-            _buildMockMissionCard(
-              time: "14:00",
-              duration: "4h00",
-              title: "Rénovation Électrique",
-              client: "Résidence Les Oliviers",
-              tag: "+1 ouvrier",
-              color: _missionColors[1],
-              status: "En attente",
-            ),
-            _buildMockMissionCard(
-              time: "18:00",
-              duration: "1h00",
-              title: "Rendez-vous Devis",
-              client: "Résidence Les Oliviers",
-              tag: "+1 ouvrier",
-              color: _missionColors[2],
-            ),
-          ],
-
           const SizedBox(height: 40),
         ],
       ),
@@ -399,8 +379,18 @@ class _PlanningScreenState extends State<PlanningScreen> {
   }
 
   Widget _buildDayEmptyState() {
-    // We'll show mock data, so this is just a placeholder
-    return const SizedBox.shrink();
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Text(
+          'Aucune mission pour cette journée',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF8B95A5),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMissionCard(TaskItem task, int index) {
@@ -486,177 +476,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                           color: Color(0xFF8B95A5),
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMockMissionCard({
-    required String time,
-    required String duration,
-    required String title,
-    required String client,
-    required String tag,
-    required Color color,
-    bool hasPointer = false,
-    String? status,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Time column
-          SizedBox(
-            width: 56,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  duration,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF8B95A5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Colored line
-          Container(
-            width: 4,
-            height: 100,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Card content
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0A1227),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.person_outline,
-                          size: 14, color: Color(0xFF8B95A5)),
-                      const SizedBox(width: 4),
-                      Text(
-                        client,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF8B95A5),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      // Worker avatars (mock)
-                      ...List.generate(
-                        hasPointer ? 2 : 1,
-                        (i) => Container(
-                          width: 28,
-                          height: 28,
-                          margin: EdgeInsets.only(right: i == 0 ? 0 : 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE2E8F0),
-                            shape: BoxShape.circle,
-                            border:
-                                Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: Icon(Icons.person,
-                              size: 16, color: Colors.blueGrey[300]),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (tag.isNotEmpty)
-                        Row(
-                          children: [
-                            if (!tag.startsWith('+'))
-                              Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.only(right: 6),
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            Text(
-                              tag,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF8B95A5),
-                              ),
-                            ),
-                          ],
-                        ),
-                      const Spacer(),
-                      if (hasPointer)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0A1227),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            "Pointer",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      if (status != null)
-                        Text(
-                          status,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF8B95A5),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                     ],
                   ),
                 ],
@@ -802,14 +621,16 @@ class _PlanningScreenState extends State<PlanningScreen> {
 
           // Chantier list
           if (_projects.isEmpty)
-            ...[
-              _buildChantierItem("Résidence Les Pins", "12 jours - Peinture",
-                  _missionColors[0], darkNavy),
-              _buildChantierItem("Appartement Durand", "5 jours - Enduit",
-                  _missionColors[2], darkNavy),
-              _buildChantierItem("Résidence Les Pins", "8 jours - Électricité",
-                  _missionColors[1], darkNavy),
-            ]
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'Aucun chantier en cours',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF8B95A5),
+                ),
+              ),
+            )
           else
             ...List.generate(
               _projects.length > 5 ? 5 : _projects.length,
@@ -817,7 +638,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 final project = _projects[index];
                 return _buildChantierItem(
                   project.title,
-                  "${project.status} - ${project.clientName}",
+                  '${project.status} - ${project.clientName}',
                   _missionColors[index % _missionColors.length],
                   darkNavy,
                 );
@@ -876,8 +697,14 @@ class _PlanningScreenState extends State<PlanningScreen> {
           today.month == _currentMonth.month &&
           today.year == _currentMonth.year;
 
-      // Mock: some days have events
-      final hasEvent = day % 7 == 1 || day % 7 == 6;
+      final cellDate = DateTime(_currentMonth.year, _currentMonth.month, day);
+      final hasEvent = _tasks.any((t) {
+        final d = t.scheduledDate ?? t.startDate;
+        if (d == null) return false;
+        return d.year == cellDate.year &&
+            d.month == cellDate.month &&
+            d.day == cellDate.day;
+      });
 
       cells.add(GestureDetector(
         onTap: () {

@@ -9,15 +9,28 @@ class ProjectRepository {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return [];
 
+      // Fetch from chantiers table (main source of truth for user's job sites)
       final response = await _client
-          .from('projects')
+          .from('chantiers')
           .select()
-          .eq('user_id', userId) // Explicit filter
+          .eq('user_id', userId)
           .order('created_at', ascending: false);
 
-      return (response as List).map((e) => Project.fromJson(e)).toList();
+      return (response as List).map((e) => Project.fromChantierJson(e)).toList();
     } catch (e) {
-      throw Exception('Failed to fetch projects: $e');
+      // Fallback to projects table if chantiers fails
+      try {
+        final userId = _client.auth.currentUser?.id;
+        if (userId == null) return [];
+        final response = await _client
+            .from('projects')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false);
+        return (response as List).map((e) => Project.fromJson(e)).toList();
+      } catch (_) {
+        throw Exception('Failed to fetch projects: $e');
+      }
     }
   }
 
@@ -118,18 +131,51 @@ class ProjectRepository {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return [];
 
-      // Fetch tasks assigned to user
-      // Since we don't have date column, we'll fetch all 'À Faire' or 'En Cours'
+      // 1. Get the user's chantier IDs
+      final chantiers = await _client
+          .from('chantiers')
+          .select('id')
+          .eq('user_id', userId);
+
+      if ((chantiers as List).isEmpty) return [];
+
+      final chantierIds = chantiers.map((c) => c['id'] as String).toList();
+
+      // 2. Fetch tasks for those chantiers on the selected date
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
       final response = await _client
-          .from('project_tasks')
+          .from('chantier_tasks')
           .select()
-          .eq('user_id', userId)
-          //.neq('status', 'Terminé') // Optional: filter completed
+          .inFilter('chantier_id', chantierIds)
           .order('created_at', ascending: false);
 
-      return (response as List).map((e) => TaskItem.fromJson(e)).toList();
+      return (response as List).map((e) => TaskItem.fromChantierTaskJson(e)).toList();
     } catch (e) {
       throw Exception('Failed to fetch planning: $e');
+    }
+  }
+
+  /// Fetch real stats for the sync dashboard
+  Future<Map<String, dynamic>> fetchSyncStats() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) return {'totalWorkers': 0, 'activeWorkers': 0};
+
+      final workers = await _client
+          .from('workers')
+          .select('id, status')
+          .eq('user_id', userId);
+
+      final total = (workers as List).length;
+      final active = workers.where((w) => w['status'] == 'Disponible' || w['status'] == 'En mission').length;
+
+      return {
+        'totalWorkers': total,
+        'activeWorkers': active,
+      };
+    } catch (e) {
+      return {'totalWorkers': 0, 'activeWorkers': 0};
     }
   }
 

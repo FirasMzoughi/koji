@@ -292,7 +292,7 @@ class _AccountTypeSelectionScreenState
     final isPro = _selectedType == 'entreprise';
     ref.read(accountTypeProvider.notifier).state = isPro;
 
-    // Navigate to login screen
-    context.go('/login');
+    // Navigate to login screen with the chosen type
+    context.go('/login?type=$_selectedType');
   }
 }

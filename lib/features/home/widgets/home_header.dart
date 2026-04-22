@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeHeader extends StatelessWidget {
   final VoidCallback? onMenuTap;
@@ -60,9 +61,7 @@ class HomeHeader extends StatelessWidget {
 
               // Profile Icon
               GestureDetector(
-                onTap: () {
-                  // TODO: Navigate to Profile
-                },
+                onTap: () => context.push('/profile/company'),
                 child: Container(
                   width: 36,
                   height: 36,

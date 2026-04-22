@@ -43,7 +43,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       ref.read(quoteCreationProvider.notifier).updateClientInfo(clientInfo);
 
       // Navigate to next step
-      context.push('/quote/visual-proofs');
+      context.push('/quote/room-selection', extra: <String>[]);
     }
   }
 

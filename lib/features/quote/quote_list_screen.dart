@@ -131,8 +131,16 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
           Expanded(
             child: quotesAsync.when(
               data: (quotes) {
+                // Deduplicate by quoteNumber — keep only most recent per reference
+                final seenRefs = <String>{};
+                final uniqueQuotes = quotes.where((q) {
+                  final ref = (q['quoteNumber'] ?? q['reference'] ?? q['id'] ?? '').toString();
+                  if (ref.isEmpty) return true;
+                  return seenRefs.add(ref);
+                }).toList();
+
                 // Filter Logic
-                final filteredQuotes = quotes.where((quote) {
+                final filteredQuotes = uniqueQuotes.where((quote) {
                   final client = quote['client'] as Map<String, dynamic>? ?? {};
                   final clientName = (client['name'] ?? '').toLowerCase();
                   final quoteNumber =

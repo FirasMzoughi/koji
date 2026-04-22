@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(del \"c:\\\\Users\\\\firas\\\\OneDrive\\\\Desktop\\\\koji\\\\koji-main\\\\lib\\\\features\\\\quote\\\\data\\\\banque_de_temps_data.dart\")"
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/features/synchronization/data/project_model.dart';
 import 'data/calendar_event_model.dart';
 import 'data/calendar_repository.dart';
 
@@ -33,6 +34,23 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
       if (mounted) setState(() { _event = event; _isLoading = false; });
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _openTeamAssignment(CalendarEvent event) {
+    if (event.projectId != null) {
+      // Build a minimal Project from the event data and go to assignment screen
+      final project = Project(
+        id: event.projectId!,
+        title: event.title,
+        clientName: event.clientName ?? '',
+        address: event.address,
+        status: event.status,
+      );
+      context.push('/projects/assign/${event.projectId}', extra: project);
+    } else {
+      // No linked project — let the user pick one
+      context.push('/projects');
     }
   }
 
@@ -221,7 +239,10 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
           _iconBtn(Icons.share_outlined, () {}),
           const SizedBox(width: 8),
           _iconBtn(Icons.edit_outlined, () async {
-            // Navigate to edit (reuse NouvelEvenement with pre-filled data)
+            if (_event != null) {
+              await context.push('/calendrier/new-event', extra: _event);
+              _load(); // refresh after returning from edit
+            }
           }),
         ],
       ),
@@ -609,7 +630,7 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
         ...event.workers.map((w) => _workerChip(w)),
         // Add button
         GestureDetector(
-          onTap: () {},
+          onTap: () => _openTeamAssignment(event),
           child: Column(
             children: [
               Container(

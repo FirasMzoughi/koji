@@ -118,9 +118,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     onPressed: _selectedProfile != null
                         ? () {
                             final isPro = _selectedProfile == 1;
-                            ref.read(accountTypeProvider.notifier).state =
-                                isPro;
-                            context.go('/login');
+                            ref.read(accountTypeProvider.notifier).state = isPro;
+                            final type = isPro ? 'entreprise' : 'particulier';
+                            context.go('/login?type=$type');
                           }
                         : null,
                     style: ElevatedButton.styleFrom(

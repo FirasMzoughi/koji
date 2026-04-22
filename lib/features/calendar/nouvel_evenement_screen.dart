@@ -5,7 +5,10 @@ import 'data/calendar_event_model.dart';
 import 'data/calendar_repository.dart';
 
 class NouvelEvenementScreen extends StatefulWidget {
-  const NouvelEvenementScreen({super.key});
+  /// When provided, the form is pre-filled and saves via updateEvent (edit mode).
+  final CalendarEvent? initialEvent;
+
+  const NouvelEvenementScreen({super.key, this.initialEvent});
 
   @override
   State<NouvelEvenementScreen> createState() => _NouvelEvenementScreenState();
@@ -42,10 +45,27 @@ class _NouvelEvenementScreenState extends State<NouvelEvenementScreen> {
     'Maintenance': Color(0xFF10B981),
   };
 
+  bool get _isEditing => widget.initialEvent != null;
+
   @override
   void initState() {
     super.initState();
     _fetchWorkers();
+    _prefillFromEvent(widget.initialEvent);
+  }
+
+  void _prefillFromEvent(CalendarEvent? event) {
+    if (event == null) return;
+    _titleCtrl.text = event.title;
+    _clientCtrl.text = event.clientName ?? '';
+    _addressCtrl.text = event.address ?? '';
+    if (_eventTypes.contains(event.eventType)) {
+      _eventType = event.eventType;
+    }
+    _startDate = event.startAt;
+    _startTime = TimeOfDay(hour: event.startAt.hour, minute: event.startAt.minute);
+    _endDate = event.endAt;
+    _endTime = TimeOfDay(hour: event.endAt.hour, minute: event.endAt.minute);
   }
 
   @override
@@ -143,27 +163,39 @@ class _NouvelEvenementScreenState extends State<NouvelEvenementScreen> {
         _endTime.hour, _endTime.minute,
       );
 
-      final userId = _client.auth.currentUser!.id;
-      final event = CalendarEvent(
-        id: '',
-        userId: userId,
-        title: _titleCtrl.text.trim(),
-        eventType: _eventType,
-        clientName: _clientCtrl.text.trim().isEmpty ? null : _clientCtrl.text.trim(),
-        address: _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
-        startAt: startAt,
-        endAt: endAt,
-        status: 'En Cours',
-        createdAt: DateTime.now(),
-      );
-
-      await _repo.createEvent(event, _selectedWorkerIds, chefWorkerId: _chefWorkerId);
+      if (_isEditing) {
+        // Update existing event
+        await _repo.updateEvent(widget.initialEvent!.id, {
+          'title': _titleCtrl.text.trim(),
+          'event_type': _eventType,
+          'client_name': _clientCtrl.text.trim().isEmpty ? null : _clientCtrl.text.trim(),
+          'address': _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+          'start_at': startAt.toIso8601String(),
+          'end_at': endAt.toIso8601String(),
+        });
+      } else {
+        // Create new event
+        final userId = _client.auth.currentUser!.id;
+        final event = CalendarEvent(
+          id: '',
+          userId: userId,
+          title: _titleCtrl.text.trim(),
+          eventType: _eventType,
+          clientName: _clientCtrl.text.trim().isEmpty ? null : _clientCtrl.text.trim(),
+          address: _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+          startAt: startAt,
+          endAt: endAt,
+          status: 'En Cours',
+          createdAt: DateTime.now(),
+        );
+        await _repo.createEvent(event, _selectedWorkerIds, chefWorkerId: _chefWorkerId);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Événement enregistré !'),
-            backgroundColor: Color(0xFF10B981),
+          SnackBar(
+            content: Text(_isEditing ? 'Événement mis à jour !' : 'Événement enregistré !'),
+            backgroundColor: const Color(0xFF10B981),
           ),
         );
         context.pop();

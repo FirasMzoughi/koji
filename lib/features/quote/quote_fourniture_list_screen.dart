@@ -11,44 +11,67 @@ class QuoteFournitureListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(quoteCreationProvider);
 
-    // Extract products from selectedFournitures in roomTasks
-    final Map<String, List<Map<String, dynamic>>> fournituresByRoom = {};
+    // ── Collect all items, preserving fournisseur info ──────────────────────
+    final List<Map<String, dynamic>> allItems = [];
     double totalMaterialCost = 0.0;
-    int totalItemsCount = 0;
 
     state.roomTasks.forEach((roomId, taskDetails) {
       if (taskDetails is Map) {
-        final List<Map<String, dynamic>> roomFournitures = [];
         taskDetails.forEach((taskId, taskData) {
           if (taskData is Map) {
             final selectedFournitures = taskData['selectedFournitures'];
             if (selectedFournitures is Map) {
               selectedFournitures.forEach((_, productData) {
                 if (productData is Map) {
-                  final name = productData['name']?.toString() ?? productData['title']?.toString() ?? 'Produit';
-                  final qty = (productData['quantity'] as num?)?.toDouble() ?? 1.0;
-                  final unitPrice = (productData['unitPrice'] as num?)?.toDouble() ?? 0.0;
+                  final name = productData['name']?.toString() ??
+                      productData['title']?.toString() ??
+                      'Produit';
+                  final qty =
+                      (productData['quantity'] as num?)?.toDouble() ?? 1.0;
+                  final unitPrice =
+                      (productData['unitPrice'] as num?)?.toDouble() ?? 0.0;
                   if (unitPrice > 0 || qty > 0) {
                     final totalLine = qty * unitPrice;
-                    roomFournitures.add({
+                    final fournisseur =
+                        productData['fournisseur']?.toString().trim() ?? '';
+                    allItems.add({
                       'title': name,
                       'quantity': qty,
                       'unitPrice': unitPrice,
                       'total': totalLine,
+                      // empty string → will appear under "Divers"
+                      'fournisseur': fournisseur,
                     });
                     totalMaterialCost += totalLine;
-                    totalItemsCount++;
                   }
                 }
               });
             }
           }
         });
-        if (roomFournitures.isNotEmpty) {
-          fournituresByRoom[roomId] = roomFournitures;
-        }
       }
     });
+
+    // ── Group by fournisseur ─────────────────────────────────────────────────
+    // Preserve insertion order; "Divers" always last.
+    final Map<String, List<Map<String, dynamic>>> byFournisseur =
+        {};
+    for (final item in allItems) {
+      final key = (item['fournisseur'] as String).isEmpty
+          ? 'Divers'
+          : item['fournisseur'] as String;
+      byFournisseur.putIfAbsent(key, () => []).add(item);
+    }
+
+    // Move "Divers" to the end if present
+    final divers = byFournisseur.remove('Divers');
+    final orderedKeys = byFournisseur.keys.toList();
+    if (divers != null) {
+      byFournisseur['Divers'] = divers;
+      orderedKeys.add('Divers');
+    }
+
+    final totalItemsCount = allItems.length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -56,7 +79,8 @@ class QuoteFournitureListScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.darkNavy, size: 20),
+          icon: const Icon(Icons.arrow_back_ios,
+              color: AppTheme.darkNavy, size: 20),
           onPressed: () => context.pop(),
         ),
         title: Text(
@@ -66,15 +90,16 @@ class QuoteFournitureListScreen extends ConsumerWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: fournituresByRoom.isEmpty
+        child: byFournisseur.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
+                    Icon(Icons.inventory_2_outlined,
+                        size: 64, color: Colors.grey[400]),
                     const SizedBox(height: 16),
                     Text(
-                      "Aucune fourniture nécessaire",
+                      'Aucune fourniture nécessaire',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -86,13 +111,13 @@ class QuoteFournitureListScreen extends ConsumerWidget {
               )
             : Column(
                 children: [
-                  // Total Header
+                  // ── Total header ────────────────────────────────────────
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                    decoration: const BoxDecoration(
                       color: AppTheme.darkNavy,
-                      borderRadius: const BorderRadius.only(
+                      borderRadius: BorderRadius.only(
                         bottomLeft: Radius.circular(24),
                         bottomRight: Radius.circular(24),
                       ),
@@ -101,54 +126,48 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                       children: [
                         const Text(
                           'Total estimé des matériaux',
-                          style: TextStyle( color: Colors.white70, fontSize: 13),
+                          style:
+                              TextStyle(color: Colors.white70, fontSize: 13),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${totalMaterialCost.toStringAsFixed(2)} €',
-                          style: const TextStyle( color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '$totalItemsCount éléments',
-                            style: const TextStyle( color: Colors.white, fontSize: 12),
-                          ),
-                        )
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _statChip('$totalItemsCount élément${totalItemsCount > 1 ? 's' : ''}'),
+                            const SizedBox(width: 8),
+                            _statChip(
+                                '${byFournisseur.keys.where((k) => k != 'Divers').length} fournisseur${byFournisseur.keys.where((k) => k != 'Divers').length > 1 ? 's' : ''}'),
+                          ],
+                        ),
                       ],
                     ),
                   ),
 
-                  // List of items
+                  // ── Grouped list ────────────────────────────────────────
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: fournituresByRoom.keys.length,
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                      itemCount: orderedKeys.length,
                       itemBuilder: (context, index) {
-                        final roomId = fournituresByRoom.keys.elementAt(index);
-                        final items = fournituresByRoom[roomId]!;
+                        final fournisseurName = orderedKeys[index];
+                        final items = byFournisseur[fournisseurName]!;
+                        final isDivers = fournisseurName == 'Divers';
+                        final groupTotal = items.fold<double>(
+                            0, (sum, i) => sum + (i['total'] as double));
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4, bottom: 12, top: 16),
-                              child: Text(
-                                _getRoomLabel(roomId),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.darkNavy,
-                                ),
-                              ),
-                            ),
-                            ...items.map((item) => _buildFournitureItem(item)),
-                          ],
+                        return _FournisseurGroup(
+                          name: fournisseurName,
+                          items: items,
+                          groupTotal: groupTotal,
+                          isDivers: isDivers,
                         );
                       },
                     ),
@@ -170,18 +189,19 @@ class QuoteFournitureListScreen extends ConsumerWidget {
         ),
         child: SafeArea(
           child: ElevatedButton(
-            onPressed: () {
-              // Usually they just return or continue validation
-              context.pop();
-            },
+            onPressed: () => context.pop(),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.darkNavy,
               minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text(
-              "Retour au résumé",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+              'Retour au résumé',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
           ),
         ),
@@ -189,69 +209,237 @@ class QuoteFournitureListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFournitureItem(Map<String, dynamic> item) {
+  Widget _statChip(String label) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+    );
+  }
+}
+
+// ── Fournisseur group card ───────────────────────────────────────────────────
+
+class _FournisseurGroup extends StatefulWidget {
+  final String name;
+  final List<Map<String, dynamic>> items;
+  final double groupTotal;
+  final bool isDivers;
+
+  const _FournisseurGroup({
+    required this.name,
+    required this.items,
+    required this.groupTotal,
+    required this.isDivers,
+  });
+
+  @override
+  State<_FournisseurGroup> createState() => _FournisseurGroupState();
+}
+
+class _FournisseurGroupState extends State<_FournisseurGroup> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      child: Column(
+        children: [
+          // ── Header ─────────────────────────────────────────────────────
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  // Avatar / icon
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: widget.isDivers
+                          ? const Color(0xFFF1F5F9)
+                          : AppTheme.darkNavy,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: widget.isDivers
+                        ? const Icon(Icons.category_outlined,
+                            color: Color(0xFF94A3B8), size: 20)
+                        : Center(
+                            child: Text(
+                              widget.name.isNotEmpty
+                                  ? widget.name[0].toUpperCase()
+                                  : 'F',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Name + count
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.name,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.darkNavy,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${widget.items.length} fourniture${widget.items.length > 1 ? 's' : ''}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Group total
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${widget.groupTotal.toStringAsFixed(2)} €',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF3B82F6),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'H.T',
+                        style: TextStyle(
+                            fontSize: 10, color: Color(0xFF94A3B8)),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.keyboard_arrow_down,
+                        color: Color(0xFF94A3B8), size: 22),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Divider ──────────────────────────────────────────────────
+          if (_expanded)
+            const Divider(height: 1, indent: 16, endIndent: 16,
+                color: Color(0xFFF1F5F9)),
+
+          // ── Items ─────────────────────────────────────────────────────
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                children: widget.items
+                    .map((item) => _FournitureRow(item: item))
+                    .toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Single fourniture row inside a group ────────────────────────────────────
+
+class _FournitureRow extends StatelessWidget {
+  final Map<String, dynamic> item;
+  const _FournitureRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
+          // Bullet icon
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.build_circle_outlined, color: AppTheme.darkNavy),
+            child: const Icon(Icons.build_circle_outlined,
+                color: AppTheme.darkNavy, size: 16),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
+
+          // Name + qty × price
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item['title'],
+                  item['title'] as String,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
                     fontSize: 14,
+                    fontWeight: FontWeight.w600,
                     color: AppTheme.darkNavy,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  '${item['quantity']} × ${item['unitPrice'].toStringAsFixed(2)} €',
-                  style: TextStyle(
+                  '${(item['quantity'] as double).toStringAsFixed(item['quantity'] == item['quantity'].roundToDouble() ? 0 : 2)} × '
+                  '${(item['unitPrice'] as double).toStringAsFixed(2)} €',
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: Color(0xFF94A3B8),
                   ),
                 ),
               ],
             ),
           ),
+
+          // Line total
           Text(
-            '${item['total'].toStringAsFixed(2)} €',
+            '${(item['total'] as double).toStringAsFixed(2)} €',
             style: const TextStyle(
-              fontWeight: FontWeight.w800,
               fontSize: 14,
+              fontWeight: FontWeight.w800,
               color: Color(0xFF3B82F6),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _getRoomLabel(String id) {
-    if (id.toLowerCase().contains('salon')) return 'Salon';
-    if (id.toLowerCase().contains('cuisine')) return 'Cuisine';
-    if (id.toLowerCase().contains('chambre')) return 'Chambre';
-    if (id.toLowerCase().contains('bain')) return 'Salle de bain';
-    if (id.toLowerCase().contains('wc')) return 'WC';
-    if (id.toLowerCase().contains('entree')) return 'Entrée';
-    return id.substring(0, 1).toUpperCase() + id.substring(1);
   }
 }

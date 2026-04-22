@@ -5,10 +5,14 @@ import 'package:koji/core/theme.dart';
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/auth/provider/auth_provider.dart';
 import 'package:koji/features/auth/provider/account_type_provider.dart';
+import 'package:koji/features/auth/repository/auth_repository.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  /// 'entreprise', 'particulier', or null (existing user — route by DB value)
+  final String? loginType;
+
+  const LoginScreen({super.key, this.loginType});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -42,6 +46,112 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
   }
 
+  void _handleForgotPassword() {
+    final emailCtrl = TextEditingController(text: _emailController.text.trim());
+    bool sending = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDs) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            'Mot de passe oublié',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Saisissez votre adresse e-mail. Vous recevrez un lien pour réinitialiser votre mot de passe.',
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  autofocus: true,
+                  style: const TextStyle(fontSize: 15),
+                  decoration: const InputDecoration(
+                    hintText: 'Adresse e-mail',
+                    prefixIcon: Icon(Icons.email_outlined,
+                        size: 20, color: Color(0xFF6B7280)),
+                    border: InputBorder.none,
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler',
+                  style: TextStyle(color: Color(0xFF6B7280))),
+            ),
+            ElevatedButton(
+              onPressed: sending
+                  ? null
+                  : () async {
+                      final email = emailCtrl.text.trim();
+                      if (email.isEmpty) return;
+                      setDs(() => sending = true);
+                      try {
+                        await ref
+                            .read(authRepositoryProvider)
+                            .resetPassword(email: email);
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                        }
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'E-mail envoyé ! Vérifiez votre boîte de réception.'),
+                              backgroundColor: Color(0xFF10B981),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        setDs(() => sending = false);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text('Erreur : ${e.toString()}')),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: sending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text('Envoyer',
+                      style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleGoogleLogin() async {
     final isPro = ref.read(accountTypeProvider) ?? false;
     setState(() => _loginAttempted = true);
@@ -60,7 +170,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final userData = await userRepo.getUser(user.id);
       if (!mounted) return;
 
-      final isPro = userData?['is_pro'] as bool? ?? true;
+      // If loginType is specified, respect the user's chosen interface.
+      // Otherwise fall back to what is stored in the DB.
+      final loginType = widget.loginType;
+      final bool isPro;
+      if (loginType == 'entreprise') {
+        isPro = true;
+      } else if (loginType == 'particulier') {
+        isPro = false;
+      } else {
+        // No type param — route by the value stored in DB.
+        // Default false (particulier) if field is missing so we don't
+        // accidentally send a non-pro user to the enterprise home.
+        isPro = userData?['is_pro'] as bool? ?? false;
+      }
 
       // CLIENT — go straight to client home
       if (!isPro) {
@@ -108,7 +231,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(height: responsive.height(5)), // ~40px
+              SizedBox(height: responsive.height(1.5)),
+
+              // Back button
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: () => context.go('/account-type'),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  color: AppTheme.darkNavy,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+
+              SizedBox(height: responsive.height(2)),
 
               // Logo
               Center(
@@ -123,11 +260,55 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
 
-              SizedBox(height: responsive.height(5)), // ~40px
+              SizedBox(height: responsive.height(2)),
+
+              // Account-type badge
+              if (widget.loginType != null)
+                Center(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: responsive.width(4),
+                      vertical: responsive.height(0.75),
+                    ),
+                    decoration: BoxDecoration(
+                      color: widget.loginType == 'entreprise'
+                          ? AppTheme.darkNavy
+                          : AppTheme.primaryBlue,
+                      borderRadius: BorderRadius.circular(responsive.borderRadius(20)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          widget.loginType == 'entreprise'
+                              ? Icons.business
+                              : Icons.person,
+                          color: Colors.white,
+                          size: responsive.iconSize(16),
+                        ),
+                        SizedBox(width: responsive.width(1.5)),
+                        Text(
+                          widget.loginType == 'entreprise'
+                              ? 'Espace Entreprise'
+                              : 'Espace Particulier',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: responsive.fontSize(13),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              SizedBox(height: responsive.height(3)), // ~24px
 
               // Title
               Text(
-                'Bon retour ! Accédez à vos devis et chantiers en un instant',
+                widget.loginType == 'particulier'
+                    ? 'Bon retour ! Suivez vos travaux et devis en un instant'
+                    : 'Bon retour ! Accédez à vos devis et chantiers en un instant',
                 style: AppTheme.headingStyle(context).copyWith(
                   fontSize: responsive.fontSize(24),
                 ),
@@ -198,7 +379,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: _handleForgotPassword,
                     child: Text(
                       'Mot de passe oublié?',
                       style: TextStyle(
@@ -306,7 +487,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               // Signup Link
               Center(
                 child: GestureDetector(
-                  onTap: () => context.go('/signup'),
+                  onTap: () {
+                    final t = widget.loginType;
+                    context.go(t != null ? '/signup?type=$t' : '/signup');
+                  },
                   child: RichText(
                     text: TextSpan(
                       style: TextStyle(

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:koji/features/auth/provider/auth_provider.dart';
 import 'package:koji/features/quote/providers/chantier_provider.dart';
 import 'package:koji/features/quote/repositories/chantier_repository.dart';
+import 'package:koji/features/synchronization/data/rdv_repository.dart';
 
 class ChantierDashboardScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
@@ -16,9 +19,53 @@ class ChantierDashboardScreen extends ConsumerStatefulWidget {
 
 class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScreen> {
   final _repository = ChantierRepository();
+
+  Map<String, dynamic>? _nextRdv;
+  bool _rdvLoaded = false;
+
   @override
   void initState() {
     super.initState();
+    _loadNextRdv();
+  }
+
+  Future<void> _loadNextRdv() async {
+    final chantierId = widget.data['id'] as String?;
+    final user = ref.read(authProvider).value;
+    if (chantierId == null || user == null) {
+      setState(() => _rdvLoaded = true);
+      return;
+    }
+    try {
+      final rdvRepo = ref.read(rdvRepositoryProvider);
+      final rdvs = await rdvRepo.getRdvs(userId: user.id, chantierId: chantierId);
+      final now = DateTime.now();
+      final upcoming = rdvs.where((r) {
+        final dt = DateTime.tryParse(r['scheduled_at'] as String? ?? '');
+        return dt != null && dt.isAfter(now);
+      }).toList();
+      if (mounted) {
+        setState(() {
+          _nextRdv = upcoming.isNotEmpty ? upcoming.first : null;
+          _rdvLoaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _rdvLoaded = true);
+    }
+  }
+
+  String _formatRdvDate(String isoString) {
+    final dt = DateTime.tryParse(isoString);
+    if (dt == null) return '';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final rdvDay = DateTime(dt.year, dt.month, dt.day);
+    final diff = rdvDay.difference(today).inDays;
+    final time = DateFormat('HH:mm').format(dt);
+    if (diff == 0) return "Aujourd'hui, $time";
+    if (diff == 1) return 'Demain, $time';
+    return '${DateFormat('dd/MM').format(dt)}, $time';
   }
 
   String get _chantierName =>
@@ -399,6 +446,17 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
 
   // ──────────────────────────────────────────
   Widget _buildDevisRdvRow() {
+    final chantierId = widget.data['id'] as String?;
+    final quotesAsync = chantierId != null
+        ? ref.watch(chantierQuotesProvider(chantierId))
+        : null;
+
+    final quoteCount = quotesAsync?.value?.length ?? 0;
+    final rdvTitle = _nextRdv?['title'] as String? ?? 'Aucun RDV';
+    final rdvDateStr = _nextRdv != null
+        ? _formatRdvDate(_nextRdv!['scheduled_at'] as String)
+        : 'Pas de RDV prévu';
+
     return Row(
       children: [
         // Devis card
@@ -408,8 +466,8 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
             child: _SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Row(
+                children: [
+                  const Row(
                     children: [
                       Icon(Icons.description_outlined,
                           size: 16, color: Color(0xFF0F172A)),
@@ -424,19 +482,23 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                       ),
                     ],
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Text(
-                    '0',
-                    style: TextStyle(
+                    '$quoteCount',
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    'Aucun devis',
-                    style: TextStyle(
+                    quoteCount == 0
+                        ? 'Aucun devis'
+                        : quoteCount == 1
+                            ? '1 devis'
+                            : '$quoteCount devis',
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF94A3B8),
                     ),
@@ -454,8 +516,8 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
             child: _SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Row(
+                children: [
+                  const Row(
                     children: [
                       Icon(Icons.calendar_today_outlined,
                           size: 16, color: Color(0xFF0F172A)),
@@ -473,18 +535,20 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                       ),
                     ],
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Text(
-                    'Réunion chantier',
-                    style: TextStyle(
+                    rdvTitle,
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF0F172A),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    'Demain, 09:00',
-                    style: TextStyle(
+                    rdvDateStr,
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF94A3B8),
                     ),

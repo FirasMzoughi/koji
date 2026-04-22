@@ -279,7 +279,7 @@ class ChantierDevisScreen extends ConsumerWidget {
     // Store chantierId in quote creation state so it gets saved with the quote
     ref.read(quoteCreationProvider.notifier).reset();
     ref.read(quoteCreationProvider.notifier).setChantierId(chantierId);
-    context.push('/quote/visual-proofs');
+    context.push('/quote/room-selection', extra: <String>[]);
   }
 
   String _fmt(double v) {

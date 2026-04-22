@@ -44,6 +44,7 @@ import 'package:koji/features/planning/planning_screen.dart';
 import 'package:koji/features/calendar/calendrier_screen.dart';
 import 'package:koji/features/calendar/nouvel_evenement_screen.dart';
 import 'package:koji/features/calendar/detail_planning_screen.dart';
+import 'package:koji/features/calendar/data/calendar_event_model.dart';
 import 'package:koji/features/settings/pricing_settings_screen.dart';
 import 'package:koji/features/profile/company_profile_screen.dart';
 import 'package:koji/features/fournitures/fournitures_screen.dart';
@@ -106,11 +107,14 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/signup',
-      pageBuilder: (context, state) => _buildPageWithTransition(
-        context,
-        state,
-        const SignupScreen(),
-      ),
+      pageBuilder: (context, state) {
+        final typeParam = state.uri.queryParameters['type'];
+        return _buildPageWithTransition(
+          context,
+          state,
+          SignupScreen(signupType: typeParam),
+        );
+      },
     ),
     GoRoute(
       path: '/account-type',
@@ -122,11 +126,17 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/login',
-      pageBuilder: (context, state) => _buildPageWithTransition(
-        context,
-        state,
-        const LoginScreen(),
-      ),
+      pageBuilder: (context, state) {
+        // ?type=entreprise  → isPro = true
+        // ?type=particulier → isPro = false
+        // no param          → read from DB (existing user)
+        final typeParam = state.uri.queryParameters['type'];
+        return _buildPageWithTransition(
+          context,
+          state,
+          LoginScreen(loginType: typeParam),
+        );
+      },
     ),
     GoRoute(
       path: '/business-info',
@@ -608,11 +618,15 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/calendrier/new-event',
-      pageBuilder: (context, state) => _buildPageWithTransition(
-        context,
-        state,
-        const NouvelEvenementScreen(),
-      ),
+      pageBuilder: (context, state) {
+        // When coming from edit button, extra is a CalendarEvent to pre-fill
+        final initial = state.extra as CalendarEvent?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          NouvelEvenementScreen(initialEvent: initial),
+        );
+      },
     ),
     GoRoute(
       path: '/calendrier/detail/:eventId',

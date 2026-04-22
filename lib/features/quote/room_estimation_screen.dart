@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/core/responsive_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:koji/features/pricing/models/pricing_models.dart';
+import 'package:koji/features/pricing/repository/pricing_repository.dart';
+import 'package:koji/features/quote/domain/pricing_engine.dart';
 import 'package:koji/features/quote/providers/quote_creation_provider.dart';
 import 'package:koji/features/quote/model/expense_item.dart';
 
@@ -47,8 +50,71 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Read selected tasks from provider and generate expense items
     _initializeExpensesFromTasks();
+    _applyPricingEngine();
+  }
+
+  /// Fetch SmartTask + PricingProfile from Supabase and pre-fill labor/material
+  /// costs on each ExpenseItem using PricingEngine.calculateTaskPrice().
+  Future<void> _applyPricingEngine() async {
+    final quoteState = ref.read(quoteCreationProvider);
+    final profession = quoteState.userProfession;
+    if (profession == null || profession.isEmpty) return;
+
+    final pricingRepo = ref.read(pricingRepositoryProvider);
+    final profile = await pricingRepo.getProfileForProfession(profession);
+    if (profile == null || !mounted) return;
+
+    final smartTasks = await pricingRepo.getTasksForProfession(profession);
+    if (!mounted) return;
+
+    // Map task ID → SmartTask for quick lookup
+    final taskMap = {for (final t in smartTasks) t.id: t};
+
+    bool changed = false;
+    for (final roomId in widget.selectedRoomIds) {
+      final roomLabel = _getRoomLabel(roomId);
+      final items = _expensesByRoom[roomLabel];
+      if (items == null) continue;
+
+      final realityFactors =
+          quoteState.roomContexts[roomId] ?? const RealityFactors();
+
+      // Collect all selected task IDs for this room
+      final roomTaskData = quoteState.roomTasks[roomId];
+      final selectedTaskIds =
+          (roomTaskData?['tasks'] as List<dynamic>?)?.cast<String>() ?? [];
+
+      for (final taskId in selectedTaskIds) {
+        final smartTask = taskMap[taskId];
+        if (smartTask == null) continue;
+
+        // Find the matching ExpenseItem by id prefix similarity
+        // (tasks map to grouped expense items, so multiple task IDs may share one item)
+        for (final item in items) {
+          // Only auto-fill items still at 0.0 to avoid overwriting user edits
+          if (item.laborCost != 0.0 || item.materialCost != 0.0) continue;
+
+          final breakdown = PricingEngine.calculateTaskPrice(
+            task: smartTask,
+            quantity: item.quantity > 0 ? item.quantity : 1.0,
+            realityFactors: realityFactors,
+            pricingProfile: profile,
+            selectedProducts: const [],
+          );
+
+          item.laborCost = breakdown.laborCost;
+          item.materialCost = breakdown.materialCost;
+          item.stateCoefficient = realityFactors.totalCoefficient;
+          item.normativeTime = smartTask.normativeTime;
+          item.hourlyRate = profile.hourlyRate;
+          changed = true;
+          break; // one task → fills first matching zero item
+        }
+      }
+    }
+
+    if (changed && mounted) setState(() {});
   }
   
   void _initializeExpensesFromTasks() {
@@ -490,15 +556,41 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                                fontWeight: FontWeight.bold,
                              ),
                            ),
-                           const SizedBox(height: 16),
-                           Row(
-                             mainAxisAlignment: MainAxisAlignment.center,
-                             children: [
-                               _buildLegendItem(label: "MO: 60%", color: const Color(0xFF3B82F6)), // Light Blue
-                               const SizedBox(width: 24),
-                               _buildLegendItem(label: "Mat: 40%", color: const Color(0xFF9CA3AF)), // Grey
-                             ],
-                           ),
+                            const SizedBox(height: 16),
+                            Builder(builder: (context) {
+                              final roomItems = _expensesByRoom[currentRoom] ?? <ExpenseItem>[];
+                              double totalLabor = roomItems.fold(0.0, (sum, i) => sum + (i.quantity * i.laborCost));
+                              double totalMaterial = roomItems.fold(0.0, (sum, i) => sum + (i.quantity * i.materialCost));
+                              double laborPct = roomTotal > 0 ? (totalLabor / roomTotal * 100) : 0;
+                              double matPct = roomTotal > 0 ? (totalMaterial / roomTotal * 100) : 0;
+                              return Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _buildLegendItem(label: "MO: ${laborPct.toStringAsFixed(0)}%", color: const Color(0xFF3B82F6)),
+                                      const SizedBox(width: 24),
+                                      _buildLegendItem(label: "Mat: ${matPct.toStringAsFixed(0)}%", color: const Color(0xFF9CA3AF)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        "${totalLabor.toStringAsFixed(2)} €",
+                                        style: TextStyle(color: const Color(0xFF3B82F6), fontSize: 11, fontWeight: FontWeight.w600),
+                                      ),
+                                      Text(" + ", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
+                                      Text(
+                                        "${totalMaterial.toStringAsFixed(2)} €",
+                                        style: TextStyle(color: const Color(0xFF9CA3AF), fontSize: 11, fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            }),
                          ],
                        ),
                      ),
@@ -791,9 +883,52 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
           // Row 3: Taxes
            // _buildInputColumn("Taxe sur la valeur ajoutée (TVA)", "11.00", suffix: "€"), // Placeholder
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F4FF),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFD0D8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calculate_outlined, size: 14, color: Color(0xFF5B7BD5)),
+                    const SizedBox(width: 6),
+                    Text(
+                      "Détail du calcul",
+                      style: TextStyle(
+                        color: const Color(0xFF5B7BD5),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildCalcLine("Quantité", "${item.quantity.toStringAsFixed(1)} m²"),
+                _buildCalcLine("Main d'œuvre", "${item.laborCost.toStringAsFixed(2)} €/h"),
+                _buildCalcLine("Matériel", "${item.materialCost.toStringAsFixed(2)} €/u"),
+                const Divider(height: 12, color: Color(0xFFD0D8F0)),
+                Text(
+                  "${item.quantity.toStringAsFixed(1)} × (${item.laborCost.toStringAsFixed(2)} + ${item.materialCost.toStringAsFixed(2)}) = ${total.toStringAsFixed(2)} €",
+                  style: TextStyle(
+                    color: AppTheme.darkNavy,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
           
-          // Footer
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -879,6 +1014,32 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCalcLine(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: const Color(0xFF6B7280),
+              fontSize: 11,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: AppTheme.darkNavy,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

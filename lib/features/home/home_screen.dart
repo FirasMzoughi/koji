@@ -97,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.photo_camera,
                       onTap: () {
                         Navigator.pop(context);
-                        context.push('/quote/visual-proofs');
+                        context.push('/quote/room-selection', extra: <String>[]);
                       },
                     ),
                     _buildPlusActionItem(
@@ -105,10 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.fact_check,
                       onTap: () {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Tâches bientôt disponibles')),
-                        );
+                        context.push('/chantier/add-task', extra: <String, dynamic>{});
                       },
                     ),
                     _buildPlusActionItem(
@@ -401,6 +398,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 DashboardSection(
                   title: 'Chantiers',
+                  onTap: () => setState(() => _selectedIndex = 2),
                   child: chantiersAsync.when(
                     data: (chantiers) {
                       if (user == null) {
@@ -560,6 +558,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // Devis en cours
                 DashboardSection(
                   title: 'Devis en cours',
+                  onTap: () => setState(() => _selectedIndex = 1),
                   child: quotesAsync.when(
                     data: (quotes) {
                       if (user == null) {
@@ -569,7 +568,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       }
 
-                      final inProgress = quotes.where((q) {
+                      // Deduplicate by quoteNumber — keep only the first occurrence
+                      // (stream is ordered by created_at desc, so first = most recent)
+                      final seenRefs = <String>{};
+                      final uniqueQuotes = quotes.where((q) {
+                        final ref = (q['quoteNumber'] ?? q['reference'] ?? q['id'] ?? '').toString();
+                        if (ref.isEmpty) return true;
+                        return seenRefs.add(ref);
+                      }).toList();
+
+                      final inProgress = uniqueQuotes.where((q) {
                         final s = (q['status'] ?? '').toString().toLowerCase();
                         return s == 'en_cours' ||
                             s == 'generated' ||
@@ -629,51 +637,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               },
                               child: Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
-                                child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
+                                child: InkWell(
+                                  onTap: quoteId == null
+                                      ? null
+                                      : () => context.push('/quote/detail', extra: q),
                                   borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.description_outlined, size: 18, color: Color(0xFF0F172A)),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            clientName,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF0F172A),
-                                            ),
-                                          ),
-                                          if (refQ.isNotEmpty)
+                                  child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.description_outlined, size: 18, color: Color(0xFF0F172A)),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
                                             Text(
-                                              refQ,
+                                              clientName,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                               style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Color(0xFF64748B),
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF0F172A),
                                               ),
                                             ),
-                                        ],
+                                            if (refQ.isNotEmpty)
+                                              Text(
+                                                refQ,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Color(0xFF64748B),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      _formatEuro(amount),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F172A),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        _formatEuro(amount),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF0F172A),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 6),
+                                      const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF94A3B8)),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -725,7 +741,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       double factured = 0;
                       double awaitingSignature = 0;
 
-                      for (final q in quotes) {
+                      // Deduplicate by quoteNumber before summing
+                      final seenSumRefs = <String>{};
+                      final uniqueForSum = quotes.where((q) {
+                        final ref = (q['quoteNumber'] ?? q['reference'] ?? q['id'] ?? '').toString();
+                        if (ref.isEmpty) return true;
+                        return seenSumRefs.add(ref);
+                      }).toList();
+
+                      for (final q in uniqueForSum) {
                         final totals = q['totals'] as Map<String, dynamic>? ?? {};
                         final amount = (totals['ttc'] as num?)?.toDouble() ?? 0;
                         final status = (q['status'] ?? '').toString().toLowerCase();
@@ -739,15 +763,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         final isAwaiting = status == 'generated' ||
                             status == 'en_cours' ||
                             status == 'draft' ||
+                            status == 'pending' ||
                             status.contains('attente');
 
                         if (isSigned) {
                           factured += amount;
                         } else if (isAwaiting) {
                           awaitingSignature += amount;
-                        } else {
-                          awaitingSignature += amount;
                         }
+                        // Archived or unknown statuses are not counted
                       }
 
                       return Column(

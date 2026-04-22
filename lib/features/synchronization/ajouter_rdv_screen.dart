@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/features/auth/repository/auth_repository.dart';
+import 'package:koji/features/synchronization/data/rdv_repository.dart';
 import 'package:koji/features/synchronization/data/worker_model.dart';
 
-class AjouterRdvScreen extends StatefulWidget {
+class AjouterRdvScreen extends ConsumerStatefulWidget {
   final Worker? worker;
   const AjouterRdvScreen({super.key, this.worker});
 
   @override
-  State<AjouterRdvScreen> createState() => _AjouterRdvScreenState();
+  ConsumerState<AjouterRdvScreen> createState() => _AjouterRdvScreenState();
 }
 
-class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
+class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
+  bool _saving = false;
   final _titleController = TextEditingController();
   final _noteController = TextEditingController();
   DateTime _currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
@@ -339,38 +343,38 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
                 height: 56,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Save RDV to Supabase
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('RDV enregistré avec succès!'),
-                        backgroundColor: Color(0xFF10B981),
-                      ),
-                    );
-                    context.pop(true);
-                  },
+                  onPressed: _saving ? null : _saveRdv,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E65F3),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Enregistrer",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Enregistrer",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward,
+                                color: Colors.white, size: 20),
+                          ],
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward,
-                          color: Colors.white, size: 20),
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -378,6 +382,61 @@ class _AjouterRdvScreenState extends State<AjouterRdvScreen> {
         ],
       ),
     );
+  }
+
+  // ─── SAVE ──────────────────────────────
+  Future<void> _saveRdv() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez saisir un intitulé')),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    try {
+      final user = ref.read(authRepositoryProvider).currentUser;
+      if (user == null) throw Exception('Utilisateur non connecté');
+
+      final scheduledAt = DateTime(
+        _currentMonth.year,
+        _currentMonth.month,
+        _selectedDay,
+        _selectedHour,
+        _selectedMinute,
+      );
+
+      await ref.read(rdvRepositoryProvider).createRdv(
+            userId: user.id,
+            title: title,
+            scheduledAt: scheduledAt,
+            duration: _selectedDuration,
+            note: _noteController.text.trim(),
+            workerName: widget.worker != null
+                ? '${widget.worker!.firstName} ${widget.worker!.lastName}'
+                : null,
+            workerId: widget.worker?.id,
+          );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('RDV enregistré avec succès !'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        context.pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : ${e.toString()}')),
+        );
+      }
+    }
   }
 
   // ─── CALENDAR ──────────────────────────

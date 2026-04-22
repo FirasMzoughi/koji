@@ -35,6 +35,31 @@ class Project {
     );
   }
 
+  /// Map a chantiers table row to a Project
+  factory Project.fromChantierJson(Map<String, dynamic> json) {
+    // Build a readable title from reference or city
+    final reference = json['reference'] as String? ?? '';
+    final city = json['city'] as String? ?? '';
+    final street = json['street'] as String? ?? '';
+    final title = reference.isNotEmpty ? reference : (city.isNotEmpty ? city : 'Chantier');
+    final address = [street, city].where((s) => s.isNotEmpty).join(', ');
+
+    return Project(
+      id: json['id'] as String,
+      title: title,
+      clientName: json['client_name'] as String? ?? '',
+      address: address.isNotEmpty ? address : null,
+      status: json['status'] as String? ?? 'En attente',
+      imageUrl: json['image_url'] as String?,
+      startDate: json['start_date'] != null
+          ? DateTime.tryParse(json['start_date'])
+          : null,
+      endDate: json['end_date'] != null
+          ? DateTime.tryParse(json['end_date'])
+          : null,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'title': title,
@@ -119,7 +144,6 @@ class TaskItem {
   factory TaskItem.fromJson(Map<String, dynamic> json) {
     final details = json['details'] as Map<String, dynamic>?;
 
-    // Attempt parse date
     DateTime? parsedDate;
     if (json['scheduled_date'] != null) {
       parsedDate = DateTime.tryParse(json['scheduled_date']);
@@ -143,6 +167,19 @@ class TaskItem {
       endTime: json['end_time'],
       duration: details?['duration'],
       workerId: json['worker_id'],
+    );
+  }
+
+  /// Map a chantier_tasks row to a TaskItem
+  factory TaskItem.fromChantierTaskJson(Map<String, dynamic> json) {
+    return TaskItem(
+      id: json['id'] as String,
+      projectId: json['chantier_id'] as String,
+      userId: '',
+      taskName: json['label'] as String? ?? 'Tâche',
+      roomName: '',
+      status: (json['is_done'] as bool? ?? false) ? 'Terminé' : 'À Faire',
+      scheduledDate: null,
     );
   }
 }

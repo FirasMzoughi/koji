@@ -1,8 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SynchronizationScreen extends StatelessWidget {
+class SynchronizationScreen extends StatefulWidget {
   const SynchronizationScreen({super.key});
+
+  @override
+  State<SynchronizationScreen> createState() => _SynchronizationScreenState();
+}
+
+class _SynchronizationScreenState extends State<SynchronizationScreen> {
+  int _totalWorkers = 0;
+  int _activeWorkers = 0;
+  int _totalChantiers = 0;
+  int _activeChantiers = 0;
+  bool _statsLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final workers = await client
+          .from('workers')
+          .select('id, status')
+          .eq('user_id', userId);
+
+      final chantiers = await client
+          .from('chantiers')
+          .select('id, status')
+          .eq('user_id', userId);
+
+      if (mounted) {
+        final wList = workers as List;
+        final cList = chantiers as List;
+        setState(() {
+          _totalWorkers = wList.length;
+          _activeWorkers = wList
+              .where((w) => w['status'] == 'Disponible' || w['status'] == 'En mission')
+              .length;
+          _totalChantiers = cList.length;
+          _activeChantiers = cList
+              .where((c) => c['status'] != 'Terminé' && c['status'] != 'Annulé')
+              .length;
+          _statsLoaded = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading sync stats: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,29 +175,27 @@ class SynchronizationScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "Aujourd'hui",
+                              "Mon équipe",
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
                                 color: darkText,
                               ),
                             ),
-                            Text(
-                              "Janvier 2026",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: greyText,
-                                fontWeight: FontWeight.w500,
+                            if (!_statsLoaded)
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 20),
-                        // Blue Team Hours Card
+                        // Navy summary card
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0A1227), // Deep navy
+                            color: const Color(0xFF0A1227),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
@@ -153,16 +205,16 @@ class SynchronizationScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    "Total heures équipe",
+                                    "Ouvriers enregistrés",
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFFB3B9C5),
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text(
-                                    "123.4 h",
-                                    style: TextStyle(
+                                  Text(
+                                    "$_totalWorkers ouvrier${_totalWorkers != 1 ? 's' : ''}",
+                                    style: const TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
@@ -173,11 +225,11 @@ class SynchronizationScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.25),
+                                  color: Colors.white.withValues(alpha: 0.25),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(
-                                  Icons.access_time_filled,
+                                  Icons.people_alt,
                                   color: Colors.white,
                                   size: 32,
                                 ),
@@ -191,8 +243,8 @@ class SynchronizationScreen extends StatelessWidget {
                           children: [
                             Expanded(
                               child: _buildStatBox(
-                                label: "Actifs",
-                                value: "12/20",
+                                label: "Disponibles",
+                                value: "$_activeWorkers",
                                 darkText: darkText,
                                 greyText: greyText,
                                 valueSize: 24,
@@ -201,8 +253,8 @@ class SynchronizationScreen extends StatelessWidget {
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildStatBox(
-                                label: "Retards",
-                                value: "02",
+                                label: "Chantiers actifs",
+                                value: "$_activeChantiers / $_totalChantiers",
                                 darkText: darkText,
                                 greyText: greyText,
                                 valueSize: 24,

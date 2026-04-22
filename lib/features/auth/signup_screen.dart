@@ -7,7 +7,10 @@ import 'package:koji/features/auth/provider/account_type_provider.dart';
 import 'package:koji/core/responsive_helper.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
-  const SignupScreen({super.key});
+  /// 'entreprise', 'particulier', or null
+  final String? signupType;
+
+  const SignupScreen({super.key, this.signupType});
 
   @override
   ConsumerState<SignupScreen> createState() => _SignupScreenState();
@@ -47,8 +50,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   void _handleSignup() async {
     if (!_isFormValid) return;
 
-    // Get isPro from provider (default to false if not set)
-    final isPro = ref.read(accountTypeProvider) ?? false;
+    // Derive isPro from the signupType param; fall back to accountTypeProvider
+    final isPro = widget.signupType == 'entreprise'
+        ? true
+        : widget.signupType == 'particulier'
+            ? false
+            : ref.read(accountTypeProvider) ?? false;
 
     // Set the flag BEFORE awaiting so ref.listen is blocked from the start
     setState(() => _awaitingEmailConfirmation = true);
@@ -100,8 +107,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   void _handleGoogleSignup() async {
-    // Get isPro from provider (default to false if not set)
-    final isPro = ref.read(accountTypeProvider) ?? false;
+    final isPro = widget.signupType == 'entreprise'
+        ? true
+        : widget.signupType == 'particulier'
+            ? false
+            : ref.read(accountTypeProvider) ?? false;
 
     await ref.read(authProvider.notifier).signInWithGoogle(isPro: isPro);
   }
@@ -144,7 +154,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.darkNavy),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            final t = widget.signupType;
+            context.go(t != null ? '/login?type=$t' : '/login');
+          },
         ),
       ),
       body: SafeArea(
@@ -170,11 +183,52 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 12),
+
+                // Account-type badge
+                if (widget.signupType != null)
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: widget.signupType == 'entreprise'
+                            ? AppTheme.darkNavy
+                            : AppTheme.primaryBlue,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.signupType == 'entreprise'
+                                ? Icons.business
+                                : Icons.person,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.signupType == 'entreprise'
+                                ? 'Espace Entreprise'
+                                : 'Espace Particulier',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                 const SizedBox(height: 24),
 
                 // Title
                 Text(
-                  'Inscrivez-vous pour simplifier votre activité',
+                  widget.signupType == 'particulier'
+                      ? 'Inscrivez-vous pour suivre vos travaux et devis'
+                      : 'Inscrivez-vous pour simplifier votre activité',
                   style: AppTheme.headingStyle(context).copyWith(fontSize: 24),
                   textAlign: TextAlign.left,
                 ),
@@ -449,7 +503,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 // Login Link
                 Center(
                   child: GestureDetector(
-                    onTap: () => context.go('/login'),
+                    onTap: () {
+                      final t = widget.signupType;
+                      context.go(t != null ? '/login?type=$t' : '/login');
+                    },
                     child: RichText(
                       text: TextSpan(
                         style: TextStyle(

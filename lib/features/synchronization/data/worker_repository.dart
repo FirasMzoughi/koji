@@ -8,7 +8,10 @@ class WorkerRepository {
 
   Future<List<Worker>> getWorkers({String? query}) async {
     try {
-      var dbQuery = _client.from('workers').select();
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      var dbQuery = _client.from('workers').select().eq('user_id', userId);
 
       if (query != null && query.isNotEmpty) {
         dbQuery = dbQuery.or(
@@ -25,9 +28,15 @@ class WorkerRepository {
 
   Future<Worker> createWorker(Worker worker) async {
     try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated');
+
+      final data = worker.toJson();
+      data['user_id'] = userId;
+
       final response = await _client
           .from('workers')
-          .insert(worker.toJson())
+          .insert(data)
           .select()
           .single();
 
