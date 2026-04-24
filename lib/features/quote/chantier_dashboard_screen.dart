@@ -100,6 +100,11 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
             case 'Ajouter tâche':
               context.push('/chantier/add-task', extra: data);
               break;
+            case 'Planifier une tâche':
+              context.push('/synchronization/schedule-task', extra: {
+                'chantierId': data['id'],
+              });
+              break;
             case 'Documents':
               context.push('/chantier/documents', extra: data);
               break;
@@ -715,6 +720,7 @@ class _AddMenuSheet extends StatelessWidget {
     'Devis',
     'Prochain rendez-vous',
     'Ajouter tâche',
+    'Planifier une tâche',
     'Documents',
   ];
 

@@ -30,6 +30,7 @@ import 'package:koji/features/synchronization/synchronization_screen.dart';
 import 'package:koji/features/synchronization/pointage_heures_screen.dart';
 import 'package:koji/features/synchronization/nouveau_contact_screen.dart';
 import 'package:koji/features/synchronization/ajouter_rdv_screen.dart';
+import 'package:koji/features/synchronization/schedule_task_screen.dart';
 import 'package:koji/features/synchronization/worker_list_screen.dart';
 import 'package:koji/features/synchronization/create_worker_screen.dart';
 import 'package:koji/features/synchronization/worker_success_screen.dart';
@@ -493,6 +494,24 @@ final router = GoRouter(
           context,
           state,
           AjouterRdvScreen(worker: worker),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/synchronization/schedule-task',
+      pageBuilder: (context, state) {
+        final args = state.extra as Map<String, dynamic>?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          ScheduleTaskScreen(
+            chantierId: args?['chantierId'] as String?,
+            chantierTaskId: args?['chantierTaskId'] as String?,
+            editingTaskId: args?['editingTaskId'] as String?,
+            initialDate: args?['initialDate'] as DateTime?,
+            initialTitle: args?['initialTitle'] as String?,
+            initialWorkerId: args?['initialWorkerId'] as String?,
+          ),
         );
       },
     ),

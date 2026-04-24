@@ -265,6 +265,27 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                 ],
               ),
             ),
+            if (!isDone)
+              GestureDetector(
+                onTap: () {
+                  final chantierId = widget.data['id'] as String?;
+                  if (chantierId == null) return;
+                  context.push('/synchronization/schedule-task', extra: {
+                    'chantierId': chantierId,
+                    'chantierTaskId': task['id'] as String?,
+                    'initialTitle': task['label'] as String?,
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.event_available,
+                      size: 18, color: Color(0xFF0F172A)),
+                ),
+              ),
           ],
         ),
       ),

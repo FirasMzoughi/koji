@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:koji/core/notification_service.dart';
 import 'package:koji/core/router.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/core/theme_provider.dart';
@@ -15,6 +18,10 @@ void main() async {
 
   // Initialize Date Formatting
   await initializeDateFormatting();
+
+  // Local notifications for the contractor's planning reminders.
+  await NotificationService.instance.init();
+  unawaited(NotificationService.instance.refreshDailySummary());
 
   runApp(
     const ProviderScope(

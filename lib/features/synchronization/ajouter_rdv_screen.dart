@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koji/features/auth/repository/auth_repository.dart';
+import 'package:koji/features/synchronization/data/availability_service.dart';
 import 'package:koji/features/synchronization/data/rdv_repository.dart';
 import 'package:koji/features/synchronization/data/worker_model.dart';
 
@@ -23,6 +24,78 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
   int _selectedMinute = 0;
   String _selectedDuration = '1h';
   final List<String> _durations = ['30 min', '1h', '2h', '½ journée', 'Journée'];
+  WorkerBusyBlock? _conflict;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recomputeConflict());
+  }
+
+  int _durationToMinutes(String d) {
+    switch (d) {
+      case '30 min':
+        return 30;
+      case '1h':
+        return 60;
+      case '2h':
+        return 120;
+      case '½ journée':
+        return 240;
+      case 'Journée':
+        return 480;
+      default:
+        return 60;
+    }
+  }
+
+  Future<bool> _confirmConflict(WorkerBusyBlock block) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Conflit détecté'),
+            content: Text(
+              'Cet ouvrier a déjà "${block.title}" de ${block.startTime} à ${block.endTime} ce jour-là.\n\n'
+              'Voulez-vous quand même enregistrer ?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Forcer'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _recomputeConflict() async {
+    final worker = widget.worker;
+    if (worker == null) {
+      if (mounted) setState(() => _conflict = null);
+      return;
+    }
+    try {
+      final service = ref.read(availabilityServiceProvider);
+      final startTime =
+          '${_selectedHour.toString().padLeft(2, '0')}:${_selectedMinute.toString().padLeft(2, '0')}';
+      final date =
+          DateTime(_currentMonth.year, _currentMonth.month, _selectedDay);
+      final conflict = await service.findConflict(
+        workerId: worker.id,
+        date: date,
+        startTime: startTime,
+        durationMinutes: _durationToMinutes(_selectedDuration),
+      );
+      if (mounted) setState(() => _conflict = conflict);
+    } catch (_) {
+      if (mounted) setState(() => _conflict = null);
+    }
+  }
 
   @override
   void dispose() {
@@ -295,7 +368,8 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Conflict warning
+                        // Conflict warning — driven by AvailabilityService.
+                        if (_conflict != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 12),
@@ -311,7 +385,7 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  "Conflit avec un autre RDV (Pose fenêtre)",
+                                  "Conflit: ${_conflict!.title} déjà prévu ${_conflict!.startTime}–${_conflict!.endTime}",
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: const Color(0xFFFF9800)
@@ -408,6 +482,25 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
         _selectedMinute,
       );
 
+      // Block save on conflict unless user forces it.
+      if (widget.worker != null) {
+        final conflict =
+            await ref.read(availabilityServiceProvider).findConflict(
+                  workerId: widget.worker!.id,
+                  date: scheduledAt,
+                  startTime:
+                      '${_selectedHour.toString().padLeft(2, '0')}:${_selectedMinute.toString().padLeft(2, '0')}',
+                  durationMinutes: _durationToMinutes(_selectedDuration),
+                );
+        if (conflict != null) {
+          final proceed = await _confirmConflict(conflict);
+          if (!proceed) {
+            if (mounted) setState(() => _saving = false);
+            return;
+          }
+        }
+      }
+
       await ref.read(rdvRepositoryProvider).createRdv(
             userId: user.id,
             title: title,
@@ -487,7 +580,10 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
       final isSelected = _selectedDay == day;
 
       cells.add(GestureDetector(
-        onTap: () => setState(() => _selectedDay = day),
+        onTap: () {
+          setState(() => _selectedDay = day);
+          _recomputeConflict();
+        },
         child: Container(
           decoration: BoxDecoration(
             color: isSelected
@@ -608,8 +704,11 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
           Column(
             children: [
               GestureDetector(
-                onTap: () => setState(() =>
-                    _selectedHour = (_selectedHour + 1) % 24),
+                onTap: () {
+                  setState(() =>
+                      _selectedHour = (_selectedHour + 1) % 24);
+                  _recomputeConflict();
+                },
                 child: Text(
                   "${(_selectedHour + 1).toString().padLeft(2, '0')}",
                   style: TextStyle(
@@ -630,8 +729,11 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
               ),
               const SizedBox(height: 4),
               GestureDetector(
-                onTap: () => setState(() =>
-                    _selectedHour = (_selectedHour - 1 + 24) % 24),
+                onTap: () {
+                  setState(() =>
+                      _selectedHour = (_selectedHour - 1 + 24) % 24);
+                  _recomputeConflict();
+                },
                 child: Text(
                   "${(_selectedHour - 1 + 24) % 24}".padLeft(2, '0'),
                   style: TextStyle(
@@ -660,8 +762,11 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
           Column(
             children: [
               GestureDetector(
-                onTap: () => setState(() =>
-                    _selectedMinute = (_selectedMinute + 5) % 60),
+                onTap: () {
+                  setState(() =>
+                      _selectedMinute = (_selectedMinute + 5) % 60);
+                  _recomputeConflict();
+                },
                 child: Text(
                   "${(_selectedMinute + 5) % 60}".padLeft(2, '0'),
                   style: TextStyle(
@@ -682,8 +787,11 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
               ),
               const SizedBox(height: 4),
               GestureDetector(
-                onTap: () => setState(() =>
-                    _selectedMinute = (_selectedMinute - 5 + 60) % 60),
+                onTap: () {
+                  setState(() =>
+                      _selectedMinute = (_selectedMinute - 5 + 60) % 60);
+                  _recomputeConflict();
+                },
                 child: Text(
                   "${(_selectedMinute - 5 + 60) % 60}".padLeft(2, '0'),
                   style: TextStyle(
@@ -708,7 +816,10 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
       children: _durations.map((d) {
         final isSelected = _selectedDuration == d;
         return GestureDetector(
-          onTap: () => setState(() => _selectedDuration = d),
+          onTap: () {
+            setState(() => _selectedDuration = d);
+            _recomputeConflict();
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(

@@ -67,6 +67,19 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
     
     return Scaffold(
       backgroundColor: appBg,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () =>
+            context.push('/synchronization/schedule-task'),
+        backgroundColor: const Color(0xFF2E65F3),
+        icon: const Icon(Icons.event_available, color: Colors.white),
+        label: const Text(
+          'Planifier une tâche',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           // Background Gradient (Peach glow at top right)
