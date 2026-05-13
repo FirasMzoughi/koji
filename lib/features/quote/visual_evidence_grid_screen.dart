@@ -85,8 +85,8 @@ class _VisualEvidenceGridScreenState
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -141,12 +141,12 @@ class _VisualEvidenceGridScreenState
               const SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -217,7 +217,7 @@ class _VisualEvidenceGridScreenState
                     label: Text(tag),
                     selected: isSelected,
                     onSelected: (_) => _toggleTag(tag),
-                    backgroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     selectedColor: AppTheme.darkNavy,
                     checkmarkColor: Colors.white,
                     labelStyle: TextStyle(
@@ -312,8 +312,8 @@ class _VisualEvidenceGridScreenState
                   color: Color(0xFFE5E7EB),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.add_photo_alternate_outlined,
-                    color: Colors.white, size: 32),
+                child: Icon(Icons.add_photo_alternate_outlined,
+                    color: Theme.of(context).colorScheme.surface, size: 32),
               ),
               const SizedBox(height: 12),
               Text(
@@ -361,17 +361,17 @@ class _VisualEvidenceGridScreenState
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.fullscreen, color: Colors.white, size: 14),
+                Icon(Icons.fullscreen, color: Theme.of(context).colorScheme.surface, size: 14),
                 const SizedBox(width: 4),
                 Text(
                   "Agrandir",
-                  style: TextStyle( color: Colors.white, fontSize: 10),
+                  style: TextStyle( color: Theme.of(context).colorScheme.surface, fontSize: 10),
                 )
               ],
             ),
@@ -388,10 +388,10 @@ class _VisualEvidenceGridScreenState
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: Colors.white, size: 16),
+        child: Icon(icon, color: Theme.of(context).colorScheme.surface, size: 16),
       ),
     );
   }

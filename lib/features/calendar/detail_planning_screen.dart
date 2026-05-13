@@ -212,7 +212,7 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
             child: Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -255,7 +255,7 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
       child: Container(
         width: 40, height: 40,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
@@ -274,7 +274,7 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -406,7 +406,7 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
   Widget _buildInfoCard(CalendarEvent event) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -550,7 +550,7 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -575,7 +575,7 @@ class _DetailPlanningScreenState extends State<DetailPlanningScreen> {
               ),
             ),
             child: isTermine
-                ? const Icon(Icons.check, color: Colors.white, size: 18)
+                ? Icon(Icons.check, color: Theme.of(context).colorScheme.surface, size: 18)
                 : null,
           ),
           const SizedBox(width: 14),

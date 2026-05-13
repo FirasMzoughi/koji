@@ -137,14 +137,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     borderRadius: BorderRadius.circular(10)),
               ),
               child: sending
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
+                          color: Theme.of(context).colorScheme.surface, strokeWidth: 2),
                     )
-                  : const Text('Envoyer',
-                      style: TextStyle(color: Colors.white)),
+                  : Text('Envoyer',
+                      style: TextStyle(color: Theme.of(context).colorScheme.surface)),
             ),
           ],
         ),
@@ -153,7 +153,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _handleGoogleLogin() async {
-    final isPro = ref.read(accountTypeProvider) ?? false;
+    // Honour the URL-param loginType first (?type=entreprise|particulier).
+    // Without this, a brand-new Google user gets is_pro=false written to the
+    // DB even when they came in via /login?type=entreprise, and the next
+    // cold start routes them to /client-home.
+    final loginType = widget.loginType;
+    final bool isPro;
+    if (loginType == 'entreprise') {
+      isPro = true;
+    } else if (loginType == 'particulier') {
+      isPro = false;
+    } else {
+      isPro = ref.read(accountTypeProvider) ?? false;
+    }
     setState(() => _loginAttempted = true);
     await ref.read(authProvider.notifier).signInWithGoogle(isPro: isPro);
   }
@@ -224,7 +236,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final responsive = context.responsive;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: responsive.paddingSymmetric(horizontalPercent: 6.4), // ~24px
@@ -283,7 +295,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           widget.loginType == 'entreprise'
                               ? Icons.business
                               : Icons.person,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           size: responsive.iconSize(16),
                         ),
                         SizedBox(width: responsive.width(1.5)),
@@ -292,7 +304,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ? 'Espace Entreprise'
                               : 'Espace Particulier',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             fontSize: responsive.fontSize(13),
                             fontWeight: FontWeight.w600,
                           ),
@@ -415,8 +427,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ? SizedBox(
                         height: responsive.iconSize(20),
                         width: responsive.iconSize(20),
-                        child: const CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
+                        child: CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
                     : Text(
                         'Connexion',
                         style: TextStyle(
@@ -465,7 +477,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 icon: Container(
                   padding: EdgeInsets.all(responsive.width(0.5)), // ~2px
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius:
                         BorderRadius.circular(responsive.borderRadius(4)),
                   ),

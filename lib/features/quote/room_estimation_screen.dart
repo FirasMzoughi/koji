@@ -427,8 +427,8 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -543,7 +543,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                            Text(
                              'Total estimé de la pièce',
                              style: TextStyle( 
-                               color: Colors.white.withOpacity(0.7),
+                               color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
                                fontSize: 14,
                              ),
                            ),
@@ -551,7 +551,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                            Text(
                              '${roomTotal.toStringAsFixed(2)} €',
                              style: TextStyle( 
-                               color: Colors.white,
+                               color: Theme.of(context).colorScheme.surface,
                                fontSize: 32,
                                fontWeight: FontWeight.bold,
                              ),
@@ -581,7 +581,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                                         "${totalLabor.toStringAsFixed(2)} €",
                                         style: TextStyle(color: const Color(0xFF3B82F6), fontSize: 11, fontWeight: FontWeight.w600),
                                       ),
-                                      Text(" + ", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
+                                      Text(" + ", style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.5), fontSize: 11)),
                                       Text(
                                         "${totalMaterial.toStringAsFixed(2)} €",
                                         style: TextStyle(color: const Color(0xFF9CA3AF), fontSize: 11, fontWeight: FontWeight.w600),
@@ -626,11 +626,11 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                      // Add Custom Post Input
                      Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                              BoxShadow(
-                               color: Colors.black.withOpacity(0.02),
+                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.02),
                                blurRadius: 10,
                                offset: const Offset(0, 4),
                              ),
@@ -679,7 +679,10 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: IconButton(
-                                    icon: const Icon(Icons.add, color: Colors.white),
+                                    icon: Icon(
+                                      Icons.add,
+                                      color: Theme.of(context).colorScheme.surface,
+                                    ),
                                     onPressed: _addCustomPost,
                                   ),
                                 ),
@@ -702,10 +705,10 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -769,7 +772,7 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
         Text(
           label,
           style: TextStyle( 
-            color: Colors.white.withOpacity(0.7),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
@@ -785,11 +788,11 @@ class _RoomEstimationScreenState extends ConsumerState<RoomEstimationScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

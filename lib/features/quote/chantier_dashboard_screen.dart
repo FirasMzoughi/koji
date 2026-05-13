@@ -194,7 +194,7 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFE8E8E8)),
               ),
@@ -236,7 +236,7 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
                 border: Border.all(color: const Color(0xFFE8E8E8)),
               ),
@@ -318,8 +318,8 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: isDone
-                          ? const Icon(Icons.check,
-                              size: 14, color: Colors.white)
+                          ? Icon(Icons.check,
+                              size: 14, color: Theme.of(context).colorScheme.surface)
                           : null,
                     ),
                     const SizedBox(width: 12),
@@ -673,7 +673,7 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
       onPressed: _showAddMenu,
       backgroundColor: const Color(0xFF0F172A),
       elevation: 4,
-      child: const Icon(Icons.add, color: Colors.white, size: 28),
+      child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface, size: 28),
     );
   }
 }
@@ -691,11 +691,11 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -727,8 +727,8 @@ class _AddMenuSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -797,7 +797,7 @@ class _MenuTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE2E8F0)),
         ),

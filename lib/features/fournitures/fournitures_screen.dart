@@ -23,7 +23,7 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: widget.selectionMode ? 1 : 3,
       vsync: this,
       initialIndex: 0,
     );
@@ -38,7 +38,7 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppTheme.backgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -49,13 +49,16 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
                 children: [
                   Container(
                     margin: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back,
-                          color: AppTheme.darkNavy, size: 20),
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: AppTheme.textPrimary(context),
+                        size: 20,
+                      ),
                       onPressed: () {
                         if (Navigator.canPop(context)) {
                           context.pop();
@@ -84,11 +87,11 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -112,11 +115,15 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
                   fontSize: 14,
                 ),
                 padding: const EdgeInsets.all(4),
-                tabs: const [
-                  Tab(text: 'Récents'),
-                  Tab(text: 'Divers'),
-                  Tab(text: 'Fournisseurs'),
-                ],
+                tabs: widget.selectionMode
+                    ? const [
+                        Tab(text: 'Fournisseurs'),
+                      ]
+                    : const [
+                        Tab(text: 'Récents'),
+                        Tab(text: 'Divers'),
+                        Tab(text: 'Fournisseurs'),
+                      ],
               ),
             ),
 
@@ -126,11 +133,15 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [
-                  _RecentsTab(selectionMode: widget.selectionMode),
-                  _DiversTab(selectionMode: widget.selectionMode),
-                  _FournisseursTab(selectionMode: widget.selectionMode),
-                ],
+                children: widget.selectionMode
+                    ? const [
+                        _FournisseursTab(selectionMode: true),
+                      ]
+                    : [
+                        _RecentsTab(selectionMode: widget.selectionMode),
+                        _DiversTab(selectionMode: widget.selectionMode),
+                        _FournisseursTab(selectionMode: widget.selectionMode),
+                      ],
               ),
             ),
           ],
@@ -139,7 +150,7 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddOptions(context),
         backgroundColor: AppTheme.darkNavy,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface),
       ),
     );
   }
@@ -159,7 +170,7 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppTheme.borderColor(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -208,14 +219,17 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
           autofocus: true,
           decoration: InputDecoration(
             hintText: 'Nom du fournisseur',
-            hintStyle: TextStyle(color: Colors.grey[400]),
+            hintStyle: TextStyle(color: AppTheme.textSecondary(context)),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textSecondary(context)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -232,8 +246,10 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
                 if (ctx.mounted) Navigator.pop(ctx);
               }
             },
-            child: const Text('Créer',
-                style: TextStyle(color: Colors.white)),
+            child: Text(
+              'Créer',
+              style: TextStyle(color: Theme.of(context).colorScheme.surface),
+            ),
           ),
         ],
       ),
@@ -369,14 +385,19 @@ class _FournitureCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: selectionMode
-            ? Border.all(color: const Color(0xFF1D74FF).withOpacity(0.3))
+            ? Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.3),
+              )
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -389,7 +410,7 @@ class _FournitureCard extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: AppTheme.mutedSurface(context),
               borderRadius: BorderRadius.circular(12),
             ),
             child: item.imageUrl != null && item.imageUrl!.isNotEmpty
@@ -414,10 +435,10 @@ class _FournitureCard extends StatelessWidget {
                   item.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.darkNavy,
+                    color: AppTheme.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -427,15 +448,18 @@ class _FournitureCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         item.category,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF3B82F6),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
@@ -443,9 +467,9 @@ class _FournitureCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         item.conditionnement!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF94A3B8),
+                          color: AppTheme.textSecondary(context),
                         ),
                       ),
                     ],
@@ -455,9 +479,9 @@ class _FournitureCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     item.fournisseurName!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF94A3B8),
+                      color: AppTheme.textSecondary(context),
                     ),
                   ),
                 ],
@@ -471,17 +495,17 @@ class _FournitureCard extends StatelessWidget {
             children: [
               Text(
                 '${item.prixVenteHT.toStringAsFixed(2)} €',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.darkNavy,
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
-              const Text(
+              Text(
                 'H.T',
                 style: TextStyle(
                   fontSize: 10,
-                  color: Color(0xFF94A3B8),
+                  color: AppTheme.textSecondary(context),
                 ),
               ),
             ],
@@ -517,11 +541,11 @@ class _FournisseurCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -534,7 +558,7 @@ class _FournisseurCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppTheme.darkNavy,
+                color: AppTheme.headerBackground(context),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: fournisseur.logoUrl != null
@@ -547,8 +571,8 @@ class _FournisseurCard extends StatelessWidget {
                                   fournisseur.name.isNotEmpty
                                       ? fournisseur.name[0].toUpperCase()
                                       : 'F',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.surface,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,
                                   ),
@@ -560,8 +584,8 @@ class _FournisseurCard extends StatelessWidget {
                         fournisseur.name.isNotEmpty
                             ? fournisseur.name[0].toUpperCase()
                             : 'F',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
                         ),
@@ -577,18 +601,18 @@ class _FournisseurCard extends StatelessWidget {
                 children: [
                   Text(
                     fournisseur.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.darkNavy,
+                      color: AppTheme.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Voir les fournitures →',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF3B82F6),
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -596,8 +620,8 @@ class _FournisseurCard extends StatelessWidget {
               ),
             ),
 
-            const Icon(Icons.chevron_right,
-                color: Color(0xFF94A3B8), size: 24),
+            Icon(Icons.chevron_right,
+                color: AppTheme.textSecondary(context), size: 24),
           ],
         ),
       ),
@@ -626,7 +650,7 @@ class _OptionTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FA),
+          color: AppTheme.mutedSurface(context),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -635,10 +659,10 @@ class _OptionTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.darkNavy,
+                color: AppTheme.headerBackground(context),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: Colors.white, size: 22),
+              child: Icon(icon, color: Theme.of(context).colorScheme.surface, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -646,20 +670,20 @@ class _OptionTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.darkNavy,
+                        color: AppTheme.textPrimary(context),
                       )),
                   Text(subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF94A3B8),
+                        color: AppTheme.textSecondary(context),
                       )),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+            Icon(Icons.chevron_right, color: AppTheme.textSecondary(context)),
           ],
         ),
       ),
@@ -690,27 +714,27 @@ class _EmptyState extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: AppTheme.mutedSurface(context),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 36, color: const Color(0xFF94A3B8)),
+              child: Icon(icon, size: 36, color: AppTheme.textSecondary(context)),
             ),
             const SizedBox(height: 20),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.darkNavy,
+                color: AppTheme.textPrimary(context),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF94A3B8),
+                color: AppTheme.textSecondary(context),
               ),
             ),
           ],

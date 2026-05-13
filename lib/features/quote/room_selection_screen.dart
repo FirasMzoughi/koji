@@ -56,13 +56,39 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
 
   void _addCustomRoom() {
     final name = _customRoomController.text.trim();
-    if (name.isNotEmpty) {
-      // Logic to add custom room, for now just clear text or add to selection if we were treating it dynamic
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pièce personnalisée "$name" ajoutée')),
-      );
-      _customRoomController.clear();
+    if (name.isEmpty) return;
+
+    // Build a stable, lowercase id from the name. Downstream screens use the
+    // id as the room key in maps and as the label fallback, so it must be
+    // consistent across screens.
+    final id = name
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), '_')
+        .replaceAll(RegExp(r'[^a-z0-9_]'), '');
+    if (id.isEmpty) return;
+
+    // If the user typed an existing room name, just select it.
+    final existing = _roomOptions.where((r) => r.id == id);
+    if (existing.isNotEmpty) {
+      setState(() {
+        if (!_selectedRoomIds.contains(id)) _selectedRoomIds.add(id);
+      });
+    } else {
+      setState(() {
+        _roomOptions.add(RoomOption(
+          id: id,
+          // Capitalize first letter for display.
+          label: name[0].toUpperCase() + name.substring(1),
+          icon: Icons.room_preferences_outlined,
+        ));
+        _selectedRoomIds.add(id);
+      });
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Pièce personnalisée "$name" ajoutée')),
+    );
+    _customRoomController.clear();
   }
 
   @override
@@ -76,8 +102,8 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -112,11 +138,11 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -294,7 +320,7 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), // Subtle shadow
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), // Subtle shadow
               blurRadius: 10,
               offset: const Offset(0, 4),
             )
@@ -348,7 +374,7 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                     // Logic: The container is white, the icon is check_circle?
                     // No, usually it's a white background circle with a blue tick?
                     // Or just an icon.
-                    // Let's use Icon(Icons.check_circle, color: Colors.white) for selected?
+                    // Let's use Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface) for selected?
                     // Wait, screenshot shows white tick on blue background? No, selected is White Check inside Blue Circle? or Blue Check inside White circle?
                     // Looking at screenshot:
                     // Selected (Salon): Blue card. Top right has a White Circle with a Blue Tick inside.
@@ -366,8 +392,8 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                 child: Container(
                   width: 24,
                   height: 24,
-                  decoration: const BoxDecoration(
-                      color: Colors.white, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface, shape: BoxShape.circle),
                   child: const Center(
                     child:
                         Icon(Icons.check, size: 16, color: AppTheme.darkNavy),

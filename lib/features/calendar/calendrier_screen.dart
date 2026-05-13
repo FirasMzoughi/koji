@@ -100,7 +100,7 @@ class _CalendrierScreenState extends State<CalendrierScreen> {
           await context.push('/calendrier/new-event');
           _load();
         },
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface, size: 28),
       ),
     );
   }
@@ -168,7 +168,7 @@ class _CalendrierScreenState extends State<CalendrierScreen> {
         height: 44,
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -428,7 +428,7 @@ class _CalendrierScreenState extends State<CalendrierScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -616,11 +616,11 @@ class _CalendrierScreenState extends State<CalendrierScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -682,7 +682,7 @@ class _CalendrierScreenState extends State<CalendrierScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFE2E8F0),
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
         image: w.profilePictureUrl != null
             ? DecorationImage(
                 image: NetworkImage(w.profilePictureUrl!),
@@ -704,7 +704,7 @@ class _CalendrierScreenState extends State<CalendrierScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFE2E8F0),
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
       ),
       alignment: Alignment.center,
       child: Text('+$count',
@@ -738,7 +738,7 @@ class _CalendrierScreenState extends State<CalendrierScreen> {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(9),
           border: Border.all(color: const Color(0xFFE2E8F0)),
         ),

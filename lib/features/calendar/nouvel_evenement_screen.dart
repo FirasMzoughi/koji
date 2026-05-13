@@ -96,7 +96,7 @@ class _NouvelEvenementScreenState extends State<NouvelEvenementScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
+        data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(primary: _darkNavy),
         ),
         child: child!,
@@ -119,7 +119,7 @@ class _NouvelEvenementScreenState extends State<NouvelEvenementScreen> {
       context: context,
       initialTime: initial,
       builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
+        data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(primary: _darkNavy),
         ),
         child: child!,
@@ -506,7 +506,7 @@ class _NouvelEvenementScreenState extends State<NouvelEvenementScreen> {
   void _showWorkerPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -618,9 +618,9 @@ class _NouvelEvenementScreenState extends State<NouvelEvenementScreen> {
                       borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Confirmer',
+                child: Text('Confirmer',
                     style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w700)),
+                        color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -693,25 +693,25 @@ class _NouvelEvenementScreenState extends State<NouvelEvenementScreen> {
         ),
         onPressed: _isSaving ? null : _save,
         child: _isSaving
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
-                    color: Colors.white, strokeWidth: 2.5),
+                    color: Theme.of(context).colorScheme.surface, strokeWidth: 2.5),
               )
-            : const Row(
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'Enregistrer au planning',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                  Icon(Icons.arrow_forward, color: Theme.of(context).colorScheme.surface, size: 20),
                 ],
               ),
       ),
@@ -722,7 +722,7 @@ class _NouvelEvenementScreenState extends State<NouvelEvenementScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE8EDF2)),
       ),

@@ -72,7 +72,7 @@ class HomeGridItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),

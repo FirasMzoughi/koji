@@ -6,6 +6,7 @@ import 'package:koji/features/auth/provider/auth_provider.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
 import 'package:koji/features/quote/repository/quote_repository.dart';
 import 'package:koji/features/quote/providers/quote_task_provider.dart';
+import 'package:koji/features/quote/providers/quote_creation_provider.dart';
 import 'package:intl/intl.dart';
 
 // ─── Data model for one editable line ─────────────────────────────────────────
@@ -83,7 +84,15 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     _quoteNumber = 'D-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     _quoteDate   = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
-    if (widget.data.containsKey('id')) {
+    // Two ways the recap can be opened with an `id`:
+    //   1. Direct deep-link from the quotes list (no fresh tasks map) — must
+    //      load room/task rows from the database.
+    //   2. Re-entry via the edit-flow seeded from a saved quote — `tasks` is
+    //      already populated with the user's edits, and pulling from the DB
+    //      again would clobber those edits.
+    final tasksMap = widget.data['tasks'];
+    final hasFreshTasks = tasksMap is Map && tasksMap.isNotEmpty;
+    if (widget.data.containsKey('id') && !hasFreshTasks) {
       _loadExistingQuote();
     } else {
       _initFromProvider();
@@ -189,12 +198,34 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
 
         final tasksData = await repo.getQuoteTasks(r['id'] as String);
         for (final t in tasksData) {
+          // The `inputs` JSON keeps the editable fields the user originally
+          // entered (qty, tempsHU, tauxHoraire, code, famille, unite). Without
+          // it the recap would silently reset every line to qty:1, hiding the
+          // user's edits and making "Mettre à jour" look like a no-op.
+          final inputs = (t['inputs'] is Map)
+              ? Map<String, dynamic>.from(t['inputs'] as Map)
+              : <String, dynamic>{};
+
+          final qty = (inputs['quantity'] as num?)?.toDouble() ?? 1.0;
+          final moUnit = (t['unit_price_ht'] as num?)?.toDouble() ?? 0.0;
+          final fournUnit = (t['total_price_ht'] as num?)?.toDouble() ?? 0.0;
+          final tauxHoraire = (inputs['tauxHoraire'] as num?)?.toDouble()
+              ?? (_hourlyRate > 0 ? _hourlyRate : 0.0);
+          double tempsHU = (inputs['tempsHU'] as num?)?.toDouble() ?? 0.0;
+          if (tempsHU == 0 && tauxHoraire > 0) {
+            tempsHU = moUnit / tauxHoraire;
+          }
+
           _linesByRoom[roomId]!.add(_DevisLine(
             taskId:  t['task_id']?.toString() ?? '',
             label:   t['label']?.toString()   ?? '',
-            qty:     1.0,
-            tauxHoraire: _hourlyRate,
-            fournituresUnitPrice: (t['total_price_ht'] as num?)?.toDouble() ?? 0.0,
+            code:    inputs['code']?.toString()    ?? '',
+            famille: inputs['famille']?.toString() ?? '',
+            unite:   inputs['unite']?.toString()   ?? 'u',
+            qty:     qty,
+            tempsHU: tempsHU,
+            tauxHoraire: tauxHoraire,
+            fournituresUnitPrice: fournUnit,
           ));
         }
       }
@@ -264,6 +295,16 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
 
     // Convert lines back to ExpenseItem format for saving
     final expensesMap = <String, List<Map<String, dynamic>>>{};
+    // tasksMap.<room>.<taskId>.inputs is what the repo persists into
+    // quote_tasks.inputs — the recap reads it back on next open, so the
+    // editable fields must round-trip through here or "Mettre à jour" loses them.
+    final tasksMap = <String, Map<String, Map<String, dynamic>>>{};
+
+    // When the user came in via the full edit-flow (room→tasks→recap),
+    // the provider holds the rich per-task state (selectedFournitures,
+    // selectedProducts, note, photoPaths) that the recap's _DevisLine
+    // doesn't track. Merge it back so update doesn't drop fournitures.
+    final providerTasks = ref.read(quoteCreationProvider).roomTasks;
     _linesByRoom.forEach((roomId, lines) {
       expensesMap[roomId] = lines.map((l) => {
         'id':           l.taskId,
@@ -277,6 +318,43 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         'tempsHU':      l.tempsHU,
         'tauxHoraire':  l.tauxHoraire,
       }).toList();
+      final perRoomProvider = (providerTasks[roomId] is Map)
+          ? Map<String, dynamic>.from(providerTasks[roomId] as Map)
+          : <String, dynamic>{};
+
+      tasksMap[roomId] = {
+        for (final l in lines)
+          l.taskId: () {
+            final prior = (perRoomProvider[l.taskId] is Map)
+                ? Map<String, dynamic>.from(perRoomProvider[l.taskId] as Map)
+                : <String, dynamic>{};
+            final priorInputs = (prior['inputs'] is Map)
+                ? Map<String, dynamic>.from(prior['inputs'] as Map)
+                : <String, dynamic>{};
+            // Recap-level edits win; preserve everything else from the
+            // earlier edit-flow state so fournitures/products/notes survive.
+            return <String, dynamic>{
+              ...prior,
+              'taskId': l.taskId,
+              'label': l.label,
+              'inputs': {
+                ...priorInputs,
+                'quantity': l.qty,
+                'tempsHU': l.tempsHU,
+                'tauxHoraire': l.tauxHoraire,
+                'unite': l.unite,
+                'code': l.code,
+                'famille': l.famille,
+              },
+              'hours': l.tempsHU,
+              'quantity': l.qty,
+              'tauxHoraire': l.tauxHoraire,
+              'unite': l.unite,
+              'code': l.code,
+              'famille': l.famille,
+            };
+          }(),
+      };
     });
 
     final quoteData = {
@@ -288,6 +366,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
       'company':  {'name': _companyName, 'address': _companyAddress, 'phone': _companyPhone, 'email': _companyEmail},
       'siteAddress': _siteAddress,
       'expenses':    expensesMap,
+      'tasks':       tasksMap,
       'totals': {
         'moHT':           _grandTotalMO,
         'fournituresHT':  _grandTotalFournitures,
@@ -305,10 +384,26 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           .saveQuote(user.id, quoteData, quoteId: existingId);
 
       if (mounted) {
-        context.go('/quote/success', extra: {
-          'quoteId':   quoteId,
-          'quoteData': {...quoteData, 'id': quoteId},
-        });
+        if (existingId != null) {
+          // Clear editing state so the next "new devis" starts clean.
+          ref.read(quoteCreationProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Devis mis à jour'),
+              backgroundColor: Color(0xFF15803D),
+            ),
+          );
+          // Pop back to home rather than the previous edit screen so the
+          // user lands on the updated quotes list, not mid-flow.
+          while (context.canPop()) {
+            context.pop();
+          }
+        } else {
+          context.go('/quote/success', extra: {
+            'quoteId':   quoteId,
+            'quoteData': {...quoteData, 'id': quoteId},
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -326,7 +421,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
@@ -429,10 +524,10 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -452,7 +547,11 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                       : null,
                 ),
                 child: _logoPath == null
-                    ? const Icon(Icons.business, color: Colors.white, size: 22)
+                    ? Icon(
+                        Icons.business,
+                        color: Theme.of(context).colorScheme.surface,
+                        size: 22,
+                      )
                     : null,
               ),
               const SizedBox(width: 12),
@@ -549,8 +648,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   Widget _buildRoomSection(String roomId) {
     final lines = _linesByRoom[roomId] ?? [];
     final roomTotal  = lines.fold(0.0, (s, l) => s + l.totalLigne);
-    final roomMO     = lines.fold(0.0, (s, l) => s + l.totalMO);
-    final roomFourns = lines.fold(0.0, (s, l) => s + l.totalFournitures);
 
     // Group lines by famille
     final byFamille = <String, List<_DevisLine>>{};
@@ -562,10 +659,10 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -582,7 +679,11 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               children: [
                 Text(
                   _getRoomLabel(roomId),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
                 ),
                 const Spacer(),
                 Text(
@@ -590,15 +691,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFEAD8B1)),
                 ),
               ],
-            ),
-          ),
-          // MO / Fournitures sub-header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            color: const Color(0xFF1E293B),
-            child: Text(
-              'MO: ${roomMO.toStringAsFixed(2)} € | Fournitures: ${roomFourns.toStringAsFixed(2)} €',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
             ),
           ),
 
@@ -645,11 +737,11 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -686,7 +778,11 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   ),
                   child: Text(
                     '${line.totalLigne.toStringAsFixed(2)} €',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
                   ),
                 ),
               ],
@@ -727,7 +823,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
             ),
           ),
 
-          // ── Computed results row ─────────────────────────────────────
+          // ── Computed results row ────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
             decoration: const BoxDecoration(
@@ -736,11 +832,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
             ),
             child: Row(
               children: [
-                _resultChip('MO €/u', '${line.moUnitPrice.toStringAsFixed(2)}€', const Color(0xFF1D4ED8)),
-                const SizedBox(width: 8),
-                _resultChip('Tot. MO', '${line.totalMO.toStringAsFixed(2)}€', const Color(0xFF1D4ED8), bold: true),
-                const SizedBox(width: 8),
-                _resultChip('Tot. Fnt', '${line.totalFournitures.toStringAsFixed(2)}€', const Color(0xFF0369A1)),
+                _resultChip('Total', '${line.totalLigne.toStringAsFixed(2)}€', const Color(0xFF0F172A), bold: true),
               ],
             ),
           ),
@@ -836,17 +928,14 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   Widget _buildTotalsCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
         children: [
-          _totalRow('Total Main d\'Œuvre HT', _grandTotalMO, const Color(0xFF1D4ED8)),
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          _totalRow('Total Fournitures HT', _grandTotalFournitures, const Color(0xFF0369A1)),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             height: 1,
@@ -865,8 +954,12 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('TOTAL TTC',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                Text('TOTAL TTC',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Theme.of(context).colorScheme.surface,
+                    )),
                 Text(
                   '${_grandTotalTTC.toStringAsFixed(2)} €',
                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: Color(0xFFEAD8B1)),
@@ -907,49 +1000,37 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, -4)),
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, -4)),
         ],
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.arrow_back, size: 16),
-                label: const Text('Modifier'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF0F172A),
-                  side: const BorderSide(color: Color(0xFF0F172A)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isSaving ? null : _generateQuote,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F172A),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _generateQuote,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: _isSaving
-                    ? const SizedBox(width: 20, height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(
-                        widget.data.containsKey('id') ? 'Mettre à jour' : 'Générer le Devis',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                      ),
-              ),
-            ),
-          ],
+            child: _isSaving
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.surface,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    widget.data.containsKey('id') ? 'Mettre à jour' : 'Générer le Devis',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+          ),
         ),
       ),
     );

@@ -189,14 +189,14 @@ class _MySignatureScreenState extends ConsumerState<MySignatureScreen> {
               height: 300,
               width: double.infinity,
               decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                       color: const Color(0xFFE2E8F0),
                       style: BorderStyle.none),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withAlpha((0.02 * 255).round()),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha((0.02 * 255).round()),
                         blurRadius: 10,
                         offset: const Offset(0, 4)),
                   ]),
@@ -265,11 +265,11 @@ class _MySignatureScreenState extends ConsumerState<MySignatureScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (_isSaving)
-                      const SizedBox(
+                      SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           strokeWidth: 2,
                         ),
                       )

@@ -25,7 +25,7 @@ class PhotoIconCircle extends StatelessWidget {
         ),
         child: Icon(
           icon,
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           size: size * 0.47, // Proportional icon size
         ),
       ),

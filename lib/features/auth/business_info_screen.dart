@@ -104,6 +104,24 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
         _tvaController.text.isNotEmpty;
   }
 
+  void _handleSkip() async {
+    final user = ref.read(authProvider).value;
+    if (user == null) return;
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(userRepositoryProvider).markBusinessInfoSkipped(user.id);
+      if (mounted) context.go('/profession-selection');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   void _handleSubmit() async {
     final user = ref.read(authProvider).value;
     if (user == null) {
@@ -163,9 +181,9 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
     final responsive = context.responsive;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.darkNavy),
@@ -215,7 +233,7 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                               color: AppTheme.darkNavy,
                               width: 2,
                             ),
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             image: _imageFile != null
                                 ? DecorationImage(
                                     image: FileImage(_imageFile!),
@@ -242,11 +260,11 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                                 color: AppTheme.darkNavy,
                                 shape: BoxShape.circle,
                                 border:
-                                    Border.all(color: Colors.white, width: 2),
+                                    Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.add,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 size: 18,
                               ),
                             ),
@@ -354,11 +372,11 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                     disabledForegroundColor: Colors.white,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
+                              color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -377,7 +395,26 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                         ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+
+                // Skip Link — completes onboarding without filling fields.
+                // The user can still edit these later in Mon Profil.
+                Center(
+                  child: TextButton(
+                    onPressed: _isLoading ? null : _handleSkip,
+                    child: const Text(
+                      "Passer pour l'instant",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.darkNavy,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
 
                 // Login Link
                 Center(

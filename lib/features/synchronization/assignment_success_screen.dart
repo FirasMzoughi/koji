@@ -54,8 +54,8 @@ class AssignmentSuccessScreen extends StatelessWidget {
                           color: Color(0xFF2E65F3),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check,
-                            color: Colors.white, size: 44),
+                        child: Icon(Icons.check,
+                            color: Theme.of(context).colorScheme.surface, size: 44),
                       ),
                     ),
                   ),
@@ -101,7 +101,7 @@ class AssignmentSuccessScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
@@ -109,12 +109,12 @@ class AssignmentSuccessScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                           SizedBox(width: 8),
                           Icon(Icons.arrow_forward,
-                              color: Colors.white, size: 20),
+                              color: Theme.of(context).colorScheme.surface, size: 20),
                         ],
                       ),
                     ),

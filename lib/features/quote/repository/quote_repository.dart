@@ -122,11 +122,28 @@ class QuoteRepository {
            final taskId = expenseItem['id'];
            final detail = roomTaskDetailsMap[taskId] as Map<String, dynamic>? ?? {};
 
+           // The quote_tasks schema has no dedicated column for fournitures,
+           // hours, or recap fields (code/famille/unite). Embedding them in
+           // inputs lets the edit-flow rehydrate the full task on reopen
+           // without a schema migration.
+           final mergedInputs = <String, dynamic>{
+             ...((detail['inputs'] as Map?)?.cast<String, dynamic>() ?? const {}),
+             if (detail['selectedFournitures'] != null)
+               'selectedFournitures': detail['selectedFournitures'],
+             if (detail['hours'] != null) 'hours': detail['hours'],
+             if (detail['quantity'] != null) 'quantity': detail['quantity'],
+             if (detail['tauxHoraire'] != null) 'tauxHoraire': detail['tauxHoraire'],
+             if (detail['conditionCoeff'] != null) 'conditionCoeff': detail['conditionCoeff'],
+             if (detail['unite'] != null) 'unite': detail['unite'],
+             if (detail['code'] != null) 'code': detail['code'],
+             if (detail['famille'] != null) 'famille': detail['famille'],
+           };
+
            final taskDbData = {
              'room_id': insertedRoomId,
              'task_id': taskId,
              'label': expenseItem['title'],
-             'inputs': detail['inputs'] ?? {},
+             'inputs': mergedInputs,
              'selected_products': detail['selectedProducts'] ?? {},
              'note': detail['note'] ?? expenseItem['subtitle'] ?? '',
              'photo_paths': detail['photoPaths'] ?? [],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koji/core/theme.dart';
 
 /// Stat card widget displaying statistics
 /// STATELESS & CONST for performance
@@ -17,18 +18,16 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // RepaintBoundary to prevent unnecessary repaints
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return RepaintBoundary(
       child: Container(
         height: 140, // Fixed height to match image ratios
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: AppTheme.surface(context),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), // Softer shadow
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), // Softer shadow
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -42,15 +41,14 @@ class StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1D74FF).withValues(alpha: 0.2)
-                    : const Color(0xFFE0E7FF), // varying opacity
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: AppTheme.isDark(context) ? 0.18 : 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon,
-                  color: isDark
-                      ? const Color(0xFF60A5FA)
-                      : const Color(0xFF1D74FF),
+                  color: Theme.of(context).colorScheme.primary,
                   size: 24),
             ),
 
@@ -62,7 +60,7 @@ class StatCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: AppTheme.textPrimary(context),
                     height: 1.0,
                   ),
                 ),
@@ -74,7 +72,7 @@ class StatCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                    color: AppTheme.textSecondary(context),
                   ),
                 ),
               ],

@@ -110,7 +110,7 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -147,7 +147,7 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border:
                           Border.all(color: const Color(0xFFE0E7FF)),
@@ -299,7 +299,7 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isSelected
@@ -309,7 +309,7 @@ class _ProjectSelectionScreenState extends State<ProjectSelectionScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

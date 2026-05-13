@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koji/core/theme.dart';
 
 class CreateProjectButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -9,9 +10,9 @@ class CreateProjectButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        border: Border.all(color: AppTheme.borderColor(context), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -23,14 +24,14 @@ class CreateProjectButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add, color: Color(0xFF0F172A), size: 24),
+                Icon(Icons.add, color: AppTheme.textPrimary(context), size: 24),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Créer un premier chantier',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: AppTheme.textPrimary(context),
                   ),
                 ),
               ],

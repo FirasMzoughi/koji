@@ -75,7 +75,7 @@ class _ClientQuotesScreenState extends ConsumerState<ClientQuotesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -276,12 +276,12 @@ class _ClientQuotesScreenState extends ConsumerState<ClientQuotesScreen>
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -371,17 +371,17 @@ class _ClientQuotesScreenState extends ConsumerState<ClientQuotesScreen>
                         color: _blue,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(Icons.draw_outlined,
-                              color: Colors.white, size: 14),
+                              color: Theme.of(context).colorScheme.surface, size: 14),
                           SizedBox(width: 6),
                           Text(
                             'Signer',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                         ],

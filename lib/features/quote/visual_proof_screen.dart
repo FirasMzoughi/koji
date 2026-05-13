@@ -40,8 +40,8 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -78,9 +78,9 @@ class _VisualProofScreenState extends State<VisualProofScreen> {
                     color: AppTheme.darkNavy,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.add_photo_alternate_outlined,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     size: 56,
                   ),
                 ),

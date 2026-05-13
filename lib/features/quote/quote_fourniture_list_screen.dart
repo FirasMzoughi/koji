@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koji/core/theme.dart';
+import 'package:koji/features/fournitures/repository/fourniture_repository.dart';
 import 'package:koji/features/quote/providers/quote_creation_provider.dart';
 
 class QuoteFournitureListScreen extends ConsumerWidget {
@@ -10,9 +11,10 @@ class QuoteFournitureListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(quoteCreationProvider);
+    final catalogAsync = ref.watch(allFournituresProvider);
 
-    // ── Collect all items, preserving fournisseur info ──────────────────────
-    final List<Map<String, dynamic>> allItems = [];
+    // ── Collect items already selected in tasks ──────────────────────────────
+    final List<Map<String, dynamic>> selectedItems = [];
     double totalMaterialCost = 0.0;
 
     state.roomTasks.forEach((roomId, taskDetails) {
@@ -34,12 +36,11 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                     final totalLine = qty * unitPrice;
                     final fournisseur =
                         productData['fournisseur']?.toString().trim() ?? '';
-                    allItems.add({
+                    selectedItems.add({
                       'title': name,
                       'quantity': qty,
                       'unitPrice': unitPrice,
                       'total': totalLine,
-                      // empty string → will appear under "Divers"
                       'fournisseur': fournisseur,
                     });
                     totalMaterialCost += totalLine;
@@ -51,6 +52,30 @@ class QuoteFournitureListScreen extends ConsumerWidget {
         });
       }
     });
+
+    // ── If nothing selected, fall back to showing the full catalog ───────────
+    final List<Map<String, dynamic>> allItems = selectedItems.isNotEmpty
+        ? selectedItems
+        : catalogAsync.maybeWhen(
+            data: (items) => items
+                .map((f) => {
+                      'title': f.name,
+                      'quantity': 1.0,
+                      'unitPrice': f.prixVenteHT,
+                      'total': f.prixVenteHT,
+                      'fournisseur': f.fournisseurName ?? '',
+                    })
+                .toList(),
+            orElse: () => <Map<String, dynamic>>[],
+          );
+
+    final bool isCatalogFallback = selectedItems.isEmpty && allItems.isNotEmpty;
+    if (isCatalogFallback) {
+      totalMaterialCost = 0.0;
+      for (final i in allItems) {
+        totalMaterialCost += (i['total'] as num).toDouble();
+      }
+    }
 
     // ── Group by fournisseur ─────────────────────────────────────────────────
     // Preserve insertion order; "Divers" always last.
@@ -76,7 +101,7 @@ class QuoteFournitureListScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios,
@@ -91,22 +116,36 @@ class QuoteFournitureListScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: byFournisseur.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.inventory_2_outlined,
-                        size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Aucune fourniture nécessaire',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
+            ? catalogAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Erreur de chargement du catalogue: $e',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[700]),
                     ),
-                  ],
+                  ),
+                ),
+                data: (_) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.inventory_2_outlined,
+                          size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Aucune fourniture disponible',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
             : Column(
@@ -124,16 +163,20 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                     ),
                     child: Column(
                       children: [
-                        const Text(
-                          'Total estimé des matériaux',
-                          style:
-                              TextStyle(color: Colors.white70, fontSize: 13),
+                        Text(
+                          isCatalogFallback
+                              ? 'Catalogue des fournitures'
+                              : 'Total estimé des matériaux',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 13),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${totalMaterialCost.toStringAsFixed(2)} €',
-                          style: const TextStyle(
-                              color: Colors.white,
+                          isCatalogFallback
+                              ? '$totalItemsCount fourniture${totalItemsCount > 1 ? 's' : ''}'
+                              : '${totalMaterialCost.toStringAsFixed(2)} €',
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.surface,
                               fontSize: 36,
                               fontWeight: FontWeight.bold),
                         ),
@@ -141,9 +184,13 @@ class QuoteFournitureListScreen extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _statChip('$totalItemsCount élément${totalItemsCount > 1 ? 's' : ''}'),
+                            _statChip(
+                              context,
+                              '$totalItemsCount élément${totalItemsCount > 1 ? 's' : ''}',
+                            ),
                             const SizedBox(width: 8),
                             _statChip(
+                                context,
                                 '${byFournisseur.keys.where((k) => k != 'Divers').length} fournisseur${byFournisseur.keys.where((k) => k != 'Divers').length > 1 ? 's' : ''}'),
                           ],
                         ),
@@ -178,10 +225,10 @@ class QuoteFournitureListScreen extends ConsumerWidget {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -4),
             )
@@ -196,12 +243,12 @@ class QuoteFournitureListScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text(
+            child: Text(
               'Retour au résumé',
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white),
+                  color: Theme.of(context).colorScheme.surface),
             ),
           ),
         ),
@@ -209,16 +256,19 @@ class QuoteFournitureListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _statChip(String label) {
+  Widget _statChip(BuildContext context, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.surface,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -251,11 +301,11 @@ class _FournisseurGroupState extends State<_FournisseurGroup> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -289,8 +339,8 @@ class _FournisseurGroupState extends State<_FournisseurGroup> {
                               widget.name.isNotEmpty
                                   ? widget.name[0].toUpperCase()
                                   : 'F',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.surface,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),

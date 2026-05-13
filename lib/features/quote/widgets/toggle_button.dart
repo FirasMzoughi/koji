@@ -34,7 +34,7 @@ class ToggleButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (isSelected)
-                const Icon(Icons.check, size: 16, color: Colors.white),
+                Icon(Icons.check, size: 16, color: Theme.of(context).colorScheme.surface),
               if (isSelected) const SizedBox(width: 8),
               if (!isSelected)
                 Container(

@@ -47,11 +47,11 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
             margin: const EdgeInsets.only(left: 16),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -126,7 +126,7 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border(
              left: BorderSide(
@@ -136,7 +136,7 @@ class _PlanningProjectTasksScreenState extends State<PlanningProjectTasksScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

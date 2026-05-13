@@ -34,6 +34,17 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   String? _currentLogoUrl;
   final ImagePicker _picker = ImagePicker();
 
+  // Same options as the signup ProfessionSelectionScreen — keep in sync.
+  static const List<Map<String, dynamic>> _professionOptions = [
+    {'name': 'Électricien', 'icon': Icons.electrical_services_outlined},
+    {'name': 'Plombier', 'icon': Icons.plumbing_outlined},
+    {'name': 'Carreleur', 'icon': Icons.grid_on_outlined},
+    {'name': 'Menuisier', 'icon': Icons.carpenter_outlined},
+    {'name': 'Peintre', 'icon': Icons.format_paint_outlined},
+    {'name': 'Tout corps d\'état', 'icon': Icons.handshake_outlined},
+  ];
+  final Set<String> _selectedProfessions = {};
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +74,16 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
         final businessInfo =
             userData?['business_info'] as Map<String, dynamic>?;
         _currentLogoUrl = userData?['logo_url'] as String?;
+
+        final professionRaw = userData?['profession'];
+        if (professionRaw is String && professionRaw.isNotEmpty) {
+          _selectedProfessions
+            ..clear()
+            ..addAll(professionRaw
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty));
+        }
 
         if (businessInfo != null) {
           _dailyRateController.text =
@@ -137,6 +158,12 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
             logoUrl: logoUrl,
           );
 
+      if (_selectedProfessions.isNotEmpty) {
+        await ref
+            .read(userRepositoryProvider)
+            .updateProfession(user.id, _selectedProfessions.toList());
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -174,7 +201,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
             color: Color(0xFF1E3A8A),
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF1E3A8A)),
       ),
@@ -202,7 +229,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                                   color: const Color(0xFF1E3A8A),
                                   width: 3,
                                 ),
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 image: _imageFile != null
                                     ? DecorationImage(
                                         image: FileImage(_imageFile!),
@@ -235,11 +262,11 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                                   color: const Color(0xFF1E3A8A),
                                   shape: BoxShape.circle,
                                   border:
-                                      Border.all(color: Colors.white, width: 3),
+                                      Border.all(color: Theme.of(context).colorScheme.surface, width: 3),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.camera_alt,
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   size: 20,
                                 ),
                               ),
@@ -263,6 +290,11 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                     // Pricing Section
                     _buildSectionTitle('Tarification'),
                     _buildPricingCard(),
+                    const SizedBox(height: 24),
+
+                    // Professions Section
+                    _buildSectionTitle('Métiers'),
+                    _buildProfessionsCard(),
                     const SizedBox(height: 24),
 
                     // Business Info Section
@@ -430,6 +462,65 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       return '${hourlyRate.toStringAsFixed(2)} € / h';
     }
     return '-- € / h';
+  }
+
+  Widget _buildProfessionsCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Sélectionnez un ou plusieurs métiers',
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _professionOptions.map((p) {
+                final name = p['name'] as String;
+                final selected = _selectedProfessions.contains(name);
+                return FilterChip(
+                  selected: selected,
+                  onSelected: (v) => setState(() {
+                    if (v) {
+                      _selectedProfessions.add(name);
+                    } else {
+                      _selectedProfessions.remove(name);
+                    }
+                  }),
+                  avatar: Icon(
+                    p['icon'] as IconData,
+                    size: 18,
+                    color: selected ? Colors.white : const Color(0xFF1E3A8A),
+                  ),
+                  label: Text(name),
+                  labelStyle: TextStyle(
+                    color: selected ? Colors.white : const Color(0xFF1E3A8A),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  backgroundColor: Colors.white,
+                  selectedColor: const Color(0xFF1E3A8A),
+                  showCheckmark: false,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: selected
+                          ? const Color(0xFF1E3A8A)
+                          : const Color(0xFFCBD5E1),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildBusinessInfoCard() {

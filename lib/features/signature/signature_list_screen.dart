@@ -105,11 +105,11 @@ class _SignatureQuoteCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.03 * 255).round()),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((0.03 * 255).round()),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),

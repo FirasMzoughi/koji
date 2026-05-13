@@ -88,11 +88,11 @@ class WorkerDetailScreen extends StatelessWidget {
                               fit: BoxFit.cover,
                             )
                           : null,
-                      border: Border.all(color: Colors.white, width: 3),
+                      border: Border.all(color: Theme.of(context).colorScheme.surface, width: 3),
                     ),
                     child: worker.profilePictureUrl == null
-                        ? const Icon(Icons.person,
-                            size: 50, color: Colors.white)
+                        ? Icon(Icons.person,
+                            size: 50, color: Theme.of(context).colorScheme.surface)
                         : null,
                   ),
 
@@ -100,10 +100,10 @@ class WorkerDetailScreen extends StatelessWidget {
 
                   Text(
                     "${worker.firstName} ${worker.lastName}",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -111,7 +111,7 @@ class WorkerDetailScreen extends StatelessWidget {
                     "${worker.profession} - ${worker.status}",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withAlpha((0.8 * 255).round()),
+                      color: Theme.of(context).colorScheme.surface.withAlpha((0.8 * 255).round()),
                     ),
                   ),
 
@@ -121,7 +121,7 @@ class WorkerDetailScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildActionButton(Icons.phone, () {
+                      _buildActionButton(context, Icons.phone, () {
                         if (worker.phoneNumber != null &&
                             worker.phoneNumber!.isNotEmpty) {
                           _makePhoneCall(worker.phoneNumber!);
@@ -132,7 +132,7 @@ class WorkerDetailScreen extends StatelessWidget {
                         }
                       }),
                       const SizedBox(width: 20),
-                      _buildActionButton(Icons.chat_bubble_outline, () {
+                      _buildActionButton(context, Icons.chat_bubble_outline, () {
                         if (worker.phoneNumber != null &&
                             worker.phoneNumber!.isNotEmpty) {
                           _sendSms(worker.phoneNumber!);
@@ -143,7 +143,7 @@ class WorkerDetailScreen extends StatelessWidget {
                         }
                       }),
                       const SizedBox(width: 20),
-                      _buildActionButton(Icons.email_outlined, () {
+                      _buildActionButton(context, Icons.email_outlined, () {
                         if (worker.email != null && worker.email!.isNotEmpty) {
                           _sendEmail(worker.email!);
                         } else {
@@ -171,6 +171,7 @@ class WorkerDetailScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _buildInfoCard(
+                          context,
                           icon: Icons.access_time,
                           title: "164h",
                           subtitle: "Total Travaillé",
@@ -180,6 +181,7 @@ class WorkerDetailScreen extends StatelessWidget {
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildInfoCard(
+                          context,
                           icon: Icons.location_on,
                           title: "Villa Durand",
                           subtitle: "Chantier Actuel",
@@ -199,11 +201,11 @@ class WorkerDetailScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha((0.04 * 255).round()),
+                          color: Theme.of(context).colorScheme.onSurface.withAlpha((0.04 * 255).round()),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -274,6 +276,7 @@ class WorkerDetailScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _buildDocumentCard(
+                          context,
                           icon: Icons.badge_outlined,
                           label: "Carte d'identité",
                         ),
@@ -281,6 +284,7 @@ class WorkerDetailScreen extends StatelessWidget {
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildDocumentCard(
+                          context,
                           icon: Icons.verified_outlined,
                           label: "Certifications",
                         ),
@@ -294,11 +298,11 @@ class WorkerDetailScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha((0.04 * 255).round()),
+                          color: Theme.of(context).colorScheme.onSurface.withAlpha((0.04 * 255).round()),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -307,6 +311,7 @@ class WorkerDetailScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _buildRowInfo(
+                            context,
                             Icons.calendar_month,
                             "Date d'embauche",
                             worker.hireDate != null
@@ -318,6 +323,7 @@ class WorkerDetailScreen extends StatelessWidget {
                           child: Divider(color: Colors.grey[100]),
                         ),
                         _buildRowInfo(
+                            context,
                             Icons.payments_outlined,
                             "Taux Horaire",
                             worker.hourlyRate != null
@@ -328,13 +334,13 @@ class WorkerDetailScreen extends StatelessWidget {
                           child: Divider(color: Colors.grey[100]),
                         ),
                         // Phone and Email details visible in list
-                        _buildRowInfo(Icons.phone, "Téléphone",
+                        _buildRowInfo(context, Icons.phone, "Téléphone",
                             worker.phoneNumber ?? "Non renseigné"),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                           child: Divider(color: Colors.grey[100]),
                         ),
-                        _buildRowInfo(Icons.email, "Email",
+                        _buildRowInfo(context, Icons.email, "Email",
                             worker.email ?? "Non renseigné"),
                       ],
                     ),
@@ -357,25 +363,26 @@ class WorkerDetailScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha((0.2 * 255).round()),
+          color: Theme.of(context).colorScheme.surface.withAlpha((0.2 * 255).round()),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: Colors.white, size: 20),
+        child: Icon(icon, color: Theme.of(context).colorScheme.surface, size: 20),
       ),
     );
   }
 
-  Widget _buildActionButton(IconData icon, VoidCallback onTap) {
+  Widget _buildActionButton(
+      BuildContext context, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha((0.1 * 255).round()),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha((0.1 * 255).round()),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -411,6 +418,7 @@ class WorkerDetailScreen extends StatelessWidget {
   }
 
   Widget _buildInfoCard(
+      BuildContext context,
       {required IconData icon,
       required String title,
       required String subtitle,
@@ -418,11 +426,11 @@ class WorkerDetailScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.04 * 255).round()),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((0.04 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -460,16 +468,17 @@ class WorkerDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDocumentCard({required IconData icon, required String label}) {
+  Widget _buildDocumentCard(BuildContext context,
+      {required IconData icon, required String label}) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE0E7FF), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.02 * 255).round()),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((0.02 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -493,7 +502,8 @@ class WorkerDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRowInfo(IconData icon, String label, String value) {
+  Widget _buildRowInfo(
+      BuildContext context, IconData icon, String label, String value) {
     return Row(
       children: [
         Container(
@@ -502,7 +512,7 @@ class WorkerDetailScreen extends StatelessWidget {
             color: const Color(0xFF0F3995), // Dark blue bg for icon
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: Colors.white, size: 20),
+          child: Icon(icon, color: Theme.of(context).colorScheme.surface, size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(

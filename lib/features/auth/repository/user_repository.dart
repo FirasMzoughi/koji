@@ -30,6 +30,33 @@ class UserRepository {
     }
   }
 
+  /// Mark business-info onboarding as skipped so the splash router stops
+  /// sending the user back to /business-info on every cold start.
+  /// The user can still fill these fields later from Mon Profil.
+  Future<void> markBusinessInfoSkipped(String uid) async {
+    _logger.i('⏭️ [UserRepository] Marking business info as skipped');
+    try {
+      await _supabase.from('users').update({
+        'is_business_info_complete': true,
+      }).eq('id', uid);
+      _logger.i('✅ [UserRepository] Business info skip flag saved');
+    } catch (e) {
+      _logger.e('❌ [UserRepository] Failed to mark skipped', error: e);
+      rethrow;
+    }
+  }
+
+  Future<void> setIsPro(String uid, bool isPro) async {
+    _logger.i('🔧 [UserRepository] Updating is_pro=$isPro for uid=$uid');
+    try {
+      await _supabase.from('users').update({'is_pro': isPro}).eq('id', uid);
+      _logger.i('✅ [UserRepository] is_pro updated successfully');
+    } catch (e) {
+      _logger.e('❌ [UserRepository] Failed to update is_pro', error: e);
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>?> getUser(String uid) async {
     _logger.i('🔍 [UserRepository] Fetching user from Supabase');
     try {

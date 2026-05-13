@@ -29,7 +29,7 @@ class ClientFormHeader extends StatelessWidget {
             ),
             child: Icon(
               icon,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               size: 32,
             ),
           ),

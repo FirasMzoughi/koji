@@ -130,12 +130,12 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                         color: accentBlue,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
+                      child: Text(
                         "Valider",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ),
@@ -150,7 +150,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE8ECF2)),
                 ),
@@ -266,14 +266,14 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                     await context.push('/workers/create');
                     _loadWorkers();
                   },
-                  icon: const Icon(Icons.person_add_alt_1,
-                      color: Colors.white, size: 22),
-                  label: const Text(
+                  icon: Icon(Icons.person_add_alt_1,
+                      color: Theme.of(context).colorScheme.surface, size: 22),
+                  label: Text(
                     "Ajouter",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -452,8 +452,8 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                 ),
               ),
               child: isSelected
-                  ? const Icon(Icons.check,
-                      color: Colors.white, size: 16)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.surface, size: 16)
                   : null,
             ),
           ],

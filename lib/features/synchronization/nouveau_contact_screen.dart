@@ -116,7 +116,7 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -260,26 +260,26 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
                     elevation: 0,
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             strokeWidth: 2,
                           ),
                         )
-                      : const Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.person_add_alt_1_outlined,
-                                color: Colors.white, size: 20),
+                                color: Theme.of(context).colorScheme.surface, size: 20),
                             SizedBox(width: 12),
                             Text(
                               "Ajouter le contact",
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                             ),
                           ],
@@ -322,7 +322,7 @@ class _NouveauContactScreenState extends State<NouveauContactScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFEEF2F6)),
       ),

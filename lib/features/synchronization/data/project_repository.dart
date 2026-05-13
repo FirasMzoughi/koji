@@ -38,9 +38,9 @@ class ProjectRepository {
       String projectId) async {
     try {
       final response = await _client
-          .from('project_assignments')
+          .from('chantier_assignments')
           .select()
-          .eq('project_id', projectId);
+          .eq('chantier_id', projectId);
 
       return (response as List)
           .map((e) => ProjectAssignment.fromJson(e))
@@ -56,16 +56,18 @@ class ProjectRepository {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) throw Exception("User not authenticated");
 
-      final updates = workerIds
+      final rows = workerIds
           .map((workerId) => {
                 'user_id': userId,
-                'project_id': projectId,
+                'chantier_id': projectId,
                 'worker_id': workerId,
                 'assigned_at': DateTime.now().toIso8601String(),
               })
           .toList();
 
-      await _client.from('project_assignments').insert(updates);
+      await _client
+          .from('chantier_assignments')
+          .upsert(rows, onConflict: 'chantier_id,worker_id');
     } catch (e) {
       throw Exception('Failed to assign workers: $e');
     }
@@ -77,9 +79,9 @@ class ProjectRepository {
       if (userId == null) throw Exception("User not authenticated");
 
       await _client
-          .from('project_assignments')
+          .from('chantier_assignments')
           .delete()
-          .eq('project_id', projectId)
+          .eq('chantier_id', projectId)
           .eq('worker_id', workerId)
           .eq('user_id', userId);
     } catch (e) {

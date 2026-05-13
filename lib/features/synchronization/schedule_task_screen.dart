@@ -350,11 +350,11 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
                       elevation: 0,
                     ),
                     child: _saving
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               strokeWidth: 2,
                             ),
                           )
@@ -362,10 +362,10 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
                             widget.editingTaskId == null
                                 ? 'Planifier la tâche'
                                 : 'Enregistrer',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                   ),
@@ -389,7 +389,7 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -531,7 +531,7 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFEEF2F6)),
       ),
@@ -662,7 +662,7 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFEEF2F6)),
       ),

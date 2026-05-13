@@ -73,9 +73,9 @@ class _ProfessionSelectionScreenState
     final responsive = context.responsive;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.darkNavy),
@@ -151,7 +151,7 @@ class _ProfessionSelectionScreenState
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -220,11 +220,11 @@ class _ProfessionSelectionScreenState
                   disabledForegroundColor: Colors.white,
                 ),
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
+                            color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

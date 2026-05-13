@@ -93,6 +93,7 @@ class AppDrawer extends ConsumerWidget {
                 label: 'Archives',
                 onTap: () {
                   Navigator.of(context).pop();
+                  context.push('/archives');
                 },
               ),
               

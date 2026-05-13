@@ -157,7 +157,7 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -206,7 +206,7 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                                 color: const Color(0xFFEEF2F6)),
@@ -281,7 +281,7 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                                 color: const Color(0xFFEEF2F6)),
@@ -340,7 +340,7 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                                 color: const Color(0xFFEEF2F6)),
@@ -425,15 +425,15 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
                     elevation: 0,
                   ),
                   child: _saving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             strokeWidth: 2,
                           ),
                         )
-                      : const Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
@@ -441,12 +441,12 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                             ),
                             SizedBox(width: 8),
                             Icon(Icons.arrow_forward,
-                                color: Colors.white, size: 20),
+                                color: Theme.of(context).colorScheme.surface, size: 20),
                           ],
                         ),
                 ),
@@ -625,11 +625,11 @@ class _AjouterRdvScreenState extends ConsumerState<AjouterRdvScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

@@ -87,7 +87,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       if (user != null) {
         _logger.i('✅ Google Sign-In successful');
 
-        // Check if user exists, if not save them
+        // Reconcile the users row with the requested account type.
+        // The DB trigger handle_new_user() inserts the row with is_pro
+        // pulled from raw_user_meta_data, but Google sign-in via
+        // signInWithIdToken does NOT pass any metadata, so the trigger
+        // ends up writing the default (is_pro=false) for entreprise
+        // Google users. Without this reconciliation, those users get
+        // routed to /client-home on every cold start.
         _logger.i('🔍 Checking if user exists in Supabase');
         final userDoc = await _userRepository.getUser(user.id);
         if (userDoc == null) {
@@ -96,7 +102,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
               isPro: isPro);
           _logger.i('✅ New Google user saved to Supabase');
         } else {
-          _logger.i('✅ Existing Google user found in Supabase');
+          final storedIsPro = userDoc['is_pro'] as bool? ?? false;
+          if (storedIsPro != isPro) {
+            _logger.i(
+                '🔧 Reconciling is_pro for existing Google user: $storedIsPro → $isPro');
+            await _userRepository.setIsPro(user.id, isPro);
+          } else {
+            _logger.i('✅ Existing Google user — is_pro already correct');
+          }
         }
       } else {
         _logger.w('⚠️ Google Sign-In cancelled by user');

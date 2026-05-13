@@ -71,11 +71,11 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
         onPressed: () =>
             context.push('/synchronization/schedule-task'),
         backgroundColor: const Color(0xFF2E65F3),
-        icon: const Icon(Icons.event_available, color: Colors.white),
-        label: const Text(
+        icon: Icon(Icons.event_available, color: Theme.of(context).colorScheme.surface),
+        label: Text(
           'Planifier une tâche',
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -170,7 +170,7 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -227,10 +227,10 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     "$_totalWorkers ouvrier${_totalWorkers != 1 ? 's' : ''}",
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                     ),
                                   ),
                                 ],
@@ -238,12 +238,12 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.25),
+                                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.people_alt,
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   size: 32,
                                 ),
                               ),
@@ -303,7 +303,7 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -331,7 +331,7 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
@@ -355,7 +355,7 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFF4848),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                   ),
                 ),
               ),
@@ -379,7 +379,7 @@ class _SynchronizationScreenState extends State<SynchronizationScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(

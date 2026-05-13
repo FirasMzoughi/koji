@@ -80,11 +80,11 @@ class ChantierDevisScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 40),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -106,11 +106,11 @@ class ChantierDevisScreen extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -144,7 +144,7 @@ class ChantierDevisScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
           itemCount: quotes.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, i) => _buildDevisTile(context, quotes[i]),
+          itemBuilder: (context, i) => _buildDevisTile(context, ref, quotes[i]),
         ),
         Positioned(
           bottom: 20,
@@ -158,17 +158,17 @@ class ChantierDevisScreen extends ConsumerWidget {
                 color: _kDark,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add, color: Colors.white, size: 20),
+                  Icon(Icons.add, color: Theme.of(context).colorScheme.surface, size: 20),
                   SizedBox(width: 8),
                   Text(
                     'Créer un devis',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ],
@@ -180,8 +180,9 @@ class ChantierDevisScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDevisTile(BuildContext context, Map<String, dynamic> devis) {
-    final String ref = devis['reference'] as String? ?? 'D-????';
+  Widget _buildDevisTile(
+      BuildContext context, WidgetRef ref, Map<String, dynamic> devis) {
+    final String reference = devis['reference'] as String? ?? 'D-????';
     final double amount = (devis['total_ht'] as num?)?.toDouble() ?? 0;
     final String status = devis['status'] as String? ?? 'Draft';
     final String date = devis['date'] as String? ?? '';
@@ -205,17 +206,40 @@ class ChantierDevisScreen extends ConsumerWidget {
     }
 
     return GestureDetector(
-      onTap: () {
-        context.push('/quote/detail', extra: QuoteDetailArgs(data: devis));
+      onTap: () async {
+        // Edit-mode: seed the creation flow then enter the room/task editor
+        // so tasks and fournitures are editable, not just the recap numbers.
+        final messenger = ScaffoldMessenger.of(context);
+        final router = GoRouter.of(context);
+        try {
+          ref.read(quoteCreationProvider.notifier).reset();
+          await ref
+              .read(quoteCreationProvider.notifier)
+              .seedFromSavedQuote(devis);
+          final state = ref.read(quoteCreationProvider);
+          if (state.selectedRoomIds.isEmpty) {
+            router.push('/quote/detail',
+                extra: QuoteDetailArgs(data: devis));
+            return;
+          }
+          router.push('/quote/room-details', extra: {
+            'roomIds': state.selectedRoomIds,
+            'images': const <String>[],
+          });
+        } catch (e) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('Erreur de chargement du devis: $e')),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -239,7 +263,7 @@ class ChantierDevisScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    ref,
+                    reference,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -279,6 +303,33 @@ class ChantierDevisScreen extends ConsumerWidget {
     // Store chantierId in quote creation state so it gets saved with the quote
     ref.read(quoteCreationProvider.notifier).reset();
     ref.read(quoteCreationProvider.notifier).setChantierId(chantierId);
+
+    // Pre-fill client info from the chantier so the devis PDF isn't blank.
+    // The chantier "référence" doubles as the client/project name; the
+    // chantier address (street + postal code + city) becomes the client address.
+    final reference = (data['reference'] as String?)?.trim() ?? '';
+    final street = (data['street'] as String?)?.trim() ?? '';
+    final postalCode =
+        (data['postal_code'] as String?)?.trim() ??
+        (data['postalCode'] as String?)?.trim() ??
+        '';
+    final city = (data['city'] as String?)?.trim() ?? '';
+    final addressParts = <String>[
+      if (street.isNotEmpty) street,
+      if (postalCode.isNotEmpty || city.isNotEmpty)
+        [postalCode, city].where((s) => s.isNotEmpty).join(' '),
+    ];
+    final address = addressParts.join(', ');
+
+    if (reference.isNotEmpty || address.isNotEmpty) {
+      ref.read(quoteCreationProvider.notifier).updateClientInfo(
+            ClientInfo(
+              name: reference,
+              address: address,
+            ),
+          );
+    }
+
     context.push('/quote/room-selection', extra: <String>[]);
   }
 

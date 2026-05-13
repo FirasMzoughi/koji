@@ -106,7 +106,7 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -142,7 +142,7 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: TextField(
@@ -244,18 +244,18 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                         borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.person_add_alt_1_outlined,
-                          color: Colors.white, size: 20),
+                          color: Theme.of(context).colorScheme.surface, size: 20),
                       SizedBox(width: 12),
                       Text(
                         "Nouveau contact",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ],

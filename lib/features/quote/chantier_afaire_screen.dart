@@ -56,17 +56,17 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add, color: Colors.white, size: 22),
+                      Icon(Icons.add, color: Theme.of(context).colorScheme.surface, size: 22),
                       SizedBox(width: 8),
                       Text(
                         'Ajouter une tâche',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ],
@@ -113,6 +113,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                                   () async {
                                     try {
                                       await _repository.updateTaskStatus(task['id'], true);
+                                      ref.invalidate(chantierTasksProvider(chantierId));
                                     } catch (e) {
                                       debugPrint('Error toggling task: $e');
                                     }
@@ -159,6 +160,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                                   () async {
                                     try {
                                       await _repository.updateTaskStatus(task['id'], false);
+                                      ref.invalidate(chantierTasksProvider(chantierId));
                                     } catch (e) {
                                       debugPrint('Error toggling task: $e');
                                     }
@@ -216,11 +218,11 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -243,7 +245,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                 borderRadius: BorderRadius.circular(5),
               ),
               child: isDone
-                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  ? Icon(Icons.check, size: 14, color: Theme.of(context).colorScheme.surface)
                   : null,
             ),
             const SizedBox(width: 14),
@@ -325,22 +327,37 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (titleCtrl.text.trim().isNotEmpty) {
-                final chantierId = widget.data['id'] as String?;
-                if (chantierId != null) {
-                  Navigator.pop(ctx);
-                  try {
-                    await _repository.addTask(
-                        chantierId, titleCtrl.text.trim());
-                  } catch (e) {
-                    debugPrint('Error adding task: $e');
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Erreur: $e')),
-                      );
-                    }
-                  }
-                }
+              final label = titleCtrl.text.trim();
+              if (label.isEmpty) return;
+              final chantierId = widget.data['id'] as String?;
+              if (chantierId == null) {
+                Navigator.pop(ctx);
+                return;
+              }
+              try {
+                await _repository.addTask(chantierId, label);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (!mounted) return;
+                // Force the stream provider to refetch in case the realtime
+                // event takes a moment to arrive.
+                ref.invalidate(chantierTasksProvider(chantierId));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Tâche "$label" ajoutée'),
+                    backgroundColor: const Color(0xFF22C55E),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              } catch (e) {
+                debugPrint('Error adding task: $e');
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur: $e'),
+                    backgroundColor: const Color(0xFFEF4444),
+                  ),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -349,8 +366,8 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                   borderRadius: BorderRadius.circular(10)),
               elevation: 0,
             ),
-            child: const Text('Ajouter',
-                style: TextStyle( color: Colors.white)),
+            child: Text('Ajouter',
+                style: TextStyle( color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),

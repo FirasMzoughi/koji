@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:koji/core/theme.dart';
 
 class DashboardSection extends StatelessWidget {
   final String title;
@@ -27,14 +28,18 @@ class DashboardSection extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A), // Dark Navy
+                    color: AppTheme.textPrimary(context),
                   ),
                 ),
                 if (onTap != null)
-                  const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF64748B)),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: AppTheme.textSecondary(context),
+                  ),
               ],
             ),
           ),
@@ -43,11 +48,11 @@ class DashboardSection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
               ),
@@ -76,10 +81,10 @@ class DashboardEmptyState extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: AppTheme.textPrimary(context),
           ),
           textAlign: TextAlign.center,
         ),
@@ -88,7 +93,7 @@ class DashboardEmptyState extends StatelessWidget {
           subtitle,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey[500],
+            color: AppTheme.textSecondary(context),
           ),
           textAlign: TextAlign.center,
         ),
@@ -119,24 +124,24 @@ class DashboardStatRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[500],
+            color: AppTheme.textSecondary(context),
           ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9), // Light Grey background
+            color: AppTheme.mutedSurface(context),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: AppTheme.textPrimary(context),
                 ),
               ),
             ],

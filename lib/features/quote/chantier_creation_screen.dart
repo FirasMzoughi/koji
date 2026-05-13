@@ -88,7 +88,7 @@ class _ChantierCreationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -119,7 +119,7 @@ class _ChantierCreationScreenState
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: const Color(0xFFE8E8E8)),
                         ),
@@ -207,7 +207,7 @@ class _ChantierCreationScreenState
               // Sticky bottom button
               Container(
                 padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -224,15 +224,15 @@ class _ChantierCreationScreenState
                           elevation: 0,
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                 ),
                               )
-                            : const Row(
+                            : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
@@ -240,7 +240,7 @@ class _ChantierCreationScreenState
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                     ),
                                   ),
                                   SizedBox(width: 8),
@@ -248,7 +248,7 @@ class _ChantierCreationScreenState
                                     '→',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                     ),
                                   ),
                                 ],
@@ -323,7 +323,7 @@ class _ChantierCreationScreenState
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: _dropdownOpen
                   ? const BorderRadius.only(
                       topLeft: Radius.circular(12),
@@ -361,7 +361,7 @@ class _ChantierCreationScreenState
         if (_dropdownOpen)
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),

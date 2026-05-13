@@ -89,11 +89,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).round()),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -210,11 +210,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               margin: const EdgeInsets.only(left: 16),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha((0.05 * 255).round()),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha((0.05 * 255).round()),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -255,11 +255,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             margin: const EdgeInsets.only(left: 16),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha((0.05 * 255).round()),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha((0.05 * 255).round()),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -316,13 +316,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     ),
                     elevation: 0,
                   ),
-                  icon: const Icon(Icons.person_add, color: Colors.white),
-                  label: const Text(
+                  icon: Icon(Icons.person_add, color: Theme.of(context).colorScheme.surface),
+                  label: Text(
                     'Assigner des ouvriers',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ),
@@ -375,11 +375,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).round()),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -483,11 +483,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).round()),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((0.05 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -560,7 +560,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE0E7FF)),
       ),
@@ -606,8 +606,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               _removeWorker(worker.id);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Retirer',
-                style: TextStyle( color: Colors.white)),
+            child: Text('Retirer',
+                style: TextStyle( color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),

@@ -1,7 +1,61 @@
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChantierRepository {
   final SupabaseClient _client = Supabase.instance.client;
+
+  // ────────────────────────────────────────────────────────
+  // Expenses (Main d'œuvre / Fourniture / Divers)
+  // ────────────────────────────────────────────────────────
+
+  /// Insert an expense row tied to a chantier.
+  /// [category] must be one of: 'main_oeuvre', 'fourniture', 'divers'.
+  Future<Map<String, dynamic>> addExpense({
+    required String chantierId,
+    required String category,
+    required String description,
+    required double amount,
+    double? quantity,
+    double? unitPrice,
+    String? attachmentUrl,
+    String? attachmentType,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final inserted = await _client.from('chantier_expenses').insert({
+      'chantier_id': chantierId,
+      'user_id': userId,
+      'category': category,
+      'description': description,
+      'amount': amount,
+      if (quantity != null) 'quantity': quantity,
+      if (unitPrice != null) 'unit_price': unitPrice,
+      if (attachmentUrl != null) 'attachment_url': attachmentUrl,
+      if (attachmentType != null) 'attachment_type': attachmentType,
+    }).select().single();
+
+    return Map<String, dynamic>.from(inserted as Map);
+  }
+
+  /// Upload a file to the chantier-attachments bucket.
+  /// Path layout: <userId>/<chantierId>/<timestamp>_<filename>
+  /// Returns the public URL.
+  Future<String> uploadAttachment({
+    required String chantierId,
+    required File file,
+    required String filename,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final safeName = filename.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    final path = '$userId/$chantierId/${ts}_$safeName';
+
+    await _client.storage.from('chantier-attachments').upload(path, file);
+    return _client.storage.from('chantier-attachments').getPublicUrl(path);
+  }
 
   // ────────────────────────────────────────────────────────
   // 1. Chantiers
@@ -86,11 +140,13 @@ class ChantierRepository {
 
   /// Add a new task (À faire)
   Future<void> addTask(String chantierId, String label) async {
+    // .select() forces a round-trip and surfaces RLS / constraint errors.
+    // Without it, a rejected insert can fail silently with no exception.
     await _client.from('chantier_tasks').insert({
       'chantier_id': chantierId,
       'label': label,
       'is_done': false,
-    });
+    }).select().single();
   }
 
   /// Toggle a task\'s done status

@@ -100,7 +100,7 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
           }
         },
         backgroundColor: const Color(0xFF2E65F3),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface),
       ),
       body: Stack(
         children: [
@@ -158,7 +158,7 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -196,7 +196,7 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
         height: 52,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
@@ -458,11 +458,11 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -726,7 +726,7 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: const Color(0xFFEEF2F6)),
                       ),
@@ -747,7 +747,7 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: const Color(0xFFEEF2F6)),
                       ),
@@ -935,11 +935,11 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -966,11 +966,11 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1004,11 +1004,11 @@ class _PlanningScreenState extends ConsumerState<PlanningScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

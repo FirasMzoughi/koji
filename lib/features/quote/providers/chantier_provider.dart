@@ -10,8 +10,14 @@ final userChantiersProvider = StreamProvider.family<List<Map<String, dynamic>>, 
   return ref.watch(chantierRepositoryProvider).streamChantiers(userId);
 });
 
-final chantierTasksProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, chantierId) {
-  return ref.watch(chantierRepositoryProvider).streamTasks(chantierId);
+// FutureProvider (not Stream) because Supabase Realtime is not enabled on
+// chantier_tasks — `.stream()` only emits the initial snapshot, so new rows
+// inserted by the same client never appear until the screen is rebuilt.
+// Using a Future + explicit `ref.invalidate(...)` after each mutation keeps
+// the list in sync without depending on the realtime publication.
+final chantierTasksProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, chantierId) {
+  return ref.watch(chantierRepositoryProvider).getTasks(chantierId);
 });
 
 final chantierBudgetProvider = StreamProvider.family<Map<String, dynamic>?, String>((ref, chantierId) {

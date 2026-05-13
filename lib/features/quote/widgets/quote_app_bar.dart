@@ -24,8 +24,8 @@ class QuoteAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       leading: Container(
         margin: const EdgeInsets.all(8),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           shape: BoxShape.circle,
         ),
         child: IconButton(

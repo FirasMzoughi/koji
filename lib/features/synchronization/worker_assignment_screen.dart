@@ -136,7 +136,7 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -173,7 +173,7 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border:
                           Border.all(color: const Color(0xFFE0E7FF)),
@@ -441,8 +441,8 @@ class _WorkerAssignmentScreenState extends State<WorkerAssignmentScreen> {
                         width: 2),
               ),
               child: isSelected
-                  ? const Icon(Icons.check,
-                      size: 18, color: Colors.white)
+                  ? Icon(Icons.check,
+                      size: 18, color: Theme.of(context).colorScheme.surface)
                   : null,
             ),
           ],

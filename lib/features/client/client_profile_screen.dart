@@ -106,8 +106,8 @@ class _ClientProfileScreenState extends ConsumerState<ClientProfileScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Déconnexion',
-                style: TextStyle(color: Colors.white)),
+            child: Text('Déconnexion',
+                style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -121,7 +121,7 @@ class _ClientProfileScreenState extends ConsumerState<ClientProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -195,11 +195,11 @@ class _ClientProfileScreenState extends ConsumerState<ClientProfileScreen> {
                                   ),
                                 ),
                                 child: _saving
-                                    ? const SizedBox(
+                                    ? SizedBox(
                                         width: 20,
                                         height: 20,
                                         child: CircularProgressIndicator(
-                                          color: Colors.white,
+                                          color: Theme.of(context).colorScheme.surface,
                                           strokeWidth: 2,
                                         ),
                                       )
@@ -447,7 +447,7 @@ class _ClientProfileScreenState extends ConsumerState<ClientProfileScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isDestructive

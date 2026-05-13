@@ -183,8 +183,8 @@ class _ChantierRdvScreenState extends ConsumerState<ChantierRdvScreen> {
                     borderRadius: BorderRadius.circular(10)),
                 elevation: 0,
               ),
-              child: const Text('Ajouter',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('Ajouter',
+                  style: TextStyle(color: Theme.of(context).colorScheme.surface)),
             ),
           ],
         ),
@@ -268,17 +268,17 @@ class _ChantierRdvScreenState extends ConsumerState<ChantierRdvScreen> {
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add, color: Colors.white, size: 22),
+                      Icon(Icons.add, color: Theme.of(context).colorScheme.surface, size: 22),
                       SizedBox(width: 8),
                       Text(
                         'Ajouter un rendez-vous',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ],
@@ -341,11 +341,11 @@ class _ChantierRdvScreenState extends ConsumerState<ChantierRdvScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 48),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -393,7 +393,7 @@ class _ChantierRdvScreenState extends ConsumerState<ChantierRdvScreen> {
               color: Colors.red.shade400,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.delete_outline, color: Colors.white),
+            child: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.surface),
           ),
           confirmDismiss: (_) async {
             return await showDialog<bool>(
@@ -411,8 +411,8 @@ class _ChantierRdvScreenState extends ConsumerState<ChantierRdvScreen> {
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red),
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Supprimer',
-                        style: TextStyle(color: Colors.white)),
+                    child: Text('Supprimer',
+                        style: TextStyle(color: Theme.of(context).colorScheme.surface)),
                   ),
                 ],
               ),
@@ -455,14 +455,14 @@ class _ChantierRdvScreenState extends ConsumerState<ChantierRdvScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: isToday
             ? Border.all(color: _kBlue.withValues(alpha: 0.4), width: 1.5)
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

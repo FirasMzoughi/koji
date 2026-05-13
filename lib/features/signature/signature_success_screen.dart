@@ -31,11 +31,11 @@ class SignatureSuccessScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withAlpha((0.03 * 255).round()),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha((0.03 * 255).round()),
                       blurRadius: 15,
                       offset: const Offset(0, 5)),
                 ],
@@ -60,8 +60,8 @@ class SignatureSuccessScreen extends StatelessWidget {
                           bottom: 5,
                           child: Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                                color: Colors.white,
+                            decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
@@ -134,11 +134,11 @@ class SignatureSuccessScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withAlpha((0.02 * 255).round()),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha((0.02 * 255).round()),
                       blurRadius: 10)
                 ],
               ),

@@ -37,7 +37,7 @@ class _PricingSettingsScreenState extends ConsumerState<PricingSettingsScreen> {
             color: Color(0xFF1E3A8A),
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF1E3A8A)),
       ),

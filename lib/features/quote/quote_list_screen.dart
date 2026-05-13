@@ -56,7 +56,7 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: CircleAvatar(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             child: IconButton(
               icon: Icon(Icons.arrow_back_ios_new,
                   size: 16, color: Theme.of(context).primaryColor),
@@ -278,7 +278,7 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -348,7 +348,7 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: statusColor),
                       ),

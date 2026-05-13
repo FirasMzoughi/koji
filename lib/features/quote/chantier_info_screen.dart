@@ -130,7 +130,7 @@ class _ChantierInfoScreenState extends ConsumerState<ChantierInfoScreen> {
   // ────────────────────────────────────────────────────────────
   Widget _buildAppBar(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         children: [
@@ -640,11 +640,11 @@ class _ChantierInfoScreenState extends ConsumerState<ChantierInfoScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -717,8 +717,8 @@ class _ChantierInfoScreenState extends ConsumerState<ChantierInfoScreen> {
                   borderRadius: BorderRadius.circular(10)),
               elevation: 0,
             ),
-            child: const Text('Ajouter',
-                style: TextStyle(color: Colors.white)),
+            child: Text('Ajouter',
+                style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),

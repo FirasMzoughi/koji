@@ -75,8 +75,77 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
     });
 
+    // Edit-mode rehydration: when the user re-enters this screen via
+    // "modifier un devis", quoteCreationProvider.roomTasks holds the saved
+    // state. Replay it into _taskStates so existing task selections (with
+    // their inputs, fournitures, hours) show up checked and editable.
+    _restoreTaskStatesFromProvider();
+
     _loadUserProfessions();
     _loadTauxHoraire();
+  }
+
+  void _restoreTaskStatesFromProvider() {
+    final saved = ref.read(quoteCreationProvider).roomTasks;
+    if (saved.isEmpty) return;
+
+    saved.forEach((roomId, perRoomRaw) {
+      if (perRoomRaw is! Map) return;
+      final perRoom = Map<String, dynamic>.from(perRoomRaw);
+      perRoom.forEach((taskId, dRaw) {
+        if (dRaw is! Map) return;
+        final d = Map<String, dynamic>.from(dRaw);
+        final key = _getKey(roomId, taskId);
+
+        final inputs = (d['inputs'] is Map)
+            ? Map<String, dynamic>.from(d['inputs'] as Map)
+            : <String, dynamic>{};
+        final selectedProducts = (d['selectedProducts'] is Map)
+            ? Map<String, double>.from(
+                (d['selectedProducts'] as Map).map(
+                  (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+                ),
+              )
+            : <String, double>{};
+        final selectedFournitures = (d['selectedFournitures'] is Map)
+            ? Map<String, Map<String, dynamic>>.from(
+                (d['selectedFournitures'] as Map).map(
+                  (k, v) => MapEntry(
+                    k.toString(),
+                    Map<String, dynamic>.from(v as Map),
+                  ),
+                ),
+              )
+            : <String, Map<String, dynamic>>{};
+
+        // Make sure quantity is reachable from inputs['surface']/['quantity']
+        // — _onContinue at line 886 reads inputs['surface'] for quantity.
+        final qty = (d['quantity'] as num?)?.toDouble();
+        if (qty != null) {
+          inputs.putIfAbsent('quantity', () => qty);
+          inputs.putIfAbsent('surface', () => qty);
+        }
+
+        _taskStates[key] = RoomTaskState(
+          taskId: taskId.toString(),
+          roomId: roomId.toString(),
+          label: (d['label'] as String?) ?? '',
+          isExpanded: false,
+          inputs: inputs,
+          note: d['note'] as String?,
+          photoPaths: (d['photoPaths'] as List?)?.cast<String>(),
+          selectedProducts: selectedProducts,
+          selectedFournitures: selectedFournitures,
+          hours: (d['hours'] as num?)?.toDouble() ?? 0.0,
+        );
+
+        final cond = (d['conditionCoeff'] as num?)?.toDouble();
+        if (cond != null && cond != 1.0) {
+          _roomContexts[roomId.toString()] =
+              RealityFactors(condition: cond);
+        }
+      });
+    });
   }
 
   /// Load taux horaire: per-métier pricing profile first, fallback to business_info
@@ -519,13 +588,39 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     }
 
     final familles = _tradeFamilles(_selectedTrade);
+    final isAllTrades = _selectedTrade.toLowerCase().contains("tout corps");
+
+    final famillesLower = familles.map((f) => f.toLowerCase()).toList();
+    
+    // Filter _customTasks by trade BEFORE mapping to TaskItem
+    final filteredCustomTasks = isAllTrades ? _customTasks : _customTasks.where((t) {
+      final fam = (t.famille ?? '').toLowerCase();
+      final prof = (t.profession ?? '').toLowerCase();
+      final tradeLower = _selectedTrade.toLowerCase();
+      
+      // 1. Match by backend famille mapping
+      if (famillesLower.contains(fam)) return true;
+      
+      // 2. Match by exact profession (ignoring accents)
+      if (prof == tradeLower) return true;
+      if (tradeLower == 'electricien' && prof == 'électricien') return true;
+      if (tradeLower == 'électricien' && prof == 'electricien') return true;
+      if (tradeLower == 'platrier' && prof == 'plâtrier') return true;
+      if (tradeLower == 'plâtrier' && prof == 'platrier') return true;
+      if (tradeLower == 'revêtement sol' && prof == 'revetement sol') return true;
+      
+      // 3. Fallback partial match
+      if (prof.contains(tradeLower) || tradeLower.contains(prof)) return true;
+      
+      return false;
+    });
 
     // Build task items (parents only — children attached as subTasks)
-    final allTaskItems = _customTasks.map((t) => TaskItem(
+    final allTaskItems = filteredCustomTasks.map((t) => TaskItem(
       id: t.id,
       label: t.title,
       code: t.code,
-      famille: t.famille,
+      famille: t.famille ?? t.profession, // Use profession as category title if famille is null
       unite: t.unite,
       tempsHU: t.tempsHU,
       typePoste: t.typePoste,
@@ -535,7 +630,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
         id: s.id,
         label: s.title,
         code: s.code,
-        famille: s.famille,
+        famille: s.famille ?? s.profession,
         unite: s.unite,
         tempsHU: s.tempsHU,
         typePoste: s.typePoste,
@@ -543,12 +638,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       )).toList(),
     )).toList();
 
-    // Filter by trade familles — match any of the mapped familles
-    final famillesLower = familles.map((f) => f.toLowerCase()).toList();
-    final tradeFiltered = allTaskItems.where((t) {
-      final fam = (t.famille ?? '').toLowerCase();
-      return famillesLower.contains(fam);
-    }).toList();
+    final tradeFiltered = allTaskItems.toList();
 
     final backendTaskItems = _searchQuery.isEmpty
         ? tradeFiltered
@@ -568,7 +658,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
         .map((e) => TaskCategory(title: e.key, tasks: e.value))
         .toList();
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -592,7 +682,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'Créer vos postes de travail',
+                          'Créer vos ouvrages',
                           style: AppTheme.headingStyle(context).copyWith(
                             color: const Color(0xFF0F2648),
                             fontSize: 18,
@@ -660,7 +750,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
           // 2. Trade Tabs (Segmented) - Only show if we have multiple trades or just header if 1
           if (_trades.isNotEmpty)
           Container(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -681,7 +771,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                         }
                       },
                       selectedColor: const Color(0xFFE0E7FF),
-                      backgroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                       labelStyle: TextStyle(
                         color: isSelected ? const Color(0xFF1D74FF) : Colors.grey[700],
                         fontWeight: FontWeight.bold,
@@ -701,7 +791,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Ajouter des tâches',
+                    'Ajouter des ouvrages',
                     style: AppTheme.headingStyle(context).copyWith(color: const Color(0xFF111827), fontSize: 22),
                   ),
                   const SizedBox(height: 8),
@@ -781,7 +871,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                           Icon(Icons.add_circle_outline, color: Color(0xFF1D74FF)),
                           SizedBox(width: 8),
                           Text(
-                            'Créer une nouvelle tâche',
+                            'Créer une ouvrage',
                             style: TextStyle( 
                               color: Color(0xFF1D74FF),
                               fontWeight: FontWeight.bold,
@@ -833,7 +923,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       ),
     ),
       bottomSheet: Container(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         padding: const EdgeInsets.all(24),
         child: SafeArea(
 
@@ -1050,7 +1140,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected ? const Color(0xFF1D3557) : Colors.transparent,
@@ -1095,7 +1185,13 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: isSelected ? const Color(0xFF1D3557) : Colors.grey[300]!),
                       ),
-                      child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
+                      child: isSelected
+                          ? Icon(
+                              Icons.check,
+                              color: Theme.of(context).colorScheme.surface,
+                              size: 16,
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1164,11 +1260,50 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                       isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                       color: const Color(0xFF1D3557),
                     ),
+                  // Edit / delete menu — only for user-created postes (not global).
+                  if (!taskItem.isGlobal)
+                    SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: PopupMenuButton<String>(
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.more_vert,
+                            size: 20, color: Color(0xFF94A3B8)),
+                        onSelected: (action) {
+                          if (action == 'edit') {
+                            _editTask(taskItem);
+                          } else if (action == 'delete') {
+                            _confirmDeleteTask(taskItem);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(children: [
+                              Icon(Icons.edit,
+                                  size: 18, color: Color(0xFF0F172A)),
+                              SizedBox(width: 8),
+                              Text('Modifier'),
+                            ]),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(children: [
+                              Icon(Icons.delete,
+                                  size: 18, color: Color(0xFFEF4444)),
+                              SizedBox(width: 8),
+                              Text('Supprimer',
+                                  style: TextStyle(color: Color(0xFFEF4444))),
+                            ]),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
-          
+
           // Sub-tasks section — visible if parent has children OR if it's a top-level task (to let them add sub-tasks)
           if (taskItem.subTasks.isNotEmpty || !taskItem.isChild) ...[
             if (taskItem.subTasks.isNotEmpty)
@@ -1298,7 +1433,11 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                                    child: Container(
                                      padding: const EdgeInsets.all(2),
                                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                     child: const Icon(Icons.close, size: 10, color: Colors.white),
+                                     child: Icon(
+                                       Icons.close,
+                                       size: 10,
+                                       color: Theme.of(context).colorScheme.surface,
+                                     ),
                                    ),
                                  ),
                                ),
@@ -1394,7 +1533,13 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                   borderRadius: BorderRadius.circular(5),
                   border: Border.all(color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFCBD5E1)),
                 ),
-                child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
+                child: isSelected
+                    ? Icon(
+                        Icons.check,
+                        color: Theme.of(context).colorScheme.surface,
+                        size: 14,
+                      )
+                    : null,
               ),
               // Content
               Expanded(
@@ -1434,11 +1579,169 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF3B82F6)),
                   ),
                 ),
+              // Edit / delete menu — only for user-created sub-tasks (not global).
+              if (!sub.isGlobal)
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.more_vert,
+                        size: 18, color: Color(0xFF94A3B8)),
+                    onSelected: (action) {
+                      if (action == 'edit') {
+                        _editTask(sub);
+                      } else if (action == 'delete') {
+                        _confirmDeleteTask(sub);
+                      }
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Row(children: [
+                          Icon(Icons.edit, size: 18, color: Color(0xFF0F172A)),
+                          SizedBox(width: 8),
+                          Text('Modifier'),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(children: [
+                          Icon(Icons.delete,
+                              size: 18, color: Color(0xFFEF4444)),
+                          SizedBox(width: 8),
+                          Text('Supprimer',
+                              style: TextStyle(color: Color(0xFFEF4444))),
+                        ]),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Edit dialog — works for both parent postes and sous-postes.
+  Future<void> _editTask(TaskItem item) async {
+    final titleCtrl = TextEditingController(text: item.label);
+    final codeCtrl = TextEditingController(text: item.code ?? '');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Modifier la tâche',
+            style: TextStyle(
+                fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Désignation'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: codeCtrl,
+              decoration: const InputDecoration(labelText: 'Code'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler',
+                style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F172A),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            onPressed: () async {
+              if (titleCtrl.text.trim().isEmpty) return;
+              try {
+                await ref.read(taskRepositoryProvider).updateTask(
+                      id: item.id,
+                      title: titleCtrl.text.trim(),
+                      code: codeCtrl.text.trim().isEmpty
+                          ? null
+                          : codeCtrl.text.trim(),
+                    );
+                if (ctx.mounted) Navigator.pop(ctx, true);
+              } catch (e) {
+                if (!ctx.mounted) return;
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur: $e'),
+                    backgroundColor: const Color(0xFFEF4444),
+                  ),
+                );
+              }
+            },
+            child: const Text('Enregistrer',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (saved == true) {
+      _fetchCustomTasksForTrade(_selectedTrade);
+    }
+  }
+
+  Future<void> _confirmDeleteTask(TaskItem item) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Supprimer cette tâche ?',
+            style: TextStyle(
+                fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        content: Text(
+            '"${item.label}" sera définitivement supprimée${item.subTasks.isNotEmpty ? ", ainsi que ses ${item.subTasks.length} sous-poste(s)" : ""}.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler',
+                style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(taskRepositoryProvider).deleteTask(item.id);
+      // Drop selection state if the user had selected this task in any room.
+      // Keys are formatted as `<roomId>_<taskId>` (see _getKey).
+      _taskStates.removeWhere((key, _) => key.endsWith('_${item.id}'));
+      _fetchCustomTasksForTrade(_selectedTrade);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    }
   }
 
   Widget _buildDynamicInputs(String roomId, String taskId, RoomTaskState state) {
@@ -1469,7 +1772,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                      height: 48,
                      padding: const EdgeInsets.symmetric(horizontal: 12),
                      decoration: BoxDecoration(
-                       color: Colors.white,
+                       color: Theme.of(context).colorScheme.surface,
                        border: Border.all(color: const Color(0xFFCBD5E1)),
                        borderRadius: BorderRadius.circular(8),
                      ),
@@ -1668,7 +1971,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: const Color(0xFF86EFAC)),
           ),
@@ -1746,11 +2049,11 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
          margin: const EdgeInsets.only(bottom: 12),
          padding: const EdgeInsets.all(8),
          decoration: BoxDecoration(
-           color: Colors.white,
+           color: Theme.of(context).colorScheme.surface,
            border: Border.all(color: const Color(0xFFE2E8F0)),
            borderRadius: BorderRadius.circular(12),
            boxShadow: [
-             BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2)),
+             BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2)),
            ],
          ),
          child: Row(

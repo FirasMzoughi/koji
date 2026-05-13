@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/core/theme.dart';
+import 'package:koji/core/theme_provider.dart';
 
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends ConsumerWidget {
   final VoidCallback? onMenuTap;
 
   const HomeHeader({super.key, this.onMenuTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = AppTheme.isDark(context);
+    final headerIconColor = Theme.of(context).colorScheme.surface;
+
     return Container(
-      color: const Color(0xFF0F172A), // Dark Navy Blue background
+      color: AppTheme.headerBackground(context),
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
       child: Stack(
         alignment: Alignment.center,
@@ -32,7 +38,7 @@ class HomeHeader extends StatelessWidget {
                         width: 32,
                         height: 3,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -41,7 +47,7 @@ class HomeHeader extends StatelessWidget {
                         width: 24,
                         height: 3,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -50,7 +56,7 @@ class HomeHeader extends StatelessWidget {
                         width: 16,
                         height: 3,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -59,18 +65,42 @@ class HomeHeader extends StatelessWidget {
                 ),
               ),
 
-              // Profile Icon
-              GestureDetector(
-                onTap: () => context.push('/profile/company'),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: headerIconColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isDark ? Icons.light_mode : Icons.dark_mode,
+                        color: headerIconColor,
+                        size: 20,
+                      ),
+                    ),
                   ),
-                  child: const Icon(Icons.person, color: Colors.white, size: 20),
-                ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () => context.push('/profile/company'),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: headerIconColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        color: headerIconColor,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

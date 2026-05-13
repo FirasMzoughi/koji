@@ -65,8 +65,8 @@ class WorkerSuccessScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.check,
-                            color: Colors.white, size: 36),
+                        child: Icon(Icons.check,
+                            color: Theme.of(context).colorScheme.surface, size: 36),
                       ),
                     ),
                   ),
@@ -103,11 +103,11 @@ class WorkerSuccessScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -186,7 +186,7 @@ class WorkerSuccessScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
@@ -194,12 +194,12 @@ class WorkerSuccessScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                           SizedBox(width: 8),
                           Icon(Icons.arrow_forward,
-                              color: Colors.white, size: 20),
+                              color: Theme.of(context).colorScheme.surface, size: 20),
                         ],
                       ),
                     ),
@@ -214,7 +214,7 @@ class WorkerSuccessScreen extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () => context.go('/workers'),
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                         side: BorderSide.none,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16)),

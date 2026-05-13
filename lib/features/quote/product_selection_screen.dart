@@ -95,7 +95,7 @@ class _ProductSelectionScreenState
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -149,7 +149,7 @@ class _ProductSelectionScreenState
           ? FloatingActionButton(
               onPressed: _showAddProductDialog,
               backgroundColor: darkNavy,
-              child: const Icon(Icons.add, color: Colors.white),
+              child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface),
             )
           : null,
     );
@@ -181,7 +181,7 @@ class _ProductSelectionScreenState
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFEEF2F6)),
             ),
@@ -388,11 +388,11 @@ class _ProductSelectionScreenState
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -540,8 +540,8 @@ class _ProductSelectionScreenState
                             color: Color(0xFF2E65F3),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.add,
-                              color: Colors.white, size: 20),
+                          child: Icon(Icons.add,
+                              color: Theme.of(context).colorScheme.surface, size: 20),
                         ),
                       ],
                     ),
@@ -677,8 +677,8 @@ class _ProductSelectionScreenState
                     }
                   }
                 },
-                child: const Text("Créer",
-                    style: TextStyle(color: Colors.white)),
+                child: Text("Créer",
+                    style: TextStyle(color: Theme.of(context).colorScheme.surface)),
               ),
             ],
           );

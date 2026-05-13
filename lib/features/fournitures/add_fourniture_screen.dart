@@ -24,11 +24,25 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
   final _barcodeController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final _sourceUrlController = TextEditingController();
+  final _quantiteController = TextEditingController();
 
   String _selectedCategory = 'Peinture';
+  String _selectedUnite = 'Unité';
   Fournisseur? _selectedFournisseur;
   bool _isUrlMode = false;
   bool _isSaving = false;
+
+  final List<String> _unites = [
+    'Unité',
+    'm²',
+    'm³',
+    'ml',
+    'L',
+    'kg',
+    'g',
+    'pcs',
+    'h',
+  ];
 
   final List<String> _categories = [
     'Peinture',
@@ -55,6 +69,7 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
     _barcodeController.dispose();
     _imageUrlController.dispose();
     _sourceUrlController.dispose();
+    _quantiteController.dispose();
     super.dispose();
   }
 
@@ -63,7 +78,7 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
     final fournisseursAsync = ref.watch(fournisseursProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppTheme.backgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -74,8 +89,8 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
                 children: [
                   Container(
                     margin: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -103,11 +118,11 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -214,10 +229,10 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                     blurRadius: 20,
                     offset: const Offset(0, -4),
                   ),
@@ -234,11 +249,11 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
                   ),
                 ),
                 child: _isSaving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
+                            color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
                     : const Text(
                         'Enregistrer',
                         style: TextStyle(
@@ -320,6 +335,33 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
           label: 'Conditionnement',
           hint: 'Ex: Pot de 5L',
           icon: Icons.straighten,
+        ),
+        const SizedBox(height: 14),
+
+        // Quantité + Unité row
+        Row(
+          children: [
+            Expanded(
+              child: _buildFormField(
+                controller: _quantiteController,
+                label: 'Quantité',
+                hint: '0',
+                icon: Icons.numbers,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildDropdown(
+                label: 'Unité',
+                value: _selectedUnite,
+                items: _unites,
+                icon: Icons.straighten_outlined,
+                onChanged: (val) => setState(() => _selectedUnite = val!),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 14),
 
@@ -440,6 +482,32 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
           hint: 'Ex: Pot de 5L',
           icon: Icons.straighten,
         ),
+        const SizedBox(height: 14),
+
+        Row(
+          children: [
+            Expanded(
+              child: _buildFormField(
+                controller: _quantiteController,
+                label: 'Quantité',
+                hint: '0',
+                icon: Icons.numbers,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildDropdown(
+                label: 'Unité',
+                value: _selectedUnite,
+                items: _unites,
+                icon: Icons.straighten_outlined,
+                onChanged: (val) => setState(() => _selectedUnite = val!),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -448,7 +516,7 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
@@ -495,39 +563,49 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
     bool required = false,
     TextInputType? keyboardType,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: TextStyle(
+        fontSize: 14,
+        color: AppTheme.textPrimary(context),
       ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        style: const TextStyle( fontSize: 14),
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          labelStyle: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF94A3B8),
-          ),
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: Colors.grey[300],
-          ),
-          prefixIcon: icon != null
-              ? Icon(icon, size: 18, color: const Color(0xFF94A3B8))
-              : null,
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      cursorColor: AppTheme.darkNavy,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        filled: true,
+        fillColor: Theme.of(context).colorScheme.surface,
+        labelStyle: const TextStyle(
+          fontSize: 13,
+          color: Color(0xFF94A3B8),
         ),
-        validator: required
-            ? (val) =>
-                (val == null || val.isEmpty) ? 'Ce champ est requis' : null
+        hintStyle: TextStyle(
+          fontSize: 13,
+          color: Colors.grey[400],
+        ),
+        prefixIcon: icon != null
+            ? Icon(icon, size: 18, color: const Color(0xFF94A3B8))
             : null,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.darkNavy, width: 1.5),
+        ),
       ),
+      validator: required
+          ? (val) =>
+              (val == null || val.isEmpty) ? 'Ce champ est requis' : null
+          : null,
     );
   }
 
@@ -541,7 +619,7 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
@@ -575,6 +653,9 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
     setState(() => _isSaving = true);
 
     try {
+      final quantite = double.tryParse(
+          _quantiteController.text.replaceAll(',', '.'));
+
       final data = {
         'name': _nameController.text.trim(),
         'category': _selectedCategory,
@@ -586,6 +667,8 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
             0.0,
         if (_conditionnementController.text.isNotEmpty)
           'conditionnement': _conditionnementController.text.trim(),
+        if (quantite != null) 'quantite': quantite,
+        'unite': _selectedUnite,
         if (_barcodeController.text.isNotEmpty)
           'barcode': _barcodeController.text.trim(),
         if (_imageUrlController.text.isNotEmpty)

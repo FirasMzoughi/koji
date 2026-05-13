@@ -138,7 +138,19 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
     final roomIds = ref.read(quoteCreationProvider).selectedRoomIds;
     // Safety check if rooms changed or init issue
     if (roomIds.isEmpty) {
-      return const Scaffold(body: Center(child: Text("Aucune pièce sélectionnée")));
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: AppTheme.surface(context),
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: AppTheme.textPrimary(context), size: 20),
+            onPressed: () => context.pop(),
+          ),
+          centerTitle: true,
+          title: Text('Détails de la Pièce(s)', style: AppTheme.headingStyle(context).copyWith(fontSize: 18)),
+        ),
+        body: const Center(child: Text("Aucune pièce sélectionnée")),
+      );
     }
     if (_selectedRoomId.isEmpty && roomIds.isNotEmpty) {
       _selectedRoomId = roomIds.first;
@@ -148,100 +160,109 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
     final currentItems = _localEstimations[_selectedRoomId] ?? [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Light grey background
-      body: SafeArea(
-        child: Column(
+      backgroundColor: AppTheme.backgroundColor(context),
+      appBar: AppBar(
+        backgroundColor: AppTheme.surface(context),
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppTheme.textPrimary(context), size: 20),
+          onPressed: () => context.pop(),
+        ),
+        centerTitle: true,
+        title: Column(
           children: [
-            // 1. Header
-            _buildHeader(context),
-            
-            // 2. Room Tabs
-            _buildRoomTabs(roomIds),
-            
-            // 3. Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // Total Card
-                    _buildTotalCard(currentTotal),
-                    const SizedBox(height: 24),
-                    
-                    // Room Title Header
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _getRoomLabel(_selectedRoomId),
-                        style: AppTheme.headingStyle(context).copyWith(color: AppTheme.darkNavy, fontSize: 24),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Définissez les postes de dépenses et les estimations pour cette pièce ou bien ajouter une poste personnalisée.",
-                        style: TextStyle( color: Color(0xFF64748B), fontSize: 13),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Tasks List
-                    ...currentItems.asMap().entries.map((entry) {
-                       return _buildEditableTaskCard(_selectedRoomId, entry.key, entry.value);
-                    }),
-                    
-                    const SizedBox(height: 80), // Bottom padding
-                  ],
-                ),
-              ),
-            ),
+            Text('Détails de la Pièce(s)', style: AppTheme.headingStyle(context).copyWith(fontSize: 18)),
+            const SizedBox(height: 2),
+            Text('Etape 5/6', style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 12, fontWeight: FontWeight.w500)),
           ],
         ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE2E8F0)),
+        ),
+      ),
+      body: Column(
+        children: [
+          // 1. Room Tabs
+          _buildRoomTabs(roomIds),
+          
+          // 2. Content
+          Expanded(
+            child: currentItems.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.assignment_outlined, size: 56, color: AppTheme.textSecondary(context).withValues(alpha: 0.4)),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucune tâche ajoutée pour cette pièce',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 15, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Retournez à l\'étape précédente pour sélectionner des ouvrages.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppTheme.textSecondary(context).withValues(alpha: 0.7), fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // Total Card
+                        _buildTotalCard(currentTotal),
+                        const SizedBox(height: 24),
+                        
+                        // Room Title Header
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _getRoomLabel(_selectedRoomId),
+                            style: AppTheme.headingStyle(context).copyWith(
+                              color: AppTheme.textPrimary(context),
+                              fontSize: 24,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Définissez les postes de dépenses et les estimations pour cette pièce ou bien ajouter une poste personnalisée.",
+                            style: TextStyle(
+                              color: AppTheme.textSecondary(context),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Tasks List
+                        ...currentItems.asMap().entries.map((entry) {
+                           return _buildEditableTaskCard(_selectedRoomId, entry.key, entry.value);
+                        }),
+                        
+                        const SizedBox(height: 80), // Bottom padding
+                      ],
+                    ),
+                  ),
+          ),
+        ],
       ),
       bottomNavigationBar: _buildBottomBar(),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: AppTheme.darkNavy, size: 20),
-            onPressed: () => context.pop(),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  'Détails de la Pièce(s)',
-                  style: AppTheme.headingStyle(context).copyWith(fontSize: 18),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'Etape 5/6',
-                  style: TextStyle( color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-             icon: const Icon(Icons.arrow_forward_ios, color: AppTheme.darkNavy, size: 20),
-             onPressed: () {}, // Next room?
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildRoomTabs(List<String> roomIds) {
     return Container(
-      color: AppTheme.darkNavy,
+      color: AppTheme.headerBackground(context),
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: SingleChildScrollView(
@@ -256,28 +277,45 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
                 margin: const EdgeInsets.only(right: 12),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF1D74FF) : Colors.white,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : AppTheme.surface(context),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
                   children: [
-                    Icon(_getRoomIcon(id), size: 18, color: isSelected ? Colors.white : AppTheme.darkNavy),
+                    Icon(
+                      _getRoomIcon(id),
+                      size: 18,
+                      color: isSelected
+                          ? Colors.white
+                          : AppTheme.textPrimary(context),
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       _getRoomLabel(id),
                       style: TextStyle( 
                         fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : AppTheme.darkNavy,
+                        color: isSelected
+                            ? Colors.white
+                            : AppTheme.textPrimary(context),
                       ),
                     ),
                     if (isSelected && (_localEstimations[id]?.isNotEmpty ?? false)) ...[
                        const SizedBox(width: 6),
                        Container(
                          padding: const EdgeInsets.all(5),
-                         decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                         decoration: BoxDecoration(
+                           color: AppTheme.surface(context),
+                           shape: BoxShape.circle,
+                         ),
                          child: Text(
                            '${_localEstimations[id]?.length}',
-                           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1D74FF)),
+                           style: TextStyle(
+                             fontSize: 10,
+                             fontWeight: FontWeight.bold,
+                             color: Theme.of(context).colorScheme.primary,
+                           ),
                          ),
                        )
                     ]
@@ -300,10 +338,14 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F2648), // Dark Navy
+        color: AppTheme.headerBackground(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-           BoxShadow(color: const Color(0xFF0F2648).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+           BoxShadow(
+             color: AppTheme.headerBackground(context).withValues(alpha: 0.3),
+             blurRadius: 15,
+             offset: const Offset(0, 8),
+           ),
         ],
       ),
       child: Column(
@@ -315,14 +357,21 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
           const SizedBox(height: 8),
           Text(
             '${total.toStringAsFixed(2)} €',
-            style: const TextStyle( color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: AppTheme.surface(context),
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           // Real MO/Mat ratio visualization
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendDot(const Color(0xFF1D74FF), "MO: $laborPercentage%"),
+              _buildLegendDot(
+                Theme.of(context).colorScheme.primary,
+                "MO: $laborPercentage%",
+              ),
               const SizedBox(width: 16),
               _buildLegendDot(Colors.white, "Mat: $materialPercentage%"),
             ],
@@ -346,9 +395,9 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF), // Light blue tint
+        color: AppTheme.mutedSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDBEAFE)),
+        border: Border.all(color: AppTheme.borderColor(context)),
       ),
       child: Column(
          children: [
@@ -360,18 +409,38 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
                  Container(
                    padding: const EdgeInsets.all(10),
                    decoration: BoxDecoration(
-                     color: const Color(0xFF93C5FD).withOpacity(0.3),
+                     color: Theme.of(context)
+                         .colorScheme
+                         .primary
+                         .withValues(alpha: 0.18),
                      borderRadius: BorderRadius.circular(10),
                    ),
-                   child: Icon(item.icon, color: const Color(0xFF1E3A8A), size: 20),
+                   child: Icon(
+                     item.icon,
+                     color: Theme.of(context).colorScheme.primary,
+                     size: 20,
+                   ),
                  ),
                  const SizedBox(width: 12),
                  Expanded(
                    child: Column(
                      crossAxisAlignment: CrossAxisAlignment.start,
                      children: [
-                       Text(item.title, style: const TextStyle( fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A))),
-                       Text(item.subtitle, style: const TextStyle( fontSize: 12, color: Color(0xFF64748B))),
+                       Text(
+                         item.title,
+                         style: TextStyle(
+                           fontWeight: FontWeight.bold,
+                           fontSize: 16,
+                           color: AppTheme.textPrimary(context),
+                         ),
+                       ),
+                       Text(
+                         item.subtitle,
+                         style: TextStyle(
+                           fontSize: 12,
+                           color: AppTheme.textSecondary(context),
+                         ),
+                       ),
                      ],
                    ),
                  ),
@@ -389,7 +458,7 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
                ],
              ),
            ),
-           Container(height: 1, color: Colors.white),
+           Container(height: 1, color: Theme.of(context).colorScheme.surface),
            
            // Inputs Grid
            Padding(
@@ -468,18 +537,35 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
            // Tax Row
            Container(
              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-             decoration: const BoxDecoration(
-               color: Colors.white,
-               borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+             decoration: BoxDecoration(
+               color: Theme.of(context).colorScheme.surface,
+               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
              ),
              child: Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                  const Text('Taxe sur la valeur ajoutée (TVA)', style: TextStyle( fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E3A8A))),
+                 Text(
+                   'Taxe sur la valeur ajoutée (TVA)',
+                   style: TextStyle(
+                     fontWeight: FontWeight.bold,
+                     fontSize: 13,
+                     color: AppTheme.textPrimary(context),
+                   ),
+                 ),
                   Container(
-                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                     decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)),
-                     child: Text('${item.tax.toStringAsFixed(1)}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.mutedSurface(context),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${item.tax.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppTheme.textPrimary(context),
+                      ),
+                    ),
                   )
                ],
              ),
@@ -527,84 +613,88 @@ class _QuoteSummaryScreenState extends ConsumerState<QuoteSummaryScreen> {
 
   Widget _buildBottomBar() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -4))],
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -4))],
       ),
-      child: Column(
-        children: [
-          // Room Navigation
-          if (ref.read(quoteCreationProvider).selectedRoomIds.length > 1) ...[
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Room Navigation
+            if (ref.read(quoteCreationProvider).selectedRoomIds.length > 1) ...[
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: _previousRoom,
+                    icon: const Icon(Icons.arrow_back_ios, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey[100],
+                      foregroundColor: AppTheme.darkNavy,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '${ref.read(quoteCreationProvider).selectedRoomIds.indexOf(_selectedRoomId) + 1} / ${ref.read(quoteCreationProvider).selectedRoomIds.length}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.darkNavy,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    onPressed: _nextRoom,
+                    icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey[100],
+                      foregroundColor: AppTheme.darkNavy,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // Action Buttons
             Row(
               children: [
-                IconButton(
-                  onPressed: _previousRoom,
-                  icon: const Icon(Icons.arrow_back_ios, size: 20),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.grey[100],
-                    foregroundColor: AppTheme.darkNavy,
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => context.push('/quote/fourniture-summary'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.darkNavy,
+                      side: const BorderSide(color: AppTheme.darkNavy),
+                      minimumSize: const Size(double.infinity, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Validé la liste de fournitures', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    '${ref.read(quoteCreationProvider).selectedRoomIds.indexOf(_selectedRoomId) + 1} / ${ref.read(quoteCreationProvider).selectedRoomIds.length}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.darkNavy,
+                  child: ElevatedButton(
+                    onPressed: _saveAndContinue,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.darkNavy,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  onPressed: _nextRoom,
-                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.grey[100],
-                    foregroundColor: AppTheme.darkNavy,
+                    child: const Text('Valider le Devis', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
           ],
-          
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => context.push('/quote/fourniture-summary'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.darkNavy,
-                    side: const BorderSide(color: AppTheme.darkNavy),
-                    minimumSize: const Size(double.infinity, 48),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Validé la liste de fournitures', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _saveAndContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.darkNavy,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Valider le Devis', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

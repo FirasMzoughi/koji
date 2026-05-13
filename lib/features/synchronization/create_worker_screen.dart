@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,14 +18,12 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  final _ssnController = TextEditingController();
-  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
 
   String? _selectedProfession;
   bool _isSubmitting = false;
   File? _pickedImage;
-  File? _pickedDocument;
-  String? _pickedDocumentName;
   final _repository = WorkerRepository();
 
   final List<String> _professions = [
@@ -47,6 +44,8 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
       _firstNameController.text = widget.worker!.firstName;
       _lastNameController.text = widget.worker!.lastName;
       _selectedProfession = widget.worker!.profession;
+      _phoneController.text = widget.worker!.phoneNumber ?? '';
+      _emailController.text = widget.worker!.email ?? '';
     }
   }
 
@@ -54,8 +53,8 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _ssnController.dispose();
-    _addressController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
   void _pickImage() {
@@ -109,80 +108,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
     );
   }
 
-  void _pickDocument() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Color(0xFF2E65F3)),
-                title: const Text('Scanner avec la caméra',
-                    style: TextStyle( fontWeight: FontWeight.w600)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final picked = await ImagePicker().pickImage(
-                    source: ImageSource.camera,
-                    imageQuality: 85,
-                    maxWidth: 1200,
-                  );
-                  if (picked != null && mounted) {
-                    setState(() {
-                      _pickedDocument = File(picked.path);
-                      _pickedDocumentName = picked.name;
-                    });
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF2E65F3)),
-                title: const Text('Importer une image',
-                    style: TextStyle( fontWeight: FontWeight.w600)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final picked = await ImagePicker().pickImage(
-                    source: ImageSource.gallery,
-                    imageQuality: 85,
-                    maxWidth: 1200,
-                  );
-                  if (picked != null && mounted) {
-                    setState(() {
-                      _pickedDocument = File(picked.path);
-                      _pickedDocumentName = picked.name;
-                    });
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.attach_file, color: Color(0xFF2E65F3)),
-                title: const Text('Importer un fichier (PDF, etc.)',
-                    style: TextStyle( fontWeight: FontWeight.w600)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final result = await FilePicker.platform.pickFiles(
-                    type: FileType.custom,
-                    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
-                  );
-                  if (result != null && result.files.single.path != null && mounted) {
-                    setState(() {
-                      _pickedDocument = File(result.files.single.path!);
-                      _pickedDocumentName = result.files.single.name;
-                    });
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -210,19 +135,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
         }
       }
 
-      // Upload ID document if picked
-      String? idCardUrl;
-      if (_pickedDocument != null) {
-        try {
-          idCardUrl = await _repository.uploadWorkerImage(
-            _pickedDocument!,
-            _pickedDocument!.path,
-          );
-        } catch (e) {
-          debugPrint('ID document upload failed: $e');
-        }
-      }
-
       final workerData = Worker(
         id: widget.worker?.id ?? '',
         firstName: _firstNameController.text.trim(),
@@ -231,12 +143,11 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
         contactType: 'Ouvrier',
         status: widget.worker?.status ?? 'Disponible',
         profilePictureUrl: profilePicUrl ?? widget.worker?.profilePictureUrl,
-        idCardUrl: idCardUrl ?? widget.worker?.idCardUrl,
-        socialSecurityNumber: _ssnController.text.trim().isNotEmpty
-            ? _ssnController.text.trim()
+        phoneNumber: _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
             : null,
-        address: _addressController.text.trim().isNotEmpty
-            ? _addressController.text.trim()
+        email: _emailController.text.trim().isNotEmpty
+            ? _emailController.text.trim()
             : null,
       );
 
@@ -307,7 +218,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -393,9 +304,9 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                                         color: Color(0xFF2E65F3),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.add,
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.surface,
                                         size: 18,
                                       ),
                                     ),
@@ -449,92 +360,26 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                           const SizedBox(height: 8),
                           _buildDropdown(),
 
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20),
 
-                          // Divider
-                          Divider(
-                            color: const Color(0xFFEEF2F6),
-                            height: 1,
-                          ),
-
-                          const SizedBox(height: 28),
-
-                          // Numéro de sécurité sociale
-                          _buildLabel("Numéro de sécurité sociale"),
+                          // Numéro de téléphone
+                          _buildLabel("Numéro de téléphone"),
                           const SizedBox(height: 8),
                           _buildTextField(
-                            controller: _ssnController,
-                            hint: "1 000 00 00 000 000",
-                            keyboardType: TextInputType.number,
+                            controller: _phoneController,
+                            hint: "06 12 34 56 78",
+                            keyboardType: TextInputType.phone,
                           ),
 
                           const SizedBox(height: 20),
 
-                          // Adresse postale
-                          _buildLabel("Adresse postale"),
+                          // Email
+                          _buildLabel("Email"),
                           const SizedBox(height: 8),
                           _buildTextField(
-                            controller: _addressController,
-                            hint: "Rue, Ville, Code Postal",
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Pièce d'identité
-                          Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildLabel("Pièce d'identité"),
-                              const Text(
-                                "Facultatif",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: greyText,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: _pickDocument,
-                            child: Container(
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: _pickedDocument != null
-                                      ? const Color(0xFF2E65F3)
-                                      : const Color(0xFFE0E7FF),
-                                  width: 1.5,
-                                  strokeAlign: BorderSide.strokeAlignInside,
-                                ),
-                              ),
-                              child: _pickedDocument != null
-                                  ? _buildPickedDocPreview()
-                                  : const Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.crop_free,
-                                          color: Color(0xFFCBD5E1),
-                                          size: 32,
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          "Scanner ou importer un document",
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: Color(0xFFCBD5E1),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
+                            controller: _emailController,
+                            hint: "exemple@email.com",
+                            keyboardType: TextInputType.emailAddress,
                           ),
 
                           const SizedBox(height: 100),
@@ -557,7 +402,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                 color: appBg,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03),
                     blurRadius: 10,
                     offset: const Offset(0, -4),
                   ),
@@ -575,20 +420,20 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
                     elevation: 0,
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           "Enregistrer le profil",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                 ),
@@ -600,66 +445,6 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
     );
   }
 
-  Widget _buildPickedDocPreview() {
-    final isImage = _pickedDocumentName != null &&
-        (_pickedDocumentName!.endsWith('.jpg') ||
-            _pickedDocumentName!.endsWith('.jpeg') ||
-            _pickedDocumentName!.endsWith('.png'));
-
-    return Stack(
-      children: [
-        Center(
-          child: isImage
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.file(
-                    _pickedDocument!,
-                    height: 118,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                )
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.insert_drive_file,
-                        color: Color(0xFF2E65F3), size: 36),
-                    const SizedBox(height: 6),
-                    Text(
-                      _pickedDocumentName ?? 'Document',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0A1227),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-        ),
-        Positioned(
-          top: 6,
-          right: 6,
-          child: GestureDetector(
-            onTap: () => setState(() {
-              _pickedDocument = null;
-              _pickedDocumentName = null;
-            }),
-            child: Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.9),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.close,
-                  color: Colors.white, size: 16),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildLabel(String text) {
     return Text(
@@ -680,7 +465,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFEEF2F6)),
       ),
@@ -711,7 +496,7 @@ class _CreateWorkerScreenState extends State<CreateWorkerScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFEEF2F6)),
       ),

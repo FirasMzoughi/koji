@@ -52,7 +52,7 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
     final chantiersAsync = ref.watch(userChantiersProvider(user.id));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -63,12 +63,12 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Spacer(),
-                  const Text(
+                  Text(
                     'Chantiers',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF0F172A),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const Spacer(),
@@ -79,19 +79,19 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.notifications_none_outlined,
-                          color: Color(0xFF0F172A),
+                          color: Theme.of(context).colorScheme.onSurface,
                           size: 24,
                         ),
                       ),
@@ -131,12 +131,13 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color:
-                            isSelected ? const Color(0xFF0A1128) : Colors.white,
+                        color: isSelected 
+                            ? Theme.of(context).colorScheme.primary 
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(20),
                         border: isSelected
                             ? null
-                            : Border.all(color: const Color(0xFFE2E8F0)),
+                            : Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: Text(
                         _tabs[index],
@@ -145,8 +146,8 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w500,
                           color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF64748B),
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                     ),
@@ -264,11 +265,11 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -285,18 +286,18 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                   children: [
                     Text(
                       item['name'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${item['type']} • ${item['ref']}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF64748B),
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -341,10 +342,10 @@ class _ChantierListScreenState extends ConsumerState<ChantierListScreen>
                 ),
                 Text(
                   item['price'],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'package:koji/core/responsive_helper.dart';
+import 'package:koji/core/theme.dart';
 import 'package:koji/features/auth/repository/auth_repository.dart';
 import 'package:koji/features/quote/quote_list_screen.dart';
 import 'package:koji/features/quote/chantier_list_screen.dart';
 import 'package:koji/features/quote/providers/chantier_provider.dart';
 import 'package:koji/features/quote/repository/quote_repository.dart';
+import 'package:koji/features/quote/providers/quote_creation_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -50,8 +52,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (context) {
         return Container(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppTheme.surface(context),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SafeArea(
@@ -63,7 +65,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   width: 44,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
+                    color: AppTheme.borderColor(context),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -79,11 +81,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: AppTheme.mutedSurface(context),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: AppTheme.borderColor(context)),
                         ),
-                        child: const Icon(Icons.close, size: 18),
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: AppTheme.textPrimary(context),
+                        ),
                       ),
                     ),
                   ],
@@ -143,18 +149,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: AppTheme.mutedSurface(context),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(icon, size: 30, color: const Color(0xFF0F3995)),
+            child: Icon(
+              icon,
+              size: 30,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F3995),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
@@ -169,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawer: const AppDrawer(),
       body: Stack(
         children: [
@@ -199,11 +209,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.only(top: 16, bottom: 24),
               decoration: BoxDecoration(
-                color: const Color(
-                    0xFFF8F9FA), // Light greyish background for nav bar area
+                color: Theme.of(context).colorScheme.surface, // Fixed for dark mode
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                     blurRadius: 20,
                     offset: const Offset(0, -4),
                   ),
@@ -218,7 +227,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.home_filled,
                       label: 'Accueil',
                       isActive: _selectedIndex == 0,
-                      activeColor: const Color(0xFF0F172A),
+                      activeColor: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   GestureDetector(
@@ -227,7 +236,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.description_outlined,
                       label: 'Devis',
                       isActive: _selectedIndex == 1,
-                      activeColor: const Color(0xFF0F172A),
+                      activeColor: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   GestureDetector(
@@ -236,7 +245,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.handyman_outlined,
                       label: 'Chantier',
                       isActive: _selectedIndex == 2,
-                      activeColor: const Color(0xFF0F172A),
+                      activeColor: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   GestureDetector(
@@ -245,7 +254,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.more_horiz, // Three dots
                       label: 'Plus',
                       isActive: _selectedIndex == 3,
-                      activeColor: const Color(0xFF0F172A),
+                      activeColor: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -328,10 +337,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         children: [
                           Text(
                             'Aujourd’hui : $todayCount',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
+                              color: AppTheme.textSecondary(context),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -343,8 +352,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   Container(
                                     width: 10,
                                     height: 10,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF0F3995),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -354,10 +363,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       (t['label'] as String?)?.trim().isNotEmpty == true
                                           ? (t['label'] as String)
                                           : 'Tâche',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
-                                        color: Color(0xFF0F172A),
+                                        color: AppTheme.textPrimary(context),
                                       ),
                                     ),
                                   ),
@@ -370,10 +379,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
                                 '+ ${tasks.length - visible.length} autres',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppTheme.textSecondary(context),
                                 ),
                               ),
                             ),
@@ -440,18 +449,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                             return Dismissible(
                               key: Key('chantier_$chantierId'),
-                              direction: chantierId != null ? DismissDirection.horizontal : DismissDirection.none,
+                              direction: chantierId != null ? DismissDirection.endToStart : DismissDirection.none,
                               background: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[400],
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                alignment: Alignment.centerLeft,
-                                child: const Icon(Icons.delete_outline, color: Colors.white),
-                              ),
-                              secondaryBackground: Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.symmetric(horizontal: 20),
                                 decoration: BoxDecoration(
@@ -459,11 +458,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 alignment: Alignment.centerRight,
-                                child: const Icon(Icons.archive_outlined, color: Colors.white),
+                                child: Icon(
+                                  Icons.archive_outlined,
+                                  color: AppTheme.surface(context),
+                                ),
                               ),
-                              onDismissed: (direction) {
+                              confirmDismiss: (direction) async {
+                                if (chantierId == null) return false;
+                                return await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Archiver ce chantier ?'),
+                                        content: const Text('Il sera masqué de la liste active.'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: const Text('Annuler'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            child: const Text('Archiver'),
+                                          ),
+                                        ],
+                                      ),
+                                    ) ??
+                                    false;
+                              },
+                              onDismissed: (direction) async {
                                 if (chantierId != null) {
-                                  ref.read(chantierRepositoryProvider).updateChantierStatus(chantierId, 'archived');
+                                  try {
+                                    await ref.read(chantierRepositoryProvider).updateChantierStatus(chantierId, 'archived');
+                                    ref.invalidate(userChantiersProvider(user.id));
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Chantier archivé')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Erreur: $e')),
+                                      );
+                                    }
+                                  }
                                 }
                               },
                               child: Padding(
@@ -476,12 +513,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F5F9),
+                                    color: AppTheme.mutedSurface(context),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.handyman_outlined, size: 18, color: Color(0xFF0F172A)),
+                                      Icon(
+                                        Icons.handyman_outlined,
+                                        size: 18,
+                                        color: AppTheme.textPrimary(context),
+                                      ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Column(
@@ -491,18 +532,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               title,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFF0F172A),
+                                                color: AppTheme.textPrimary(context),
                                               ),
                                             ),
                                             if (reference.isNotEmpty)
                                               Text(
                                                 reference,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 12,
-                                                  color: Color(0xFF64748B),
+                                                  color: AppTheme.textSecondary(context),
                                                 ),
                                               ),
                                           ],
@@ -511,10 +552,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       const SizedBox(width: 10),
                                       Text(
                                         status,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          color: Color(0xFF64748B),
+                                          color: AppTheme.textSecondary(context),
                                         ),
                                       ),
                                     ],
@@ -529,10 +570,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 '+ ${chantiers.length - visible.length} autres',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppTheme.textSecondary(context),
                                 ),
                               ),
                             ),
@@ -609,18 +650,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                             return Dismissible(
                               key: Key('quote_$quoteId'),
-                              direction: quoteId != null ? DismissDirection.horizontal : DismissDirection.none,
+                              direction: quoteId != null ? DismissDirection.endToStart : DismissDirection.none,
                               background: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[400],
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                alignment: Alignment.centerLeft,
-                                child: const Icon(Icons.delete_outline, color: Colors.white),
-                              ),
-                              secondaryBackground: Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.symmetric(horizontal: 20),
                                 decoration: BoxDecoration(
@@ -628,11 +659,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 alignment: Alignment.centerRight,
-                                child: const Icon(Icons.archive_outlined, color: Colors.white),
+                                child: Icon(
+                                  Icons.archive_outlined,
+                                  color: AppTheme.surface(context),
+                                ),
                               ),
-                              onDismissed: (direction) {
+                              confirmDismiss: (direction) async {
+                                if (quoteId == null) return false;
+                                return await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Archiver ce devis ?'),
+                                        content: const Text('Il sera masqué de la liste en cours.'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: const Text('Annuler'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            child: const Text('Archiver'),
+                                          ),
+                                        ],
+                                      ),
+                                    ) ??
+                                    false;
+                              },
+                              onDismissed: (direction) async {
                                 if (quoteId != null) {
-                                  ref.read(quoteRepositoryProvider).updateQuoteStatus(quoteId, 'archived');
+                                  try {
+                                    await ref.read(quoteRepositoryProvider).updateQuoteStatus(quoteId, 'archived');
+                                    ref.invalidate(userQuotesProvider(user.id));
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Devis archivé')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Erreur: $e')),
+                                      );
+                                    }
+                                  }
                                 }
                               },
                               child: Padding(
@@ -640,17 +709,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 child: InkWell(
                                   onTap: quoteId == null
                                       ? null
-                                      : () => context.push('/quote/detail', extra: q),
+                                      : () async {
+                                          // Seed the create-quote flow from
+                                          // this saved devis, then drop the
+                                          // user into the room/task editor so
+                                          // tasks, fournitures and inputs are
+                                          // all editable — not just recap
+                                          // numbers.
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          final router = GoRouter.of(context);
+                                          try {
+                                            ref
+                                                .read(quoteCreationProvider
+                                                    .notifier)
+                                                .reset();
+                                            await ref
+                                                .read(quoteCreationProvider
+                                                    .notifier)
+                                                .seedFromSavedQuote(q);
+                                            final state = ref.read(
+                                                quoteCreationProvider);
+                                            if (state.selectedRoomIds
+                                                .isEmpty) {
+                                              // No rooms persisted — fall
+                                              // back to the recap so the user
+                                              // can at least adjust numbers.
+                                              router.push('/quote/detail',
+                                                  extra: q);
+                                              return;
+                                            }
+                                            router.push(
+                                              '/quote/room-details',
+                                              extra: {
+                                                'roomIds':
+                                                    state.selectedRoomIds,
+                                                'images': const <String>[],
+                                              },
+                                            );
+                                          } catch (e) {
+                                            messenger.showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    'Erreur de chargement du devis: $e'),
+                                              ),
+                                            );
+                                          }
+                                        },
                                   borderRadius: BorderRadius.circular(14),
                                   child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F5F9),
+                                    color: AppTheme.mutedSurface(context),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.description_outlined, size: 18, color: Color(0xFF0F172A)),
+                                      Icon(
+                                        Icons.description_outlined,
+                                        size: 18,
+                                        color: AppTheme.textPrimary(context),
+                                      ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Column(
@@ -660,18 +779,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               clientName,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFF0F172A),
+                                                color: AppTheme.textPrimary(context),
                                               ),
                                             ),
                                             if (refQ.isNotEmpty)
                                               Text(
                                                 refQ,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 12,
-                                                  color: Color(0xFF64748B),
+                                                  color: AppTheme.textSecondary(context),
                                                 ),
                                               ),
                                           ],
@@ -680,14 +799,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       const SizedBox(width: 10),
                                       Text(
                                         _formatEuro(amount),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF0F172A),
+                                          color: AppTheme.textPrimary(context),
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF94A3B8)),
+                                      Icon(
+                                        Icons.arrow_forward_ios,
+                                        size: 12,
+                                        color: AppTheme.textSecondary(context),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -700,10 +823,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 '+ ${inProgress.length - visible.length} autres',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppTheme.textSecondary(context),
                                 ),
                               ),
                             ),

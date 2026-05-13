@@ -20,7 +20,7 @@ class FournisseurDetailScreen extends ConsumerWidget {
     final asyncItems = ref.watch(fournisseurFournituresProvider(fournisseur.id));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppTheme.backgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -31,8 +31,8 @@ class FournisseurDetailScreen extends ConsumerWidget {
                 children: [
                   Container(
                     margin: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -84,7 +84,7 @@ class FournisseurDetailScreen extends ConsumerWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Theme.of(context).colorScheme.surface.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Center(
@@ -92,8 +92,8 @@ class FournisseurDetailScreen extends ConsumerWidget {
                         fournisseur.name.isNotEmpty
                             ? fournisseur.name[0].toUpperCase()
                             : 'F',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
                           fontWeight: FontWeight.bold,
                           fontSize: 24,
                         ),
@@ -107,10 +107,10 @@ class FournisseurDetailScreen extends ConsumerWidget {
                       children: [
                         Text(
                           fournisseur.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -119,7 +119,7 @@ class FournisseurDetailScreen extends ConsumerWidget {
                             '${items.length} fournitures',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
                             ),
                           ),
                           loading: () => const SizedBox.shrink(),
@@ -188,7 +188,7 @@ class FournisseurDetailScreen extends ConsumerWidget {
                       if (selectionMode) {
                         return GestureDetector(
                           onTap: () => _pickQuantityAndReturn(context, item),
-                          child: _buildItemCard(item),
+                          child: _buildItemCard(context, item),
                         );
                       }
 
@@ -203,8 +203,10 @@ class FournisseurDetailScreen extends ConsumerWidget {
                             color: Colors.red,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(Icons.delete,
-                              color: Colors.white),
+                          child: Icon(
+                            Icons.delete,
+                            color: Theme.of(context).colorScheme.surface,
+                          ),
                         ),
                         onDismissed: (_) async {
                           await ref
@@ -213,7 +215,7 @@ class FournisseurDetailScreen extends ConsumerWidget {
                           ref.invalidate(fournisseurFournituresProvider(
                               fournisseur.id));
                         },
-                        child: _buildItemCard(item),
+                        child: _buildItemCard(context, item),
                       );
                     },
                   );
@@ -237,7 +239,7 @@ class FournisseurDetailScreen extends ConsumerWidget {
           });
         },
         backgroundColor: AppTheme.darkNavy,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface),
       ),
     );
   }
@@ -271,7 +273,10 @@ class FournisseurDetailScreen extends ConsumerWidget {
               Navigator.pop(ctx, parsed <= 0 ? 1 : parsed);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkNavy),
-            child: const Text('Ajouter', style: TextStyle(color: Colors.white)),
+            child: Text(
+              'Ajouter',
+              style: TextStyle(color: Theme.of(context).colorScheme.surface),
+            ),
           ),
         ],
       ),
@@ -290,16 +295,16 @@ class FournisseurDetailScreen extends ConsumerWidget {
     });
   }
 
-  Widget _buildItemCard(Fourniture item) {
+  Widget _buildItemCard(BuildContext context, Fourniture item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

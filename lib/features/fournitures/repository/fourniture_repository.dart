@@ -100,6 +100,10 @@ final recentFournituresProvider = FutureProvider<List<Fourniture>>((ref) {
   return ref.read(fournitureRepositoryProvider).getRecentFournitures();
 });
 
+final allFournituresProvider = FutureProvider<List<Fourniture>>((ref) {
+  return ref.read(fournitureRepositoryProvider).getAllFournitures();
+});
+
 final diversFournituresProvider = FutureProvider<List<Fourniture>>((ref) {
   return ref.read(fournitureRepositoryProvider).getDiversFournitures();
 });

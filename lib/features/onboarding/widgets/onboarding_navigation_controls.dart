@@ -55,7 +55,7 @@ class OnboardingNavigationControls extends StatelessWidget {
                   ),
                   child: Icon(
                     Icons.arrow_forward_ios_rounded, // Slightly different arrow
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     size: responsive.iconSize(24),
                   ),
                 ),

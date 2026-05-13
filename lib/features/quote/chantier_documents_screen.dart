@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:koji/features/quote/providers/document_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChantierDocumentsScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
@@ -52,17 +53,17 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add, color: Colors.white, size: 22),
+                      Icon(Icons.add, color: Theme.of(context).colorScheme.surface, size: 22),
                       SizedBox(width: 8),
                       Text(
                         'Ajouter un document',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ],
@@ -120,11 +121,11 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 38),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -161,7 +162,7 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
         ),
         if (_isUploading)
           Container(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
             child: const Center(
               child: CircularProgressIndicator(color: _kDark),
             ),
@@ -198,11 +199,11 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -270,7 +271,7 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
   void _showDocMenu(BuildContext context, Map<String, dynamic> doc) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -288,6 +289,35 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
               ),
             ),
             const SizedBox(height: 20),
+            _menuOption(
+              icon: Icons.open_in_new_rounded,
+              label: 'Ouvrir',
+              onTap: () async {
+                Navigator.pop(context);
+                final url = doc['file_url'] as String?;
+                if (url == null || url.isEmpty) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Fichier introuvable')),
+                    );
+                  }
+                  return;
+                }
+                final uri = Uri.tryParse(url);
+                if (uri == null ||
+                    !await launchUrl(uri,
+                        mode: LaunchMode.externalApplication)) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Impossible d'ouvrir le fichier"),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 12),
             _menuOption(
               icon: Icons.download_outlined,
               label: 'Télécharger',
@@ -363,7 +393,7 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
   void _showAddOptions() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -392,7 +422,7 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
             const SizedBox(height: 12),
             _menuOption(
               icon: Icons.photo_library_outlined,
-              label: 'Choisir depuis la galerie',
+              label: 'Ajouter une image',
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
@@ -401,7 +431,7 @@ class _ChantierDocumentsScreenState extends ConsumerState<ChantierDocumentsScree
             const SizedBox(height: 12),
             _menuOption(
               icon: Icons.description_outlined,
-              label: 'Prendre un document',
+              label: 'Ajouter un fichier',
               onTap: () {
                 Navigator.pop(context);
                 _pickDocument();

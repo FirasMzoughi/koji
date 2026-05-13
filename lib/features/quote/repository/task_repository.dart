@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:koji/features/quote/model/custom_task.dart';
@@ -119,27 +120,58 @@ class TaskRepository {
         imageUrls.add(url);
       }
 
-      // 3. Insert task
+      // 3. Insert task — only columns that exist in the DB
       final taskData = <String, dynamic>{
         'title': title,
-        'description': description,
         'profession': profession,
-        'image_urls': imageUrls,
-        'default_products': defaultProducts,
         'user_id': _supabase.auth.currentUser!.id,
+        'type_poste': parentId != null ? 'SOUS-POSTE' : (typePoste ?? 'POSTE'),
+        if (description != null && description.isNotEmpty) 'description': description,
         if (finalCode != null) 'code': finalCode,
         if (famille != null) 'famille': famille,
         if (unite != null) 'unite': unite,
         if (tempsHU != null) 'temps_hu': tempsHU,
         if (parentId != null) 'parent_id': parentId,
-        'type_poste': parentId != null ? 'SOUS-POSTE' : (typePoste ?? 'POSTE'),
+        if (imageUrls.isNotEmpty) 'image_urls': imageUrls,
+        if (defaultProducts.isNotEmpty) 'default_products': defaultProducts,
       };
 
+      debugPrint('Creating task with data: $taskData');
       final response =
           await _supabase.from('tasks').insert(taskData).select().single();
+      debugPrint('Task created: ${response['id']}');
       return CustomTask.fromMap(response);
     } catch (e) {
+      debugPrint('ERROR creating task: $e');
       throw Exception('Error creating task: $e');
     }
+  }
+
+  Future<void> updateTask({
+    required String id,
+    String? title,
+    String? description,
+    String? code,
+    String? famille,
+    String? unite,
+  }) async {
+    final updates = <String, dynamic>{};
+    if (title != null) updates['title'] = title;
+    if (description != null) updates['description'] = description;
+    if (code != null) updates['code'] = code;
+    if (famille != null) updates['famille'] = famille;
+    if (unite != null) updates['unite'] = unite;
+    if (updates.isEmpty) return;
+    await _supabase.from('tasks').update(updates).eq('id', id);
+  }
+
+  /// Delete a task. Sub-tasks linked via parent_id are removed too if the DB
+  /// has ON DELETE CASCADE; otherwise we delete them explicitly first.
+  Future<void> deleteTask(String id) async {
+    // Best-effort cleanup of children in case the FK isn't ON DELETE CASCADE.
+    try {
+      await _supabase.from('tasks').delete().eq('parent_id', id);
+    } catch (_) {/* ignore — children may already be cascaded */}
+    await _supabase.from('tasks').delete().eq('id', id);
   }
 }

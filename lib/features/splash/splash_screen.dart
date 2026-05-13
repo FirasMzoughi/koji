@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -76,8 +78,25 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       try {
         final userRepository = ref.read(userRepositoryProvider);
         final userData = await userRepository.getUser(user.id);
-        final isPro = userData?['is_pro'] as bool? ?? true;
+        final isProRaw = userData?['is_pro'] as bool? ?? true;
         final isProfileComplete = userData?['is_profile_complete'] == true;
+        final isBusinessInfoComplete =
+            userData?['is_business_info_complete'] == true;
+        final logoUrl = userData?['logo_url'] as String?;
+        final hasBusinessLogo = logoUrl != null && logoUrl.isNotEmpty;
+
+        // Recovery for accounts where the DB trigger wrote is_pro=false
+        // even though the user actually went through the entreprise flow
+        // (Google sign-in didn't propagate is_pro metadata). If any
+        // entreprise-only artefact exists, treat the account as pro and
+        // self-heal the row so future logins are correct.
+        final hasEntrepriseSignal =
+            isProfileComplete || isBusinessInfoComplete || hasBusinessLogo;
+        var isPro = isProRaw;
+        if (!isPro && hasEntrepriseSignal) {
+          isPro = true;
+          unawaited(userRepository.setIsPro(user.id, true));
+        }
 
         if (!isPro) {
           // CLIENT (Particulier) — always go to client home
@@ -85,9 +104,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           return;
         }
 
-        // ENTREPRISE — check onboarding completion
-        final logoUrl = userData?['logo_url'] as String?;
-        if (logoUrl == null || logoUrl.isEmpty) {
+        // ENTREPRISE — check onboarding completion. Either a real logo or
+        // an explicit "skipped" flag is enough to bypass /business-info.
+        if (!hasBusinessLogo && !isBusinessInfoComplete) {
           if (mounted) context.go('/business-info');
         } else if (!isProfileComplete) {
           if (mounted) context.go('/profession-selection');

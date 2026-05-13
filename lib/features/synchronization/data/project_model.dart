@@ -91,7 +91,7 @@ class ProjectAssignment {
   factory ProjectAssignment.fromJson(Map<String, dynamic> json) {
     return ProjectAssignment(
       id: json['id'] as String,
-      projectId: json['project_id'] as String,
+      projectId: (json['chantier_id'] ?? json['project_id']) as String,
       workerId: json['worker_id'] as String,
       role: json['role'] as String?,
       assignedAt: DateTime.parse(json['assigned_at']),
@@ -100,7 +100,7 @@ class ProjectAssignment {
 
   Map<String, dynamic> toJson() {
     return {
-      'project_id': projectId,
+      'chantier_id': projectId,
       'worker_id': workerId,
       'role': role,
       'assigned_at': assignedAt.toIso8601String(),

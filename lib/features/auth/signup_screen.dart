@@ -148,9 +148,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final isLoading = authState.isLoading;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.darkNavy),
@@ -203,7 +203,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             widget.signupType == 'entreprise'
                                 ? Icons.business
                                 : Icons.person,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             size: 16,
                           ),
                           const SizedBox(width: 6),
@@ -211,8 +211,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             widget.signupType == 'entreprise'
                                 ? 'Espace Entreprise'
                                 : 'Espace Particulier',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.surface,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -249,7 +249,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   icon: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Icon(Icons.g_mobiledata,
@@ -475,11 +475,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     disabledForegroundColor: const Color(0xFFD1D5DB),
                   ),
                   child: isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
+                              color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

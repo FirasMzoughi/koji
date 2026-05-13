@@ -59,8 +59,8 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -113,9 +113,9 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                       color: Color(0xFF0F172A), // Dark Navy
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.person_add_alt_1_outlined,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       size: 32,
                     ),
                   ),

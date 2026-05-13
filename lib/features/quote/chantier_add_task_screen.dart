@@ -85,17 +85,17 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add, color: Colors.white, size: 22),
+                        Icon(Icons.add, color: Theme.of(context).colorScheme.surface, size: 22),
                         SizedBox(width: 8),
                         Text(
                           'Ajouter une tâche',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                       ],
@@ -165,11 +165,11 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 38),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -202,79 +202,94 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
     final bool isDone = task['is_done'] == true;
     final String title = task['label'] as String? ?? '';
     final String subtitle = task['note'] as String? ?? ''; // Simplified subtitle logic
+    final chantierId = widget.data['id'] as String?;
+
+    Future<void> toggle() async {
+      try {
+        await _repository.updateTaskStatus(task['id'], !isDone);
+        if (chantierId != null) {
+          ref.invalidate(chantierTasksProvider(chantierId));
+        }
+      } catch (e) {
+        debugPrint('Error toggling task: $e');
+      }
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Circle checkbox
-          GestureDetector(
-            onTap: () async {
-              try {
-                await _repository.updateTaskStatus(task['id'], !isDone);
-              } catch (e) {
-                debugPrint('Error toggling task: $e');
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDone ? _kDark : Colors.white,
-                border: Border.all(
-                  color: isDone ? _kDark : const Color(0xFFCBD5E1),
-                  width: 1.8,
-                ),
-              ),
-              child: isDone
-                  ? const Icon(Icons.check_rounded,
-                      size: 14, color: Colors.white)
-                  : null,
-            ),
-          ),
-          const SizedBox(width: 14),
-          // Text
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: toggle,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: _kDark,
-                    decoration:
-                        isDone ? TextDecoration.lineThrough : TextDecoration.none,
-                  ),
-                ),
-                if (subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF64748B),
+                // Circle checkbox — visual only; the whole row already toggles.
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDone ? _kDark : Colors.white,
+                    border: Border.all(
+                      color: isDone ? _kDark : const Color(0xFFCBD5E1),
+                      width: 1.8,
                     ),
                   ),
+                  child: isDone
+                      ? Icon(Icons.check_rounded,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.surface)
+                      : null,
+                ),
+                const SizedBox(width: 14),
+                // Text
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: _kDark,
+                          decoration: isDone
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                        ),
+                      ),
+                      if (subtitle.isNotEmpty)
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded,
+                    color: Color(0xFF94A3B8), size: 22),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded,
-              color: Color(0xFF94A3B8), size: 22),
-        ],
+        ),
       ),
     );
   }
@@ -302,7 +317,7 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: _kBorder),
               ),
@@ -334,7 +349,7 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _kBorder),
             ),
@@ -359,7 +374,7 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _kBorder),
             ),
@@ -391,7 +406,7 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
           _label('Note (optionnel)'),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _kBorder),
             ),
@@ -425,13 +440,20 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
                 elevation: 0,
               ),
               child: _isLoading 
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text(
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.surface,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
                 'Enregistrer',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                 ),
               ),
             ),
@@ -473,7 +495,7 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
       {required TextEditingController controller, required String hint}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _kBorder),
       ),
@@ -515,6 +537,7 @@ class _ChantierAddTaskScreenState extends ConsumerState<ChantierAddTaskScreen> {
       // to include columns like 'note', 'person', 'date', 'lierA'
       // For now, mapping label -> titleCtrl.text.trim()
       await _repository.addTask(chantierId, _titleCtrl.text.trim());
+      ref.invalidate(chantierTasksProvider(chantierId));
 
       if (mounted) {
         setState(() {
