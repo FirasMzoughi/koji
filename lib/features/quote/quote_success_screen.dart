@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // For consolidateHttpClientResponseBytes
+import 'package:flutter/services.dart' show rootBundle; // For bundled Koji logo
 import 'package:go_router/go_router.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/core/responsive_helper.dart';
@@ -105,9 +106,39 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
     final colorNavy = PdfColor.fromInt(0xFF0F172A);
     final colorAccent = PdfColor.fromInt(0xFFA18B73);
 
+    // Bundled Koji logo, used as a faint background watermark on every page.
+    pw.MemoryImage? kojiWatermark;
+    try {
+      final data = await rootBundle.load('assets/icons/LOGO.png');
+      kojiWatermark = pw.MemoryImage(data.buffer.asUint8List());
+    } catch (e) {
+      debugPrint('Could not load Koji watermark: $e');
+    }
+
+    final siteAddress = (widget.quoteData['siteAddress'] as String?) ?? '';
+    final travauxLieu = siteAddress.isNotEmpty
+        ? siteAddress
+        : (client['address']?.toString() ?? '');
+    final travauxStart = (widget.quoteData['travauxStart'] as String?) ?? '';
+    final travauxDuration = (widget.quoteData['travauxDuration'] as String?) ?? '';
+
     pdf.addPage(pw.MultiPage(
-        pageFormat: format,
-        theme: pw.ThemeData.withFont(base: fontRegular, bold: fontBold),
+        pageTheme: pw.PageTheme(
+          pageFormat: format,
+          theme: pw.ThemeData.withFont(base: fontRegular, bold: fontBold),
+          // Faint Koji logo watermark, centered behind the content on every page.
+          buildBackground: (context) => kojiWatermark == null
+              ? pw.SizedBox()
+              : pw.Center(
+                  child: pw.Opacity(
+                    opacity: 0.04,
+                    child: pw.Image(kojiWatermark, width: 320, height: 320),
+                  ),
+                ),
+        ),
+        // Legal footer (pied de page) repeated on every page, like classic
+        // French devis: company identification in small print, plus "Créé par Koji".
+        footer: (context) => _buildLegalFooter(context, company, colorAccent),
         build: (context) {
           return [
             // ── Header ─────────────────────────────────────────────────────
@@ -281,6 +312,34 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
 
             pw.SizedBox(height: 20),
 
+            // ── Mentions obligatoires (lieu / dates / durée) ─────────────────
+            pw.Container(
+              padding: const pw.EdgeInsets.all(10),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey50,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: PdfColors.grey200),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text("MENTIONS LÉGALES DU CHANTIER",
+                      style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
+                  pw.SizedBox(height: 4),
+                  pw.Text("Lieu d'exécution des travaux : ${travauxLieu.isNotEmpty ? travauxLieu : '____________________'}",
+                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
+                  pw.SizedBox(height: 2),
+                  pw.Text("Date de début des travaux : ${travauxStart.isNotEmpty ? travauxStart : '____________________'}",
+                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
+                  pw.SizedBox(height: 2),
+                  pw.Text("Durée des travaux : ${travauxDuration.isNotEmpty ? travauxDuration : '____________________'}",
+                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
+                ],
+              ),
+            ),
+
+            pw.SizedBox(height: 20),
+
             // ── Financial Summary ───────────────────────────────────────────
             pw.Container(
               padding: const pw.EdgeInsets.all(16),
@@ -322,12 +381,39 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
               ]),
             ),
 
-            pw.SizedBox(height: 24),
+            pw.SizedBox(height: 20),
 
-            // ── Signature ───────────────────────────────────────────────────
+            // ── Conditions de règlement (échéancier / mode / RIB) ────────────
+            _buildPaymentTerms(company, totals, colorNavy, colorAccent),
+
+            pw.SizedBox(height: 20),
+
+            // ── Signatures (entreprise + client avec mention manuscrite) ─────
             pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.end,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
+                // Client side: Fait à / le + mention "Lu et approuvé, bon pour accord"
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text("Signature du client",
+                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy)),
+                      pw.SizedBox(height: 4),
+                      pw.Text("Fait à ______________  le ____________",
+                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                      pw.SizedBox(height: 4),
+                      pw.Text("Mention manuscrite obligatoire :",
+                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                      pw.Text("« Lu et approuvé, bon pour accord »",
+                          style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold, color: colorNavy)),
+                      pw.SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(width: 24),
+                // Company side
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
@@ -344,9 +430,7 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
               ],
             ),
 
-            pw.SizedBox(height: 20),
-
-            // ── Footer ──────────────────────────────────────────────────────
+            pw.SizedBox(height: 12),
             pw.Center(
               child: pw.Text("Ce devis est valable 30 jours. Merci pour votre confiance.",
                   style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
@@ -354,6 +438,103 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
           ];
         }));
     return pdf;
+  }
+
+  // ── Conditions de règlement (échéancier de paiement) ─────────────────────────
+  // States in writing how the payment is split: 30% à la signature, 50% en
+  // cours de chantier, 20% à la réception (réserves). Amounts computed from TTC.
+  pw.Widget _buildPaymentTerms(
+      Map<dynamic, dynamic> company, Map<dynamic, dynamic> totals, PdfColor colorNavy, PdfColor colorAccent) {
+    final ttc = (totals['ttc'] as num?)?.toDouble() ?? 0.0;
+    String money(double v) => '${v.toStringAsFixed(2)} €';
+
+    final schedule = <List<String>>[
+      ['Acompte à la signature', '30 %', money(ttc * 0.30)],
+      ['En cours de chantier', '50 %', money(ttc * 0.50)],
+      ['Solde à la réception (réserves levées)', '20 %', money(ttc * 0.20)],
+    ];
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey50,
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: PdfColors.grey200),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text("CONDITIONS DE RÈGLEMENT",
+              style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
+          pw.SizedBox(height: 6),
+          // Échéancier rows
+          ...schedule.map((row) => pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 3),
+                child: pw.Row(
+                  children: [
+                    pw.Expanded(flex: 5, child: pw.Text(row[0],
+                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800))),
+                    pw.Expanded(flex: 1, child: pw.Text(row[1],
+                        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy),
+                        textAlign: pw.TextAlign.center)),
+                    pw.Expanded(flex: 2, child: pw.Text(row[2],
+                        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy),
+                        textAlign: pw.TextAlign.right)),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  // ── Legal footer (pied de page) — company identification in small print ──────
+  pw.Widget _buildLegalFooter(
+      pw.Context context, Map<dynamic, dynamic> company, PdfColor colorAccent) {
+    final parts = <String>[];
+    final name = company['name']?.toString() ?? '';
+    final legalForm = company['formeJuridique']?.toString() ?? '';
+    final address = company['address']?.toString() ?? '';
+    final siret = company['siret']?.toString() ?? '';
+    final rcs = company['rcs']?.toString() ?? '';
+    final tva = company['tva']?.toString() ?? '';
+
+    if (name.isNotEmpty) parts.add(legalForm.isNotEmpty ? '$name ($legalForm)' : name);
+    if (address.isNotEmpty) parts.add('Siège : $address');
+    if (siret.isNotEmpty) parts.add('SIRET : $siret');
+    if (rcs.isNotEmpty) parts.add('RCS/SIREN : $rcs');
+    if (tva.isNotEmpty) parts.add('TVA : $tva');
+
+    return pw.Container(
+      alignment: pw.Alignment.center,
+      margin: const pw.EdgeInsets.only(top: 8),
+      padding: const pw.EdgeInsets.only(top: 6),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
+      ),
+      child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text(
+            parts.join('  •  '),
+            textAlign: pw.TextAlign.center,
+            style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Text(
+            'Page ${context.pageNumber} / ${context.pagesCount}',
+            textAlign: pw.TextAlign.center,
+            style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Text(
+            'Créé par Koji',
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: colorAccent),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<pw.Document> _generateFourniturePdf(
@@ -436,6 +617,7 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
     pdf.addPage(pw.MultiPage(
         pageFormat: format,
         theme: pw.ThemeData.withFont(base: fontRegular, bold: fontBold),
+        footer: (context) => _buildLegalFooter(context, company, colorAccent),
         build: (context) {
           return [
             // ─ Header ─────────────────────────────────────────────────────
