@@ -37,6 +37,8 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
   String? _signatureUrl;
   Uint8List? _signatureBytes;
   bool _isSendingEmail = false;
+  // Bundled Koji logo bytes, reused for the watermark and the footer mark.
+  Uint8List? _kojiLogoBytes;
 
   String get _quoteNumber => widget.quoteData['quoteNumber'] ?? 'D-XXXX';
 
@@ -106,11 +108,12 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
     final colorNavy = PdfColor.fromInt(0xFF0F172A);
     final colorAccent = PdfColor.fromInt(0xFFA18B73);
 
-    // Bundled Koji logo, used as a faint background watermark on every page.
+    // Bundled Koji logo, used as a faint background watermark on every page
+    // and as a small mark in the footer.
     pw.MemoryImage? kojiWatermark;
     try {
-      final data = await rootBundle.load('assets/icons/LOGO.png');
-      kojiWatermark = pw.MemoryImage(data.buffer.asUint8List());
+      _kojiLogoBytes ??= (await rootBundle.load('assets/icons/LOGO.png')).buffer.asUint8List();
+      kojiWatermark = pw.MemoryImage(_kojiLogoBytes!);
     } catch (e) {
       debugPrint('Could not load Koji watermark: $e');
     }
@@ -521,16 +524,29 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
             style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
           ),
           pw.SizedBox(height: 2),
-          pw.Text(
-            'Page ${context.pageNumber} / ${context.pagesCount}',
-            textAlign: pw.TextAlign.center,
-            style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
-          ),
-          pw.SizedBox(height: 2),
-          pw.Text(
-            'Créé par Koji',
-            textAlign: pw.TextAlign.center,
-            style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: colorAccent),
+          // Page number (left) and the small "Créé par Kôji" mark (right side).
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              pw.Expanded(
+                child: pw.Text(
+                  'Page ${context.pageNumber} / ${context.pagesCount}',
+                  style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+                ),
+              ),
+              pw.Text(
+                'Créé par ',
+                style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+              ),
+              if (_kojiLogoBytes != null) ...[
+                pw.Image(pw.MemoryImage(_kojiLogoBytes!), width: 8, height: 8),
+                pw.SizedBox(width: 2),
+              ],
+              pw.Text(
+                'Kôji',
+                style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: colorAccent),
+              ),
+            ],
           ),
         ],
       ),
