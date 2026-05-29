@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,6 +55,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // The company's own email, used to tell our outbound messages from the
   // client's so we only get notified about the client's replies.
   String _companyEmail = '';
+  // The quotes stream emits on quote changes, not on new messages — so it can't
+  // be the only trigger for message notifications. We cache the latest quotes
+  // and poll for new client messages on a timer while the app is open.
+  List<Map<String, dynamic>> _latestQuotes = const [];
+  Timer? _messagePollTimer;
+  // Guards against the stream listener and the poll timer running the message
+  // check at the same time (which could double-notify or race on prefs).
+  bool _handlingMessages = false;
 
   @override
   void initState() {
@@ -68,13 +78,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         (previous, next) {
           final quotes = next.valueOrNull;
           if (quotes != null) {
+            _latestQuotes = quotes;
             _handleSignedQuotes(quotes);
             _handleNewMessages(quotes);
           }
         },
         fireImmediately: true,
       );
+
+      // Poll for new client messages independently of the quotes stream so a
+      // message raises a notification even when no quote field changes.
+      _messagePollTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+        if (_latestQuotes.isNotEmpty) _handleNewMessages(_latestQuotes);
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    _messagePollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadCompanyEmail(String userId) async {
@@ -175,6 +198,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// timestamp per quote so reopening the app doesn't re-notify, and seed that
   /// baseline silently on the first emission after launch.
   Future<void> _handleNewMessages(List<Map<String, dynamic>> quotes) async {
+    if (_handlingMessages) return;
+    _handlingMessages = true;
+    try {
+      await _checkNewMessages(quotes);
+    } finally {
+      _handlingMessages = false;
+    }
+  }
+
+  Future<void> _checkNewMessages(List<Map<String, dynamic>> quotes) async {
+    // Without the company email we can't tell our own messages from the
+    // client's, so we'd wrongly notify on outbound messages. Wait for it.
+    if (_companyEmail.trim().isEmpty) return;
+
     final quoteIds = quotes
         .map((q) => (q['id'] ?? '').toString())
         .where((id) => id.isNotEmpty)
