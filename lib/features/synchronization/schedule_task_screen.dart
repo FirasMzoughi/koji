@@ -61,8 +61,12 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
   List<Map<String, dynamic>> _chantierTasks = [];
 
   String? _selectedChantierId;
-  String? _selectedWorkerId;
+  final Set<String> _selectedWorkerIds = {};
   String? _selectedChantierTaskId;
+
+  /// Primary worker = first selected (drives conflict detection + legacy field).
+  String? get _selectedWorkerId =>
+      _selectedWorkerIds.isEmpty ? null : _selectedWorkerIds.first;
 
   bool _loading = true;
   bool _saving = false;
@@ -75,7 +79,9 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
     _currentMonth = DateTime(_selectedDate.year, _selectedDate.month);
     _selectedChantierId = widget.chantierId;
     _selectedChantierTaskId = widget.chantierTaskId;
-    _selectedWorkerId = widget.initialWorkerId;
+    if (widget.initialWorkerId != null) {
+      _selectedWorkerIds.add(widget.initialWorkerId!);
+    }
     if (widget.initialTitle != null) _titleController.text = widget.initialTitle!;
     _bootstrap();
   }
@@ -116,14 +122,17 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
           _minute = int.parse(parts[1]);
           _durationMinutes = existing.durationMinutes;
           _selectedChantierId = existing.chantierId;
-          _selectedWorkerId = existing.workerId;
+          _selectedWorkerIds
+            ..clear()
+            ..addAll(existing.workerIds);
           _selectedChantierTaskId = existing.chantierTaskId;
         } else {
           // Defaults: pre-select the only chantier/worker if there is exactly one.
           _selectedChantierId ??=
               _chantiers.isNotEmpty ? _chantiers.first.id : null;
-          _selectedWorkerId ??=
-              _workers.isNotEmpty ? _workers.first.id : null;
+          if (_selectedWorkerIds.isEmpty && _workers.isNotEmpty) {
+            _selectedWorkerIds.add(_workers.first.id);
+          }
         }
 
         _loading = false;
@@ -182,8 +191,8 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
       _snack('Veuillez choisir un chantier');
       return;
     }
-    if (_selectedWorkerId == null) {
-      _snack('Veuillez choisir un ouvrier');
+    if (_selectedWorkerIds.isEmpty) {
+      _snack('Veuillez choisir au moins un ouvrier');
       return;
     }
 
@@ -226,11 +235,12 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
         durationMinutes: _durationMinutes,
       );
 
+      final workerIds = _selectedWorkerIds.toList();
       final ScheduledTask saved;
       if (widget.editingTaskId == null) {
-        saved = await repo.create(task);
+        saved = await repo.create(task, workerIds: workerIds);
       } else {
-        saved = await repo.update(task);
+        saved = await repo.update(task, workerIds: workerIds);
       }
 
       // Invalidate providers so the planning + chantier views refresh.
@@ -443,9 +453,14 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
           ),
 
           const SizedBox(height: 20),
-          _label('Ouvrier'),
-          const SizedBox(height: 8),
-          _workerDropdown(),
+          _label('Ouvriers'),
+          const SizedBox(height: 4),
+          const Text(
+            'Sélectionnez un ou plusieurs ouvriers',
+            style: TextStyle(fontSize: 12, color: Color(0xFF8B95A5)),
+          ),
+          const SizedBox(height: 10),
+          _workerMultiSelect(),
 
           const SizedBox(height: 24),
           CalendarMonthPicker(
@@ -582,28 +597,58 @@ class _ScheduleTaskScreenState extends ConsumerState<ScheduleTaskScreen> {
     );
   }
 
-  Widget _workerDropdown() {
-    return _dropdownShell(
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: _selectedWorkerId,
-          hint: const Text('Sélectionner un ouvrier'),
-          items: _workers
-              .map((w) => DropdownMenuItem(
-                    value: w.id,
-                    child: Text(
-                      '${w.firstName} ${w.lastName}${w.profession.isNotEmpty ? ' · ${w.profession}' : ''}',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ))
-              .toList(),
-          onChanged: (id) {
-            setState(() => _selectedWorkerId = id);
+  Widget _workerMultiSelect() {
+    if (_workers.isEmpty) {
+      return _dropdownShell(
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 14),
+          child: Text(
+            "Aucun ouvrier — créez d'abord un profil ouvrier",
+            style: TextStyle(color: Color(0xFF8B95A5), fontSize: 14),
+          ),
+        ),
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _workers.map((w) {
+        final selected = _selectedWorkerIds.contains(w.id);
+        final name =
+            '${w.firstName} ${w.lastName}'.trim().isEmpty ? 'Ouvrier' : '${w.firstName} ${w.lastName}'.trim();
+        return FilterChip(
+          selected: selected,
+          onSelected: (v) {
+            setState(() {
+              if (v) {
+                _selectedWorkerIds.add(w.id);
+              } else {
+                _selectedWorkerIds.remove(w.id);
+              }
+            });
             _recomputeConflict();
           },
-        ),
-      ),
+          avatar: Icon(
+            Icons.person,
+            size: 18,
+            color: selected ? Colors.white : const Color(0xFF2E65F3),
+          ),
+          label: Text(name),
+          labelStyle: TextStyle(
+            color: selected ? Colors.white : _darkNavy,
+            fontWeight: FontWeight.w600,
+          ),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          selectedColor: const Color(0xFF2E65F3),
+          showCheckmark: false,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: selected ? const Color(0xFF2E65F3) : const Color(0xFFEEF2F6),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 

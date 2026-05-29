@@ -24,10 +24,17 @@ class _DevisLine {
 
   double fournituresUnitPrice; // editable – fournitures €/u
 
+  // Forfait (flat price) — when enabled the line is billed at a single fixed
+  // price and the qty/temps/fournitures breakdown is ignored.
+  bool forfaitEnabled;
+  double forfaitPrice;
+
   // derived
   double get moUnitPrice   => tempsHU * tauxHoraire * conditionCoeff;
-  double get totalMO       => moUnitPrice * qty;
-  double get totalFournitures => fournituresUnitPrice * qty;
+  // A forfait line carries its whole price in MO so it flows into the totals;
+  // fournitures are folded into the flat price, so they're zero here.
+  double get totalMO       => forfaitEnabled ? forfaitPrice : moUnitPrice * qty;
+  double get totalFournitures => forfaitEnabled ? 0.0 : fournituresUnitPrice * qty;
   double get totalLigne    => totalMO + totalFournitures;
 
   _DevisLine({
@@ -41,6 +48,8 @@ class _DevisLine {
     this.tauxHoraire = 0.0,
     this.conditionCoeff = 1.0,
     this.fournituresUnitPrice = 0.0,
+    this.forfaitEnabled = false,
+    this.forfaitPrice = 0.0,
   });
 }
 
@@ -73,6 +82,25 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   String? _logoPath;
   double _hourlyRate     = 0.0;
 
+  // Legal identification (shown in the devis footer / pied de page)
+  String _companySiret   = '';
+  String _companyRcs     = '';
+  String _companyTva     = '';
+  String _companyLegalForm = '';
+
+  // Mandatory work info (lieu = siteAddress; dates editable here)
+  String _travauxStart   = ''; // date de début des travaux
+  String _travauxDuration = ''; // durée des travaux
+  final _startCtrl    = TextEditingController();
+  final _durationCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _startCtrl.dispose();
+    _durationCtrl.dispose();
+    super.dispose();
+  }
+
   // KOJI devis lines grouped by room
   // Map<roomId, List<_DevisLine>>
   final Map<String, List<_DevisLine>> _linesByRoom = {};
@@ -96,8 +124,26 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
       _loadExistingQuote();
     } else {
       _initFromProvider();
+      // Reuse the number when editing an existing quote; otherwise assign a
+      // fresh sequential DEVIS-YYYY-NNNN number from the backend.
+      final existingNumber = widget.data['quoteNumber'] as String?;
+      if (existingNumber != null && existingNumber.isNotEmpty) {
+        _quoteNumber = existingNumber;
+      } else {
+        _assignAutoNumber();
+      }
     }
     _fetchBusinessInfo();
+  }
+
+  Future<void> _assignAutoNumber() async {
+    final user = ref.read(authProvider).value;
+    if (user == null) return;
+    try {
+      final number =
+          await ref.read(quoteRepositoryProvider).generateNextQuoteNumber(user.id);
+      if (mounted) setState(() => _quoteNumber = number);
+    } catch (_) {/* keep the timestamp fallback already set */}
   }
 
   // ── Initialize from new quote flow ──────────────────────────────────────────
@@ -136,6 +182,9 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         }
         final qty = (td['quantity'] as num?)?.toDouble() ?? 1.0;
 
+        final forfaitEnabled = td['forfaitEnabled'] == true;
+        final forfaitPrice = (td['forfaitPrice'] as num?)?.toDouble() ?? 0.0;
+
         lines.add(_DevisLine(
           taskId:              td['taskId']?.toString() ?? '',
           label:               td['label']?.toString()  ?? '',
@@ -147,6 +196,8 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           tauxHoraire:         (td['tauxHoraire']   as num?)?.toDouble() ?? _hourlyRate,
           conditionCoeff:      (td['conditionCoeff'] as num?)?.toDouble() ?? 1.0,
           fournituresUnitPrice: qty > 0 ? fournituresTotalCost / qty : fournituresTotalCost,
+          forfaitEnabled:      forfaitEnabled,
+          forfaitPrice:        forfaitPrice,
         ));
       });
 
@@ -180,7 +231,15 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     _companyAddress = company['address'] ?? _companyAddress;
     _companyPhone   = company['phone']   ?? _companyPhone;
     _companyEmail   = company['email']   ?? _companyEmail;
+    _companySiret    = company['siret']  ?? _companySiret;
+    _companyRcs      = company['rcs']    ?? _companyRcs;
+    _companyTva      = company['tva']    ?? _companyTva;
+    _companyLegalForm = company['formeJuridique'] ?? _companyLegalForm;
     _siteAddress    = d['siteAddress']   ?? '';
+    _travauxStart    = d['travauxStart']    ?? '';
+    _travauxDuration = d['travauxDuration'] ?? '';
+    _startCtrl.text    = _travauxStart;
+    _durationCtrl.text = _travauxDuration;
 
     setState(() => _isLoadingDetails = true);
     _fetchDetails(d['id'] as String);
@@ -211,8 +270,13 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           final fournUnit = (t['total_price_ht'] as num?)?.toDouble() ?? 0.0;
           final tauxHoraire = (inputs['tauxHoraire'] as num?)?.toDouble()
               ?? (_hourlyRate > 0 ? _hourlyRate : 0.0);
+          final forfaitEnabled = inputs['forfaitEnabled'] == true;
+          // On a forfait line the flat price was saved into unit_price_ht (moUnit).
+          final forfaitPrice = (inputs['forfaitPrice'] as num?)?.toDouble()
+              ?? (forfaitEnabled ? moUnit : 0.0);
+
           double tempsHU = (inputs['tempsHU'] as num?)?.toDouble() ?? 0.0;
-          if (tempsHU == 0 && tauxHoraire > 0) {
+          if (!forfaitEnabled && tempsHU == 0 && tauxHoraire > 0) {
             tempsHU = moUnit / tauxHoraire;
           }
 
@@ -225,7 +289,9 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
             qty:     qty,
             tempsHU: tempsHU,
             tauxHoraire: tauxHoraire,
-            fournituresUnitPrice: fournUnit,
+            fournituresUnitPrice: forfaitEnabled ? 0.0 : fournUnit,
+            forfaitEnabled: forfaitEnabled,
+            forfaitPrice: forfaitPrice,
           ));
         }
       }
@@ -252,6 +318,10 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         _companyAddress = biz['address']       ?? _companyAddress;
         _companyPhone   = biz['phone']         ?? _companyPhone;
         _companyEmail   = biz['emailPro']      ?? _companyEmail;
+        _companySiret    = biz['siret']         ?? _companySiret;
+        _companyRcs      = biz['rcs']           ?? _companyRcs;
+        _companyTva      = biz['tva']           ?? _companyTva;
+        _companyLegalForm = biz['formeJuridique'] ?? _companyLegalForm;
         final daily  = (biz['dailyRate']   as num?)?.toDouble() ?? 0.0;
         final hpd    = (biz['hoursPerDay'] as num?)?.toDouble() ?? 8.0;
         if (daily > 0 && hpd > 0) {
@@ -309,14 +379,16 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
       expensesMap[roomId] = lines.map((l) => {
         'id':           l.taskId,
         'title':        l.label,
-        'laborCost':    l.moUnitPrice,
-        'materialCost': l.fournituresUnitPrice,
-        'quantity':     l.qty,
+        // Forfait: the whole flat price rides in laborCost at qty 1, with no
+        // fournitures — matches how room_task_screen emits a forfait line.
+        'laborCost':    l.forfaitEnabled ? l.forfaitPrice : l.moUnitPrice,
+        'materialCost': l.forfaitEnabled ? 0.0 : l.fournituresUnitPrice,
+        'quantity':     l.forfaitEnabled ? 1.0 : l.qty,
         'unite':        l.unite,
         'code':         l.code,
         'famille':      l.famille,
-        'tempsHU':      l.tempsHU,
-        'tauxHoraire':  l.tauxHoraire,
+        'tempsHU':      l.forfaitEnabled ? 0.0 : l.tempsHU,
+        'tauxHoraire':  l.forfaitEnabled ? 0.0 : l.tauxHoraire,
       }).toList();
       final perRoomProvider = (providerTasks[roomId] is Map)
           ? Map<String, dynamic>.from(providerTasks[roomId] as Map)
@@ -345,6 +417,8 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 'unite': l.unite,
                 'code': l.code,
                 'famille': l.famille,
+                'forfaitEnabled': l.forfaitEnabled,
+                'forfaitPrice': l.forfaitPrice,
               },
               'hours': l.tempsHU,
               'quantity': l.qty,
@@ -352,10 +426,20 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               'unite': l.unite,
               'code': l.code,
               'famille': l.famille,
+              'forfaitEnabled': l.forfaitEnabled,
+              'forfaitPrice': l.forfaitPrice,
             };
           }(),
       };
     });
+
+    // The chantier this devis belongs to. When the flow started from a chantier
+    // (chantier_devis_screen → _createDevis → setChantierId), the id lives in the
+    // creation provider. Editing an existing devis carries it in widget.data.
+    // Without this, saveQuote auto-creates an *orphan* chantier and the devis
+    // tasks never surface under the real chantier (planner/dashboard show none).
+    final effectiveChantierId = (widget.data['chantier_id'] as String?) ??
+        ref.read(quoteCreationProvider).chantierId;
 
     final quoteData = {
       'quoteNumber': _quoteNumber,
@@ -363,8 +447,19 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
       'validity':    _quoteValidity,
       'date':        _quoteDate,
       'client':   {'name': _clientName, 'address': _clientAddress, 'email': _clientEmail},
-      'company':  {'name': _companyName, 'address': _companyAddress, 'phone': _companyPhone, 'email': _companyEmail},
+      'company':  {
+        'name': _companyName,
+        'address': _companyAddress,
+        'phone': _companyPhone,
+        'email': _companyEmail,
+        'siret': _companySiret,
+        'rcs': _companyRcs,
+        'tva': _companyTva,
+        'formeJuridique': _companyLegalForm,
+      },
       'siteAddress': _siteAddress,
+      'travauxStart': _startCtrl.text.trim(),
+      'travauxDuration': _durationCtrl.text.trim(),
       'expenses':    expensesMap,
       'tasks':       tasksMap,
       'totals': {
@@ -374,7 +469,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         'tva':            _tva20,
         'ttc':            _grandTotalTTC,
       },
-      if (widget.data['chantier_id'] != null) 'chantier_id': widget.data['chantier_id'],
+      if (effectiveChantierId != null) 'chantier_id': effectiveChantierId,
     };
 
     try {
@@ -384,26 +479,22 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           .saveQuote(user.id, quoteData, quoteId: existingId);
 
       if (mounted) {
+        // Clear editing state so the next "new devis" starts clean.
+        ref.read(quoteCreationProvider.notifier).reset();
         if (existingId != null) {
-          // Clear editing state so the next "new devis" starts clean.
-          ref.read(quoteCreationProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Devis mis à jour'),
               backgroundColor: Color(0xFF15803D),
             ),
           );
-          // Pop back to home rather than the previous edit screen so the
-          // user lands on the updated quotes list, not mid-flow.
-          while (context.canPop()) {
-            context.pop();
-          }
-        } else {
-          context.go('/quote/success', extra: {
-            'quoteId':   quoteId,
-            'quoteData': {...quoteData, 'id': quoteId},
-          });
         }
+        // Both create and update land on the success screen so the user can
+        // view / share the regenerated PDF and the Fournitures PDF.
+        context.go('/quote/success', extra: {
+          'quoteId':   quoteId,
+          'quoteData': {...quoteData, 'id': quoteId},
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -436,6 +527,25 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           'Récapitulatif de votre devis',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF0F172A)),
         ),
+        actions: [
+          // Discussion with the client — only meaningful once the devis exists
+          // (has an id), since messages are keyed by quote id.
+          if ((widget.data['id'] as String?)?.isNotEmpty == true)
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9), shape: BoxShape.circle),
+              child: IconButton(
+                icon: const Icon(Icons.forum_outlined,
+                    color: Color(0xFF0F172A), size: 20),
+                tooltip: 'Discussion',
+                onPressed: () => context.push('/quote/messages', extra: {
+                  'quoteId': widget.data['id'],
+                  'clientName': _clientName,
+                }),
+              ),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: const Color(0xFFE2E8F0)),
@@ -454,6 +564,10 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
 
                   // ── Header card ───────────────────────────────────────
                   _buildHeaderCard(),
+                  const SizedBox(height: 16),
+
+                  // ── Travaux (mandatory legal info) ────────────────────
+                  _buildTravauxCard(),
                   const SizedBox(height: 24),
 
                   // ── KOJI devis table ──────────────────────────────────
@@ -644,6 +758,72 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     );
   }
 
+  // ── Travaux card: lieu (read-only) + dates (editable, mandatory mentions) ─────
+  Widget _buildTravauxCard() {
+    final lieu = _siteAddress.isNotEmpty ? _siteAddress : _clientAddress;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('TRAVAUX',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFA18B73))),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.place_outlined, size: 14, color: Color(0xFF6B7280)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  lieu.isNotEmpty ? 'Lieu d\'exécution : $lieu' : 'Lieu d\'exécution : —',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF0F172A)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _startCtrl,
+                  keyboardType: TextInputType.datetime,
+                  style: const TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
+                    labelText: 'Date de début',
+                    hintText: 'jj/mm/aaaa',
+                    isDense: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _durationCtrl,
+                  style: const TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
+                    labelText: 'Durée des travaux',
+                    hintText: 'ex : 3 semaines',
+                    isDense: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Room section ──────────────────────────────────────────────────────────────
   Widget _buildRoomSection(String roomId) {
     final lines = _linesByRoom[roomId] ?? [];
@@ -794,33 +974,41 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           // ── Editable inputs row ──────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                // Qté
-                _inputField(
-                  label: 'Qté',
-                  sublabel: line.unite,
-                  value: line.qty,
-                  onChanged: (v) => setState(() => _linesByRoom[roomId]![lineIndex].qty = v),
-                ),
-                const SizedBox(width: 8),
-                // Temps h/u
-                _inputField(
-                  label: 'Temps h/${line.unite}',
-                  sublabel: 'h',
-                  value: line.tempsHU,
-                  onChanged: (v) => setState(() => _linesByRoom[roomId]![lineIndex].tempsHU = v),
-                ),
-                const SizedBox(width: 8),
-                // Fournitures €/u
-                _inputField(
-                  label: 'Fnt €/${line.unite}',
-                  sublabel: '€',
-                  value: line.fournituresUnitPrice,
-                  onChanged: (v) => setState(() => _linesByRoom[roomId]![lineIndex].fournituresUnitPrice = v),
-                ),
-              ],
-            ),
+            child: line.forfaitEnabled
+                // Forfait line: one flat-price field, no qty/temps breakdown.
+                ? Row(
+                    children: [
+                      _inputField(
+                        label: 'Forfait (HT)',
+                        sublabel: '€',
+                        value: line.forfaitPrice,
+                        onChanged: (v) => setState(() =>
+                            _linesByRoom[roomId]![lineIndex].forfaitPrice = v),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      // Qté
+                      _inputField(
+                        label: 'Qté',
+                        sublabel: line.unite,
+                        value: line.qty,
+                        onChanged: (v) => setState(() => _linesByRoom[roomId]![lineIndex].qty = v),
+                      ),
+                      const SizedBox(width: 8),
+                      // Temps h/u
+                      _inputField(
+                        label: 'Temps h/${line.unite}',
+                        sublabel: 'h',
+                        value: line.tempsHU,
+                        onChanged: (v) => setState(() => _linesByRoom[roomId]![lineIndex].tempsHU = v),
+                      ),
+                      // Fournitures are managed in the dedicated fournitures list, so
+                      // the Fnt input is hidden here. The amount still counts toward
+                      // the line Total and grand total (see the read-only breakdown).
+                    ],
+                  ),
           ),
 
           // ── Computed results row ────────────────────────────────────
@@ -830,14 +1018,68 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               color: Color(0xFFF8FAFC),
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _resultChip('Total', '${line.totalLigne.toStringAsFixed(2)}€', const Color(0xFF0F172A), bold: true),
+                Row(
+                  children: [
+                    _resultChip('Total', '${line.totalLigne.toStringAsFixed(2)}€', const Color(0xFF0F172A), bold: true),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                _buildLineBreakdown(line),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // ── Line breakdown: shows HOW the total is computed ──────────────────────────
+  // Labor part:  Qté × Temps × tarif effectif (taux × coefficient) = MO
+  // Fournitures: shown only when there is a material cost on the line.
+  Widget _buildLineBreakdown(_DevisLine line) {
+    final effectiveRate = line.tauxHoraire * line.conditionCoeff;
+
+    String fmt(double v) {
+      final s = v.toStringAsFixed(2);
+      return s.replaceAll('.', ',');
+    }
+
+    final parts = <String>[];
+    if (line.forfaitEnabled) {
+      // Flat-price line: no MO/fournitures math, just the forfait amount.
+      parts.add('Forfait : ${fmt(line.forfaitPrice)} €');
+    } else {
+      if (line.tempsHU > 0 && effectiveRate > 0) {
+        parts.add(
+          'MO : ${fmt(line.qty)} × ${fmt(line.tempsHU)} h × ${fmt(effectiveRate)} € = ${fmt(line.totalMO)} €',
+        );
+      }
+      if (line.totalFournitures > 0) {
+        parts.add(
+          'Fnt : ${fmt(line.qty)} × ${fmt(line.fournituresUnitPrice)} € = ${fmt(line.totalFournitures)} €',
+        );
+      }
+    }
+    if (parts.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: parts
+          .map((p) => Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  p,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ))
+          .toList(),
     );
   }
 

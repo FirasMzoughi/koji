@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:koji/core/theme_provider.dart';
 import 'package:koji/features/auth/repository/auth_repository.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
 import 'dart:io';
@@ -23,6 +24,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   final _businessNameController = TextEditingController();
   final _legalFormController = TextEditingController();
   final _siretController = TextEditingController();
+  final _rcsController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
@@ -58,6 +60,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
     _businessNameController.dispose();
     _legalFormController.dispose();
     _siretController.dispose();
+    _rcsController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
@@ -93,6 +96,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
           _businessNameController.text = businessInfo['raisonSociale'] ?? '';
           _legalFormController.text = businessInfo['formeJuridique'] ?? '';
           _siretController.text = businessInfo['siret'] ?? '';
+          _rcsController.text = businessInfo['rcs'] ?? '';
           _emailController.text = businessInfo['emailPro'] ?? '';
           _phoneController.text = businessInfo['phone'] ?? '';
           _addressController.text = businessInfo['address'] ?? '';
@@ -149,6 +153,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
             raisonSociale: _businessNameController.text,
             formeJuridique: _legalFormController.text,
             siret: _siretController.text,
+            rcs: _rcsController.text,
             emailPro: _emailController.text,
             phone: _phoneController.text,
             address: _addressController.text,
@@ -287,6 +292,11 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Appearance Section (theme toggle moved here from Home)
+                    _buildSectionTitle('Apparence'),
+                    _buildAppearanceCard(),
+                    const SizedBox(height: 24),
+
                     // Pricing Section
                     _buildSectionTitle('Tarification'),
                     _buildPricingCard(),
@@ -347,6 +357,37 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Color(0xFF1E3A8A),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppearanceCard() {
+    final mode = ref.watch(themeProvider);
+    final isDark = mode == ThemeMode.dark ||
+        (mode == ThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: SwitchListTile(
+          value: isDark,
+          activeColor: const Color(0xFF1E3A8A),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          secondary: Icon(
+            isDark ? Icons.dark_mode : Icons.light_mode,
+            color: const Color(0xFF1E3A8A),
+          ),
+          title: const Text(
+            'Mode sombre',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(isDark ? 'Activé' : 'Désactivé'),
+          onChanged: (v) => ref
+              .read(themeProvider.notifier)
+              .setTheme(v ? ThemeMode.dark : ThemeMode.light),
         ),
       ),
     );
@@ -545,8 +586,40 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
             const SizedBox(height: 16),
             _buildTextField(
               controller: _siretController,
-              label: 'SIRET',
+              label: 'SIRET (14 chiffres)',
               icon: Icons.badge,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(14),
+              ],
+              validator: (value) {
+                final v = (value ?? '').trim();
+                if (v.isEmpty) return 'Le SIRET est obligatoire';
+                if (v.length != 14) {
+                  return 'Le SIRET doit comporter 14 chiffres';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _rcsController,
+              label: 'RCS / SIREN (9 chiffres)',
+              icon: Icons.account_balance,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(9),
+              ],
+              validator: (value) {
+                final v = (value ?? '').trim();
+                // Optional, but if filled it must be exactly 9 digits.
+                if (v.isNotEmpty && v.length != 9) {
+                  return 'Le RCS (SIREN) doit comporter 9 chiffres';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
             _buildTextField(
@@ -587,11 +660,15 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
     required IconData icon,
     TextInputType? keyboardType,
     int maxLines = 1,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      inputFormatters: inputFormatters,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: const Color(0xFF1E3A8A)),

@@ -5,6 +5,7 @@ import 'package:koji/core/route_args.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/features/auth/repository/auth_repository.dart';
 import 'package:koji/features/quote/repository/quote_repository.dart';
+import 'package:koji/features/quote/models/quote_status.dart';
 
 class QuoteListScreen extends ConsumerStatefulWidget {
   const QuoteListScreen({super.key});
@@ -145,22 +146,20 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
                   final clientName = (client['name'] ?? '').toLowerCase();
                   final quoteNumber =
                       (quote['quoteNumber'] ?? '').toLowerCase();
-                  final status = quote['status'] ?? 'en_cours';
 
                   // Search Match based on Client Name or Quote Number
                   bool matchesSearch = clientName.contains(_searchQuery) ||
                       quoteNumber.contains(_searchQuery);
 
-                  // Filter Match
+                  // Filter Match — use the shared classifier so quotes signed
+                  // in the web app (status 'accepte' / signed_at set) land here.
                   bool matchesFilter = true;
                   if (_selectedFilter == "En cours")
-                    matchesFilter =
-                        status == 'en_cours' || status == 'generated';
+                    matchesFilter = QuoteStatus.isInProgress(quote);
                   if (_selectedFilter == "Acceptés")
-                    matchesFilter =
-                        status == 'accepted' || status == 'validated';
+                    matchesFilter = QuoteStatus.isSigned(quote);
                   if (_selectedFilter == "Refusés")
-                    matchesFilter = status == 'refused';
+                    matchesFilter = QuoteStatus.isRefused(quote);
 
                   return matchesSearch && matchesFilter;
                 }).toList();
@@ -244,19 +243,18 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
         ? rawQuoteNumber
         : '#$rawQuoteNumber';
 
-    // Status Logic
-    String statusKey = quote['status'] ?? 'en_cours';
+    // Status Logic — shared classifier handles web-app 'accepte' / signed_at.
     String statusLabel = "En cours";
     Color statusColor = const Color(0xFFE0E7FF);
     Color statusTextColor = AppTheme.primaryBlue;
     Color statusDotColor = AppTheme.primaryBlue;
 
-    if (statusKey == 'accepted' || statusKey == 'validated') {
+    if (QuoteStatus.isSigned(quote)) {
       statusLabel = "Accepté";
       statusColor = const Color(0xFFDCFCE7);
       statusTextColor = const Color(0xFF166534);
       statusDotColor = const Color(0xFF166534); // Check icon instead
-    } else if (statusKey == 'refused') {
+    } else if (QuoteStatus.isRefused(quote)) {
       statusLabel = "Refusé";
       statusColor = const Color(0xFFFEE2E2);
       statusTextColor = const Color(0xFF991B1B);

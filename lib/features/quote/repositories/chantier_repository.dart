@@ -76,6 +76,7 @@ class ChantierRepository {
           'postal_code': data['postalCode'],
           'city': data['city'],
           'property_type': data['propertyType'],
+          'client_email': data['clientEmail'],
           'status': 'En attente',
         })
         .select('id')
@@ -192,6 +193,197 @@ class ChantierRepository {
   /// Update Chantier Status
   Future<void> updateChantierStatus(String chantierId, String status) async {
     await _client.from('chantiers').update({'status': status}).eq('id', chantierId);
+  }
+
+  /// Permanently delete a chantier.
+  Future<void> deleteChantier(String chantierId) async {
+    await _client.from('chantiers').delete().eq('id', chantierId);
+  }
+
+  // ────────────────────────────────────────────────────────
+  // 3b. Budget lines (itemized) + history
+  //   category ∈ {'main_oeuvre', 'fourniture', 'divers'}
+  //   The category "real" total = SUM(amount) of its lines.
+  // ────────────────────────────────────────────────────────
+
+  /// Maps a UI label to the DB category key.
+  static String categoryKey(String label) {
+    if (label == "Main d'œuvre") return 'main_oeuvre';
+    if (label == 'Divers') return 'divers';
+    return 'fourniture';
+  }
+
+  /// All budget lines for a chantier (every category), newest first.
+  Future<List<Map<String, dynamic>>> getBudgetLines(String chantierId) async {
+    final response = await _client
+        .from('chantier_budget_lines')
+        .select()
+        .eq('chantier_id', chantierId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Stream budget lines for a chantier (real-time).
+  Stream<List<Map<String, dynamic>>> streamBudgetLines(String chantierId) {
+    return _client
+        .from('chantier_budget_lines')
+        .stream(primaryKey: ['id'])
+        .eq('chantier_id', chantierId)
+        .order('created_at', ascending: false)
+        .map((data) => List<Map<String, dynamic>>.from(data));
+  }
+
+  /// Sum of all line amounts for one category.
+  Future<double> categoryRealTotal(String chantierId, String category) async {
+    final rows = await _client
+        .from('chantier_budget_lines')
+        .select('amount')
+        .eq('chantier_id', chantierId)
+        .eq('category', category);
+    double sum = 0;
+    for (final r in rows) {
+      sum += num.tryParse(r['amount']?.toString() ?? '0')?.toDouble() ?? 0;
+    }
+    return sum;
+  }
+
+  /// Add a budget line, sync the matching `*_real` column on the budget row,
+  /// and append a history entry. Returns the inserted line.
+  Future<Map<String, dynamic>> addBudgetLine({
+    required String chantierId,
+    required String category,
+    required String label,
+    required double amount,
+    double quantity = 1,
+    double unitPrice = 0,
+    String? attachmentUrl,
+    String? attachmentType,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final inserted = await _client.from('chantier_budget_lines').insert({
+      'chantier_id': chantierId,
+      'user_id': userId,
+      'category': category,
+      'label': label,
+      'quantity': quantity,
+      'unit_price': unitPrice,
+      'amount': amount,
+      if (attachmentUrl != null) 'attachment_url': attachmentUrl,
+      if (attachmentType != null) 'attachment_type': attachmentType,
+    }).select().single();
+
+    final newTotal = await categoryRealTotal(chantierId, category);
+    await _syncCategoryRealColumn(chantierId, category, newTotal);
+    await _addHistory(
+      chantierId: chantierId,
+      userId: userId,
+      category: category,
+      action: 'add_line',
+      label: label,
+      amountDelta: amount,
+      totalAfter: newTotal,
+    );
+
+    return Map<String, dynamic>.from(inserted as Map);
+  }
+
+  /// Delete a budget line, re-sync the category total, log the history.
+  Future<void> deleteBudgetLine(Map<String, dynamic> line) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final chantierId = line['chantier_id'] as String;
+    final category = line['category'] as String;
+    final label = line['label'] as String? ?? '';
+    final amount =
+        num.tryParse(line['amount']?.toString() ?? '0')?.toDouble() ?? 0;
+
+    await _client.from('chantier_budget_lines').delete().eq('id', line['id']);
+
+    final newTotal = await categoryRealTotal(chantierId, category);
+    await _syncCategoryRealColumn(chantierId, category, newTotal);
+    await _addHistory(
+      chantierId: chantierId,
+      userId: userId,
+      category: category,
+      action: 'delete_line',
+      label: label,
+      amountDelta: -amount,
+      totalAfter: newTotal,
+    );
+  }
+
+  /// Update an estimated target for a category and log it to history.
+  Future<void> updateEstimated({
+    required String chantierId,
+    required String category,
+    required double estimated,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final column = '${category}_estimated';
+    await updateBudget(chantierId, {column: estimated});
+
+    final realTotal = await categoryRealTotal(chantierId, category);
+    await _addHistory(
+      chantierId: chantierId,
+      userId: userId,
+      category: category,
+      action: 'edit_estimated',
+      label: 'Budget estimé → ${estimated.toStringAsFixed(0)} €',
+      amountDelta: 0,
+      totalAfter: realTotal,
+    );
+  }
+
+  /// Writes the recomputed real total back to the `chantier_budgets` row so
+  /// the dashboard / budget summary stay consistent without recomputation.
+  Future<void> _syncCategoryRealColumn(
+      String chantierId, String category, double realTotal) async {
+    await updateBudget(chantierId, {'${category}_real': realTotal});
+  }
+
+  Future<void> _addHistory({
+    required String chantierId,
+    required String userId,
+    required String category,
+    required String action,
+    required String label,
+    required double amountDelta,
+    required double totalAfter,
+  }) async {
+    await _client.from('chantier_budget_history').insert({
+      'chantier_id': chantierId,
+      'user_id': userId,
+      'category': category,
+      'action': action,
+      'label': label,
+      'amount_delta': amountDelta,
+      'total_after': totalAfter,
+    });
+  }
+
+  /// Budget history for a chantier (all categories), newest first.
+  Future<List<Map<String, dynamic>>> getBudgetHistory(String chantierId) async {
+    final response = await _client
+        .from('chantier_budget_history')
+        .select()
+        .eq('chantier_id', chantierId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Stream budget history for a chantier (real-time).
+  Stream<List<Map<String, dynamic>>> streamBudgetHistory(String chantierId) {
+    return _client
+        .from('chantier_budget_history')
+        .stream(primaryKey: ['id'])
+        .eq('chantier_id', chantierId)
+        .order('created_at', ascending: false)
+        .map((data) => List<Map<String, dynamic>>.from(data));
   }
 
   /// Stream all quotes for a specific chantier (real-time)

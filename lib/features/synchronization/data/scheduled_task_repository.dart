@@ -21,6 +21,14 @@ final scheduledTasksForChantierProvider =
   return repo.fetchForChantier(chantierId);
 });
 
+/// All scheduled tasks for the current user — feeds the synchronization hub
+/// where tasks are grouped under their chantier.
+final allScheduledTasksProvider =
+    FutureProvider<List<ScheduledTask>>((ref) async {
+  final repo = ref.watch(scheduledTaskRepositoryProvider);
+  return repo.fetchAll();
+});
+
 class ScheduledTaskRepository {
   final SupabaseClient _client;
 
@@ -32,41 +40,124 @@ class ScheduledTaskRepository {
   static const _selectWithJoins = '''
 *,
 workers ( first_name, last_name, profession ),
-chantiers ( reference, city )
+chantiers ( reference, city ),
+scheduled_task_workers ( worker_id, workers ( first_name, last_name, profession ) )
 ''';
 
-  Future<ScheduledTask> create(ScheduledTask task) async {
+  /// Create a task. [workerIds] is the full set of assigned workers; the first
+  /// becomes the row's primary worker_id (legacy column) and all are written to
+  /// the scheduled_task_workers join table. Falls back to the task's single
+  /// workerId when [workerIds] is null/empty.
+  Future<ScheduledTask> create(ScheduledTask task, {List<String>? workerIds}) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
+    final ids = _resolveWorkerIds(task, workerIds);
+
     final payload = task.toInsertJson();
     payload['user_id'] = userId;
+    payload['worker_id'] = ids.first;
 
     final row = await _client
         .from('scheduled_tasks')
         .insert(payload)
-        .select(_selectWithJoins)
+        .select('id')
         .single();
+    final id = row['id'] as String;
 
-    return ScheduledTask.fromJson(row);
+    await _syncWorkers(id, ids);
+    return (await fetchById(id))!;
   }
 
-  Future<ScheduledTask> update(ScheduledTask task) async {
+  Future<ScheduledTask> update(ScheduledTask task, {List<String>? workerIds}) async {
+    final ids = _resolveWorkerIds(task, workerIds);
+
     final payload = task.toInsertJson()
       ..remove('user_id'); // immutable after insert
+    payload['worker_id'] = ids.first;
 
-    final row = await _client
+    await _client
         .from('scheduled_tasks')
         .update(payload)
-        .eq('id', task.id)
-        .select(_selectWithJoins)
-        .single();
+        .eq('id', task.id);
 
-    return ScheduledTask.fromJson(row);
+    await _syncWorkers(task.id, ids);
+    return (await fetchById(task.id))!;
+  }
+
+  /// Replace the join-table workers for a task with [ids] (deduped, non-empty).
+  Future<void> _syncWorkers(String taskId, List<String> ids) async {
+    await _client
+        .from('scheduled_task_workers')
+        .delete()
+        .eq('scheduled_task_id', taskId);
+    if (ids.isEmpty) return;
+    await _client.from('scheduled_task_workers').insert([
+      for (final w in ids) {'scheduled_task_id': taskId, 'worker_id': w},
+    ]);
+  }
+
+  /// Dedupe + non-empty worker id list, primary worker first.
+  List<String> _resolveWorkerIds(ScheduledTask task, List<String>? workerIds) {
+    final source = (workerIds != null && workerIds.isNotEmpty)
+        ? workerIds
+        : <String>[task.workerId];
+    final seen = <String>[];
+    for (final id in source) {
+      if (id.isNotEmpty && !seen.contains(id)) seen.add(id);
+    }
+    if (seen.isEmpty) seen.add(task.workerId);
+    return seen;
   }
 
   Future<void> delete(String id) async {
     await _client.from('scheduled_tasks').delete().eq('id', id);
+  }
+
+  /// Update only the status (used by the green/red start/finish buttons in the
+  /// synchronization view). Status drives the task colour: 'À faire' = pending,
+  /// 'En cours'/'Terminé' = started (green), overdue 'À faire' = red.
+  Future<void> updateStatus(String id, String status) async {
+    await _client
+        .from('scheduled_tasks')
+        .update({'status': status, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', id);
+  }
+
+  /// Reassign a task to a different worker (single worker — replaces the set).
+  Future<void> updateWorker(String id, String workerId) async {
+    await updateWorkers(id, [workerId]);
+  }
+
+  /// Replace the full set of workers assigned to a task. The first id is also
+  /// written to the legacy worker_id column.
+  Future<void> updateWorkers(String id, List<String> workerIds) async {
+    final ids = <String>[];
+    for (final w in workerIds) {
+      if (w.isNotEmpty && !ids.contains(w)) ids.add(w);
+    }
+    if (ids.isEmpty) return;
+    await _client
+        .from('scheduled_tasks')
+        .update({'worker_id': ids.first, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', id);
+    await _syncWorkers(id, ids);
+  }
+
+  /// Every scheduled task for the current user, grouped-friendly (ordered by
+  /// chantier then date/time). Used by the synchronization hub list.
+  Future<List<ScheduledTask>> fetchAll() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return [];
+    final rows = await _client
+        .from('scheduled_tasks')
+        .select(_selectWithJoins)
+        .eq('user_id', userId)
+        .order('scheduled_date', ascending: true)
+        .order('start_time', ascending: true);
+    return (rows as List)
+        .map((e) => ScheduledTask.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<ScheduledTask?> fetchById(String id) async {

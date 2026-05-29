@@ -30,6 +30,14 @@ class RoomTaskState {
   /// Number of hours the user will work on this task.
   double hours;
 
+  /// When true, this ouvrage is billed as a flat "forfait" — the detailed
+  /// quantité / temps / main d'œuvre breakdown is ignored and [forfaitPrice]
+  /// is used directly as the line total.
+  bool forfaitEnabled;
+
+  /// Flat price (HT) used when [forfaitEnabled] is true.
+  double forfaitPrice;
+
   RoomTaskState({
     required this.taskId,
     required this.roomId,
@@ -41,6 +49,8 @@ class RoomTaskState {
     Map<String, double>? selectedProducts,
     Map<String, Map<String, dynamic>>? selectedFournitures,
     this.hours = 0.0,
+    this.forfaitEnabled = false,
+    this.forfaitPrice = 0.0,
   })  : inputs = inputs ?? {},
         photoPaths = photoPaths ?? [],
         selectedProducts = selectedProducts ?? {},
@@ -54,6 +64,8 @@ class RoomTaskState {
     Map<String, double>? selectedProducts,
     Map<String, Map<String, dynamic>>? selectedFournitures,
     double? hours,
+    bool? forfaitEnabled,
+    double? forfaitPrice,
   }) {
     return RoomTaskState(
       taskId: taskId,
@@ -72,6 +84,8 @@ class RoomTaskState {
           ? Map.from(selectedFournitures)
           : Map.from(this.selectedFournitures),
       hours: hours ?? this.hours,
+      forfaitEnabled: forfaitEnabled ?? this.forfaitEnabled,
+      forfaitPrice: forfaitPrice ?? this.forfaitPrice,
     );
   }
 }

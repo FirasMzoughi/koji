@@ -13,6 +13,38 @@ class QuoteRepository {
 
   QuoteRepository(this._supabase);
 
+  /// Generate the next sequential devis number for a company, scoped per year.
+  /// Format: DEVIS-YYYY-NNNN (e.g. DEVIS-2026-0001).
+  ///
+  /// Derives the sequence by counting the user's existing quotes whose
+  /// reference matches the current year's prefix, then takes the highest
+  /// trailing number + 1. This avoids needing a separate counter table while
+  /// still guaranteeing no in-year duplicates per user.
+  Future<String> generateNextQuoteNumber(String userId) async {
+    final year = DateTime.now().year;
+    final prefix = 'DEVIS-$year-';
+    try {
+      final rows = await _supabase
+          .from('quotes')
+          .select('reference')
+          .eq('user_id', userId)
+          .like('reference', '$prefix%');
+
+      int maxSeq = 0;
+      for (final r in rows) {
+        final ref = (r['reference'] as String?) ?? '';
+        final tail = ref.substring(ref.lastIndexOf('-') + 1);
+        final n = int.tryParse(tail) ?? 0;
+        if (n > maxSeq) maxSeq = n;
+      }
+      final next = (maxSeq + 1).toString().padLeft(4, '0');
+      return '$prefix$next';
+    } catch (e) {
+      _logger.e('Failed to generate quote number, falling back', error: e);
+      return '$prefix${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    }
+  }
+
   Future<String> saveQuote(String userId, Map<String, dynamic> quoteData,
       {String? quoteId}) async {
     _logger.i(
@@ -28,6 +60,8 @@ class QuoteRepository {
         'date': quoteData['date'],
         'validity': quoteData['validity'],
         'siteAddress': quoteData['siteAddress'],
+        'travauxStart': quoteData['travauxStart'],
+        'travauxDuration': quoteData['travauxDuration'],
         'company': company,
         'client': client, // We store the whole client snapshot too just in case
       };
@@ -345,11 +379,18 @@ class QuoteRepository {
             return {
               'id': quote['id'],
               'status': quote['status'] ?? 'Draft',
+              // Signature fields written by the client signature web app.
+              // Exposing them here lets the UI show signed quotes and lets the
+              // home screen detect a newly-signed devis to raise a notification.
+              'signed_at': quote['signed_at'],
+              'signature_data': quote['signature_data'],
               'client': client,
               'quoteNumber': metadata['quoteNumber'] ?? quote['reference'] ?? 'N/A',
               'date': metadata['date'] ?? '',
               'validity': metadata['validity'] ?? '',
               'siteAddress': metadata['siteAddress'] ?? '',
+              'travauxStart': metadata['travauxStart'] ?? '',
+              'travauxDuration': metadata['travauxDuration'] ?? '',
               'company': metadata['company'] ?? {},
               'totals': {
                 'ht': quote['total_ht'] ?? 0, 
@@ -367,5 +408,15 @@ class QuoteRepository {
   /// Update Quote Status
   Future<void> updateQuoteStatus(String quoteId, String status) async {
     await _supabase.from('quotes').update({'status': status}).eq('id', quoteId);
+  }
+
+  /// Permanently delete a quote and its child rows.
+  ///
+  /// Deletes `quote_rooms` first (which cascades to `quote_tasks`, same as the
+  /// update flow above) so the final `quotes` delete doesn't hit a foreign-key
+  /// violation if the DB lacks ON DELETE CASCADE on those tables.
+  Future<void> deleteQuote(String quoteId) async {
+    await _supabase.from('quote_rooms').delete().eq('quote_id', quoteId);
+    await _supabase.from('quotes').delete().eq('id', quoteId);
   }
 }

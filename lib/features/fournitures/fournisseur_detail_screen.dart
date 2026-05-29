@@ -246,53 +246,141 @@ class FournisseurDetailScreen extends ConsumerWidget {
 
   Future<void> _pickQuantityAndReturn(BuildContext context, Fourniture item) async {
     final qtyController = TextEditingController(text: '1');
-    final qty = await showDialog<double>(
+    // Let the user decide which price to bill: prix d'achat (cost) or prix de
+    // vente (with margin). Default to vente so margin isn't lost by accident.
+    bool useVente = true;
+
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          item.name,
-          style: const TextStyle( fontWeight: FontWeight.bold),
-        ),
-        content: TextField(
-          controller: qtyController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: 'Quantité',
-            border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            item.name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: qtyController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Quantité',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Prix à utiliser',
+                  style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              _priceOption(
+                ctx,
+                label: "Prix d'achat",
+                price: item.prixAchatHT,
+                selected: !useVente,
+                onTap: () => setSt(() => useVente = false),
+              ),
+              const SizedBox(height: 8),
+              _priceOption(
+                ctx,
+                label: 'Prix de vente',
+                price: item.prixVenteHT,
+                selected: useVente,
+                onTap: () => setSt(() => useVente = true),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              final parsed = double.tryParse(qtyController.text.trim()) ?? 1;
-              Navigator.pop(ctx, parsed <= 0 ? 1 : parsed);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkNavy),
-            child: Text(
-              'Ajouter',
-              style: TextStyle(color: Theme.of(context).colorScheme.surface),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
             ),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: () {
+                final parsed = double.tryParse(
+                        qtyController.text.trim().replaceAll(',', '.')) ??
+                    1;
+                Navigator.pop(ctx, {
+                  'qty': parsed <= 0 ? 1.0 : parsed,
+                  'useVente': useVente,
+                });
+              },
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppTheme.darkNavy),
+              child: Text(
+                'Ajouter',
+                style: TextStyle(color: Theme.of(context).colorScheme.surface),
+              ),
+            ),
+          ],
+        ),
       ),
     );
 
-    if (qty == null || !context.mounted) return;
+    if (result == null || !context.mounted) return;
+    final qty = (result['qty'] as num).toDouble();
+    final pickedVente = result['useVente'] as bool;
+    final chosenPrice = pickedVente ? item.prixVenteHT : item.prixAchatHT;
+
     Navigator.pop(context, {
       'id': item.id,
       'name': item.name,
       'fournisseur': item.fournisseurName ?? fournisseur.name,
       'fournisseurId': item.fournisseurId ?? fournisseur.id,
-      'unitPrice': item.prixAchatHT,
+      // unitPrice is what the quote bills — set it to the user's choice.
+      'unitPrice': chosenPrice,
       'sellPrice': item.prixVenteHT,
+      'priceType': pickedVente ? 'vente' : 'achat',
       'quantity': qty,
       'conditionnement': item.conditionnement ?? '',
     });
+  }
+
+  /// Selectable price row used in the add-to-quote dialog.
+  Widget _priceOption(
+    BuildContext context, {
+    required String label,
+    required double price,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFEFF6FF) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? const Color(0xFF1D74FF) : const Color(0xFFE2E8F0),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              size: 20,
+              color: selected ? const Color(0xFF1D74FF) : const Color(0xFF94A3B8),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
+            Text('${price.toStringAsFixed(2)} €',
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildItemCard(BuildContext context, Fourniture item) {

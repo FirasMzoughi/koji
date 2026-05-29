@@ -15,11 +15,10 @@ import 'package:koji/features/quote/photo_preview_screen.dart';
 import 'package:koji/features/quote/visual_evidence_grid_screen.dart';
 import 'package:koji/features/quote/room_selection_screen.dart';
 import 'package:koji/features/quote/room_task_screen.dart';
-import 'package:koji/features/quote/room_estimation_screen.dart';
-import 'package:koji/features/quote/quote_summary_screen.dart';
-import 'package:koji/features/quote/quote_fourniture_list_screen.dart';
+import 'package:koji/features/quote/ouvrage_library_screen.dart';
 import 'package:koji/features/quote/quote_detail_screen.dart';
 import 'package:koji/features/quote/quote_success_screen.dart';
+import 'package:koji/features/quote/quote_messages_screen.dart';
 import 'package:koji/features/quote/client_details_screen.dart';
 
 import 'package:koji/features/signature/signature_list_screen.dart';
@@ -31,6 +30,7 @@ import 'package:koji/features/synchronization/pointage_heures_screen.dart';
 import 'package:koji/features/synchronization/nouveau_contact_screen.dart';
 import 'package:koji/features/synchronization/ajouter_rdv_screen.dart';
 import 'package:koji/features/synchronization/schedule_task_screen.dart';
+import 'package:koji/features/synchronization/chantier_task_planning_screen.dart';
 import 'package:koji/features/synchronization/worker_list_screen.dart';
 import 'package:koji/features/synchronization/create_worker_screen.dart';
 import 'package:koji/features/synchronization/worker_success_screen.dart';
@@ -58,6 +58,8 @@ import 'package:koji/features/quote/chantier_devis_screen.dart';
 import 'package:koji/features/quote/chantier_rdv_screen.dart';
 import 'package:koji/features/quote/chantier_add_task_screen.dart';
 import 'package:koji/features/quote/chantier_documents_screen.dart';
+import 'package:koji/features/quote/budget_category_detail_screen.dart';
+import 'package:koji/features/quote/budget_history_screen.dart';
 import 'package:koji/features/client/client_home_screen.dart';
 import 'package:koji/features/archives/archives_screen.dart';
 
@@ -225,6 +227,28 @@ final router = GoRouter(
       },
     ),
     GoRoute(
+      path: '/chantier/budget/detail',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          BudgetCategoryDetailScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/budget/history',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          BudgetHistoryScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
       path: '/chantier/devis',
       pageBuilder: (context, state) {
         final data = state.extra as Map<String, dynamic>? ?? {};
@@ -329,43 +353,6 @@ final router = GoRouter(
       },
     ),
     GoRoute(
-      path: '/quote/room-estimation',
-      pageBuilder: (context, state) {
-        final extra = state.extra;
-        late List<String> roomIds;
-        late List<String> images;
-        if (extra is QuoteRoomArgs) {
-          roomIds = extra.roomIds;
-          images = extra.images;
-        } else {
-          final map = extra as Map<String, dynamic>? ?? {};
-          roomIds = map['roomIds'] as List<String>? ?? [];
-          images = map['images'] as List<String>? ?? [];
-        }
-        return _buildPageWithTransition(
-          context,
-          state,
-          RoomEstimationScreen(selectedRoomIds: roomIds, images: images),
-        );
-      },
-    ),
-    GoRoute(
-      path: '/quote/summary',
-      pageBuilder: (context, state) => _buildPageWithTransition(
-        context,
-        state,
-        const QuoteSummaryScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/quote/fourniture-summary',
-      pageBuilder: (context, state) => _buildPageWithTransition(
-        context,
-        state,
-        const QuoteFournitureListScreen(),
-      ),
-    ),
-    GoRoute(
       path: '/quote/photo-preview',
       pageBuilder: (context, state) {
         final imagePath = state.uri.queryParameters['imagePath'];
@@ -411,6 +398,19 @@ final router = GoRouter(
             quoteId: quoteId,
             quoteData: quoteData,
           ),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/quote/messages',
+      pageBuilder: (context, state) {
+        final map = state.extra as Map<String, dynamic>? ?? {};
+        final quoteId = map['quoteId'] as String? ?? '';
+        final clientName = map['clientName'] as String?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          QuoteMessagesScreen(quoteId: quoteId, clientName: clientName),
         );
       },
     ),
@@ -503,6 +503,19 @@ final router = GoRouter(
           context,
           state,
           AjouterRdvScreen(worker: worker),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/synchronization/plan-tasks',
+      pageBuilder: (context, state) {
+        final args = state.extra as Map<String, dynamic>?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierTaskPlanningScreen(
+            initialChantierId: args?['chantierId'] as String?,
+          ),
         );
       },
     ),
@@ -664,6 +677,19 @@ final router = GoRouter(
           context,
           state,
           DetailPlanningScreen(eventId: eventId),
+        );
+      },
+    ),
+    // Bibliothèque d'ouvrages (reusable works catalogue)
+    GoRoute(
+      path: '/ouvrage-library',
+      pageBuilder: (context, state) {
+        final extra = state.extra;
+        final pickMode = extra is Map && extra['pickMode'] == true;
+        return _buildPageWithTransition(
+          context,
+          state,
+          OuvrageLibraryScreen(pickMode: pickMode),
         );
       },
     ),

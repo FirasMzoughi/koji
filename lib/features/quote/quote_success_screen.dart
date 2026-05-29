@@ -1607,7 +1607,35 @@ Koji Rénovation
                         fontWeight: FontWeight.bold),
                   ),
                 ),
-                
+
+                const SizedBox(height: 12),
+
+                // Discussion with the client (shared thread with the signature
+                // web app). Available once the devis exists (it always does on
+                // this success screen).
+                OutlinedButton.icon(
+                  onPressed: () {
+                    final client = widget.quoteData['client']
+                            as Map<String, dynamic>? ??
+                        {};
+                    context.push('/quote/messages', extra: {
+                      'quoteId': widget.quoteId,
+                      'clientName': client['name'] as String?,
+                    });
+                  },
+                  icon: const Icon(Icons.forum_outlined, size: 20),
+                  label: const Text("Discussion avec le client"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.darkNavy,
+                    side: const BorderSide(color: Color(0xFFA18B73)),
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    textStyle: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+
                 const SizedBox(height: 20),
               ],
             ),

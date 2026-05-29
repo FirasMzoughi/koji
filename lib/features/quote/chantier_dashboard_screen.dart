@@ -94,16 +94,8 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
             case 'Devis':
               context.push('/chantier/devis', extra: data);
               break;
-            case 'Prochain rendez-vous':
+            case 'Mes RDV':
               context.push('/chantier/rdv', extra: data);
-              break;
-            case 'Ajouter tâche':
-              context.push('/chantier/add-task', extra: data);
-              break;
-            case 'Planifier une tâche':
-              context.push('/synchronization/schedule-task', extra: {
-                'chantierId': data['id'],
-              });
               break;
             case 'Documents':
               context.push('/chantier/documents', extra: data);
@@ -349,40 +341,57 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
 
   // ──────────────────────────────────────────
   Widget _buildBudgetCard(Map<String, dynamic>? budget) {
-    return _SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.bar_chart_rounded, size: 18, color: Color(0xFF0F172A)),
-              SizedBox(width: 8),
-              Text(
-                'Budget',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+    final moReal = num.tryParse(budget?['main_oeuvre_real']?.toString() ?? '0') ?? 0;
+    final moEst = num.tryParse(budget?['main_oeuvre_estimated']?.toString() ?? '0') ?? 0;
+    final fournitureReal = num.tryParse(budget?['fourniture_real']?.toString() ?? '0') ?? 0;
+    final fournitureEst = num.tryParse(budget?['fourniture_estimated']?.toString() ?? '0') ?? 0;
+    final diversReal = num.tryParse(budget?['divers_real']?.toString() ?? '0') ?? 0;
+    final diversEst = num.tryParse(budget?['divers_estimated']?.toString() ?? '0') ?? 0;
+
+    final totalReal = moReal + fournitureReal + diversReal;
+    final totalEst = moEst + fournitureEst + diversEst;
+
+    return GestureDetector(
+      onTap: () => context.push('/chantier/budget', extra: widget.data),
+      child: _SectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.bar_chart_rounded, size: 18, color: Color(0xFF0F172A)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Budget',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildBudgetRow(
-            'Main d\'œuvre',
-            num.tryParse(budget?['main_oeuvre_real']?.toString() ?? '0') ?? 0,
-            num.tryParse(
-                    budget?['main_oeuvre_estimated']?.toString() ?? '0') ??
-                0,
-          ),
-          const SizedBox(height: 14),
-          _buildBudgetRow(
-            'Fourniture',
-            num.tryParse(budget?['fourniture_real']?.toString() ?? '0') ?? 0,
-            num.tryParse(budget?['fourniture_estimated']?.toString() ?? '0') ??
-                0,
-          ),
-        ],
+                Text(
+                  'Total: ${totalReal}€ / $totalEst€',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildBudgetRow('Main d\'œuvre', moReal, moEst),
+            const SizedBox(height: 14),
+            _buildBudgetRow('Fourniture', fournitureReal, fournitureEst),
+            const SizedBox(height: 14),
+            _buildBudgetRow('Divers', diversReal, diversEst),
+          ],
+        ),
       ),
     );
   }
@@ -718,9 +727,7 @@ class _AddMenuSheet extends StatelessWidget {
     'À faire',
     'Budget',
     'Devis',
-    'Prochain rendez-vous',
-    'Ajouter tâche',
-    'Planifier une tâche',
+    'Mes RDV',
     'Documents',
   ];
 

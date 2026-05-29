@@ -286,8 +286,15 @@ class _RecentsTab extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: items.length,
-          itemBuilder: (context, index) =>
-              _FournitureCard(item: items[index], selectionMode: selectionMode),
+          itemBuilder: (context, index) => _DeletableFournitureCard(
+            item: items[index],
+            selectionMode: selectionMode,
+            onDeleted: () {
+              ref.invalidate(recentFournituresProvider);
+              ref.invalidate(diversFournituresProvider);
+              ref.invalidate(fournisseursProvider);
+            },
+          ),
         );
       },
     );
@@ -317,8 +324,15 @@ class _DiversTab extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: items.length,
-          itemBuilder: (context, index) =>
-              _FournitureCard(item: items[index], selectionMode: selectionMode),
+          itemBuilder: (context, index) => _DeletableFournitureCard(
+            item: items[index],
+            selectionMode: selectionMode,
+            onDeleted: () {
+              ref.invalidate(recentFournituresProvider);
+              ref.invalidate(diversFournituresProvider);
+              ref.invalidate(fournisseursProvider);
+            },
+          ),
         );
       },
     );
@@ -363,24 +377,165 @@ class _FournisseursTab extends ConsumerWidget {
 
 // ─── SHARED WIDGETS ─────────────────────────
 
+/// Wraps a [_FournitureCard] with swipe-to-delete in the Récents/Divers tabs.
+/// In selection mode we don't allow deleting (the card is being picked), so it
+/// renders the plain card. [onDeleted] lets the parent tab refresh its lists.
+class _DeletableFournitureCard extends ConsumerWidget {
+  final Fourniture item;
+  final bool selectionMode;
+  final VoidCallback onDeleted;
+
+  const _DeletableFournitureCard({
+    required this.item,
+    required this.selectionMode,
+    required this.onDeleted,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final card = _FournitureCard(item: item, selectionMode: selectionMode);
+    if (selectionMode) return card;
+
+    return Dismissible(
+      key: Key(item.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Icon(Icons.delete, color: Theme.of(context).colorScheme.surface),
+      ),
+      confirmDismiss: (_) async {
+        return await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: const Text('Supprimer cette fourniture ?',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                content: Text('"${item.name}" sera définitivement supprimée.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Annuler',
+                        style: TextStyle(color: Colors.grey)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Supprimer',
+                        style: TextStyle(
+                            color: Colors.red, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+      },
+      onDismissed: (_) async {
+        await ref.read(fournitureRepositoryProvider).deleteFourniture(item.id);
+        onDeleted();
+      },
+      child: card,
+    );
+  }
+}
+
 class _FournitureCard extends StatelessWidget {
   final Fourniture item;
   final bool selectionMode;
   const _FournitureCard({required this.item, this.selectionMode = false});
 
+  /// In selection mode, ask the user which price to bill (achat vs vente) and
+  /// the quantity, then return the picked fourniture to the caller.
+  Future<void> _pickPriceAndReturn(BuildContext context) async {
+    final qtyController = TextEditingController(text: '1');
+    bool useVente = true; // default to vente so margin isn't lost
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(item.name,
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: qtyController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                    labelText: 'Quantité', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
+              const Text('Prix à utiliser',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              _PriceOptionRow(
+                label: "Prix d'achat",
+                price: item.prixAchatHT,
+                selected: !useVente,
+                onTap: () => setSt(() => useVente = false),
+              ),
+              const SizedBox(height: 8),
+              _PriceOptionRow(
+                label: 'Prix de vente',
+                price: item.prixVenteHT,
+                selected: useVente,
+                onTap: () => setSt(() => useVente = true),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppTheme.darkNavy),
+              onPressed: () {
+                final parsed = double.tryParse(
+                        qtyController.text.trim().replaceAll(',', '.')) ??
+                    1;
+                Navigator.pop(ctx, {
+                  'qty': parsed <= 0 ? 1.0 : parsed,
+                  'useVente': useVente,
+                });
+              },
+              child: Text('Ajouter',
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.surface)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null || !context.mounted) return;
+    final pickedVente = result['useVente'] as bool;
+    Navigator.pop(context, {
+      'id': item.id,
+      'name': item.name,
+      'fournisseur': item.fournisseurName ?? '',
+      'unitPrice': pickedVente ? item.prixVenteHT : item.prixAchatHT,
+      'sellPrice': item.prixVenteHT,
+      'priceType': pickedVente ? 'vente' : 'achat',
+      'quantity': (result['qty'] as num).toDouble(),
+      'conditionnement': item.conditionnement ?? '',
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: selectionMode
-          ? () => Navigator.pop(context, {
-                'id': item.id,
-                'name': item.name,
-                'fournisseur': item.fournisseurName ?? '',
-                'unitPrice': item.prixVenteHT,
-                'quantity': 1.0,
-                'conditionnement': item.conditionnement ?? '',
-              })
-          : null,
+      onTap: selectionMode ? () => _pickPriceAndReturn(context) : null,
       child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -525,8 +680,8 @@ class _FournisseurCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) =>
@@ -536,6 +691,12 @@ class _FournisseurCard extends StatelessWidget {
                 ),
           ),
         );
+        // In selection mode, the detail screen pops with the picked
+        // fourniture map. Bubble it up so the original caller of
+        // FournituresScreen receives the selection.
+        if (selectionMode && result != null && context.mounted) {
+          Navigator.pop(context, result);
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -737,6 +898,59 @@ class _EmptyState extends StatelessWidget {
                 color: AppTheme.textSecondary(context),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Selectable achat/vente price row used in the "add to quote" dialog.
+class _PriceOptionRow extends StatelessWidget {
+  final String label;
+  final double price;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PriceOptionRow({
+    required this.label,
+    required this.price,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFEFF6FF) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? const Color(0xFF1D74FF) : const Color(0xFFE2E8F0),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              size: 20,
+              color:
+                  selected ? const Color(0xFF1D74FF) : const Color(0xFF94A3B8),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
+            Text('${price.toStringAsFixed(2)} €',
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
           ],
         ),
       ),

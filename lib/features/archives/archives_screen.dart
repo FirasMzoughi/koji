@@ -201,6 +201,28 @@ class _ArchivesScreenState extends ConsumerState<ArchivesScreen>
                         }
                       }
                     },
+              onDelete: id == null
+                  ? null
+                  : () async {
+                      if (!await _confirmDelete('chantier')) return;
+                      try {
+                        await ref
+                            .read(chantierRepositoryProvider)
+                            .deleteChantier(id);
+                        ref.invalidate(userChantiersProvider(userId));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Chantier supprimé')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erreur: $e')),
+                          );
+                        }
+                      }
+                    },
             );
           },
         );
@@ -270,11 +292,58 @@ class _ArchivesScreenState extends ConsumerState<ArchivesScreen>
                         }
                       }
                     },
+              onDelete: id == null
+                  ? null
+                  : () async {
+                      if (!await _confirmDelete('devis')) return;
+                      try {
+                        await ref
+                            .read(quoteRepositoryProvider)
+                            .deleteQuote(id);
+                        ref.invalidate(userQuotesProvider(userId));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Devis supprimé')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erreur: $e')),
+                          );
+                        }
+                      }
+                    },
             );
           },
         );
       },
     );
+  }
+
+  Future<bool> _confirmDelete(String label) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('Supprimer ce $label ?'),
+            content: const Text(
+                'Cette action est définitive et ne peut pas être annulée.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text(
+                  'Supprimer',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   Widget _archiveTile({
@@ -283,6 +352,7 @@ class _ArchivesScreenState extends ConsumerState<ArchivesScreen>
     required String subtitle,
     required VoidCallback? onTap,
     required VoidCallback? onRestore,
+    VoidCallback? onDelete,
   }) {
     return InkWell(
       onTap: onTap,
@@ -333,6 +403,16 @@ class _ArchivesScreenState extends ConsumerState<ArchivesScreen>
                   size: 20,
                 ),
                 onPressed: onRestore,
+              ),
+            if (onDelete != null)
+              IconButton(
+                tooltip: 'Supprimer',
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                  size: 20,
+                ),
+                onPressed: onDelete,
               ),
           ],
         ),

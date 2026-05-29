@@ -132,26 +132,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/BG.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: SvgPicture.asset(
-                'assets/icons/LOGO.svg',
-                width: responsive.width(42.7), // ~160px on 375px screen
-                height: responsive.width(42.7), // Keep square
-                fit: BoxFit.contain,
-              ),
+      body: Center(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: SvgPicture.asset(
+              'assets/icons/LOGO.svg',
+              width: responsive.width(42.7),
+              height: responsive.width(42.7),
+              fit: BoxFit.contain,
             ),
           ),
         ),

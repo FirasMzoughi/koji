@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:koji/core/notification_service.dart';
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/features/auth/repository/auth_repository.dart';
+import 'package:koji/features/auth/repository/user_repository.dart';
 import 'package:koji/features/quote/quote_list_screen.dart';
 import 'package:koji/features/quote/chantier_list_screen.dart';
 import 'package:koji/features/quote/providers/chantier_provider.dart';
 import 'package:koji/features/quote/repository/quote_repository.dart';
 import 'package:koji/features/quote/providers/quote_creation_provider.dart';
+import 'package:koji/features/quote/providers/quote_message_provider.dart';
+import 'package:koji/features/quote/models/quote_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,6 +22,10 @@ import 'package:koji/features/home/widgets/home_header.dart';
 import 'package:koji/features/home/widgets/dashboard_section.dart';
 import 'package:koji/features/home/widgets/create_project_button.dart';
 import 'package:koji/features/home/widgets/app_drawer.dart';
+import 'package:koji/features/home/widgets/home_today_tasks.dart';
+import 'package:koji/features/home/notifications/app_notification.dart';
+import 'package:koji/features/home/notifications/notifications_provider.dart';
+import 'package:koji/features/home/notifications/notifications_panel.dart';
 
 /// Main home screen - STATEFUL for tab management
 class HomeScreen extends ConsumerStatefulWidget {
@@ -29,6 +38,235 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  static const _notifiedSignaturesKey = 'notified_signed_quote_ids';
+  // Guards the very first stream emission: on cold start every already-signed
+  // quote would otherwise look "new". We seed the persisted set on first run
+  // instead of spamming the user with historical signatures.
+  bool _signatureBaselineDone = false;
+
+  // Same idea for inbound client messages: remember the latest client-message
+  // timestamp we have already alerted per quote, and skip the noisy toast on
+  // the first emission after launch.
+  static const _notifiedMessagesKey = 'notified_client_message_at';
+  bool _messageBaselineDone = false;
+  // The company's own email, used to tell our outbound messages from the
+  // client's so we only get notified about the client's replies.
+  String _companyEmail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Watch the live quotes stream and raise a notification + banner the moment
+    // a client signs (status -> 'accepte' / signed_at set by the web app) or
+    // sends a new message on a devis.
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      _loadCompanyEmail(user.id);
+      ref.listenManual<AsyncValue<List<Map<String, dynamic>>>>(
+        userQuotesProvider(user.id),
+        (previous, next) {
+          final quotes = next.valueOrNull;
+          if (quotes != null) {
+            _handleSignedQuotes(quotes);
+            _handleNewMessages(quotes);
+          }
+        },
+        fireImmediately: true,
+      );
+    }
+  }
+
+  Future<void> _loadCompanyEmail(String userId) async {
+    // Fall back to the auth email until the business profile resolves.
+    _companyEmail = ref.read(authRepositoryProvider).currentUser?.email ?? '';
+    try {
+      final userData = await ref.read(userRepositoryProvider).getUser(userId);
+      final biz = userData?['business_info'] as Map<String, dynamic>?;
+      final emailPro = (biz?['emailPro'] as String?)?.trim() ?? '';
+      if (emailPro.isNotEmpty) _companyEmail = emailPro;
+    } catch (_) {
+      // Keep the auth-email fallback.
+    }
+  }
+
+  /// Detect quotes that became signed since we last looked, notify once each.
+  ///
+  /// Two layers, intentionally separate:
+  ///  - The in-app bell notification is created for *every* signed quote that
+  ///    doesn't already have one. `NotificationsNotifier.add` is idempotent by
+  ///    id (`sign_<quoteId>`), so replays are harmless. This is what makes a
+  ///    signature visible when the user opens the app — even if the client
+  ///    signed while the app was closed.
+  ///  - The noisy OS toast + in-app snackbar only fire for signatures detected
+  ///    *while the app is open* (i.e. after the first stream emission), so we
+  ///    don't pop a banner for every historical signature on cold start.
+  Future<void> _handleSignedQuotes(List<Map<String, dynamic>> quotes) async {
+    final signed = quotes.where((q) => QuoteStatus.isSigned(q)).toList();
+
+    // First emission after launch establishes the baseline of what was already
+    // signed; those get a bell entry but no toast/snackbar.
+    final isBaseline = !_signatureBaselineDone;
+    _signatureBaselineDone = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    final alerted = prefs.getStringList(_notifiedSignaturesKey)?.toSet() ?? {};
+
+    for (final q in signed) {
+      final id = (q['id'] ?? '').toString();
+      if (id.isEmpty) continue;
+
+      final client = q['client'] as Map<String, dynamic>? ?? {};
+      final clientName = (client['name'] as String?)?.trim().isNotEmpty == true
+          ? (client['name'] as String)
+          : 'Un client';
+      final totals = q['totals'] as Map<String, dynamic>? ?? {};
+      final amount = (totals['ttc'] as num?)?.toDouble() ?? 0;
+      final amountLabel = amount > 0 ? _formatEuro(amount) : null;
+
+      // Persistent in-app notification — lights up the header bell badge and
+      // appears in the notifications panel on Home. Idempotent by id, so this
+      // safely fires for every signed quote on every emission.
+      await ref.read(notificationsProvider.notifier).add(
+            AppNotification(
+              id: 'sign_$id',
+              title: 'Devis signé ✍️',
+              body: amountLabel != null
+                  ? '$clientName a signé le devis ($amountLabel).'
+                  : '$clientName a signé le devis.',
+              createdAt: DateTime.now(),
+            ),
+          );
+
+      // Only show the loud OS notification + snackbar for fresh signatures
+      // (detected while the app is open and not yet alerted).
+      if (!isBaseline && !alerted.contains(id)) {
+        await NotificationService.instance.notifySignature(
+          quoteId: id,
+          clientName: clientName,
+          amountLabel: amountLabel,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$clientName a signé un devis ✍️'),
+              action: SnackBarAction(
+                label: 'Voir',
+                onPressed: () => setState(() => _selectedIndex = 1),
+              ),
+            ),
+          );
+        }
+      }
+
+      alerted.add(id);
+    }
+
+    await prefs.setStringList(_notifiedSignaturesKey, alerted.toList());
+  }
+
+  /// Detect new inbound (client-authored) messages on the user's devis and
+  /// raise a notification once per new message.
+  ///
+  /// Mirrors [_handleSignedQuotes]: an idempotent bell entry per message
+  /// (`msg_<quoteId>_<createdAt>`) plus a one-time toast for messages that
+  /// arrive while the app is open. We persist the latest alerted client-message
+  /// timestamp per quote so reopening the app doesn't re-notify, and seed that
+  /// baseline silently on the first emission after launch.
+  Future<void> _handleNewMessages(List<Map<String, dynamic>> quotes) async {
+    final quoteIds = quotes
+        .map((q) => (q['id'] ?? '').toString())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    if (quoteIds.isEmpty) return;
+
+    Map<String, String> latest;
+    try {
+      latest = await ref
+          .read(quoteMessageRepositoryProvider)
+          .latestClientMessageAtForQuotes(quoteIds, _companyEmail);
+    } catch (_) {
+      return; // messaging tables unavailable — fail quietly
+    }
+    if (latest.isEmpty) {
+      _messageBaselineDone = true;
+      return;
+    }
+
+    final isBaseline = !_messageBaselineDone;
+    _messageBaselineDone = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    // Stored as "<quoteId>=<iso>" entries (SharedPreferences has no map type).
+    final stored = prefs.getStringList(_notifiedMessagesKey) ?? <String>[];
+    final seenAt = <String, String>{};
+    for (final e in stored) {
+      final i = e.indexOf('=');
+      if (i > 0) seenAt[e.substring(0, i)] = e.substring(i + 1);
+    }
+
+    // Map quote id -> client name for nicer notification copy.
+    final nameById = <String, String>{};
+    for (final q in quotes) {
+      final id = (q['id'] ?? '').toString();
+      final client = q['client'] as Map<String, dynamic>? ?? {};
+      final name = (client['name'] as String?)?.trim();
+      if (id.isNotEmpty) {
+        nameById[id] = (name != null && name.isNotEmpty) ? name : 'Un client';
+      }
+    }
+
+    latest.forEach((quoteId, createdAt) {
+      final previous = seenAt[quoteId];
+      final isNew = previous == null || createdAt.compareTo(previous) > 0;
+      if (!isNew) return;
+
+      final clientName = nameById[quoteId] ?? 'Un client';
+
+      // Persistent bell entry, idempotent by id (includes the timestamp so each
+      // new client message produces a distinct notification).
+      ref.read(notificationsProvider.notifier).add(
+            AppNotification(
+              id: 'msg_${quoteId}_$createdAt',
+              title: 'Nouveau message ✉️',
+              body: '$clientName vous a envoyé un message sur un devis.',
+              createdAt: DateTime.now(),
+              type: 'message',
+            ),
+          );
+
+      if (!isBaseline && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$clientName vous a envoyé un message ✉️'),
+            action: SnackBarAction(
+              label: 'Voir',
+              onPressed: () => context.push('/quote/messages', extra: {
+                'quoteId': quoteId,
+                'clientName': clientName,
+              }),
+            ),
+          ),
+        );
+      }
+
+      seenAt[quoteId] = createdAt;
+    });
+
+    await prefs.setStringList(
+      _notifiedMessagesKey,
+      seenAt.entries.map((e) => '${e.key}=${e.value}').toList(),
+    );
+  }
+
+  /// Open the notifications panel; tapping a notification jumps to the Devis tab.
+  Future<void> _openNotifications() async {
+    final tapped = await NotificationsPanel.show(context);
+    if (tapped == true && mounted) {
+      setState(() => _selectedIndex = 1);
+    }
+  }
 
   void _onItemTapped(int index) {
     if (index == 3) {
@@ -271,9 +509,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final chantiersAsync = user == null
         ? const AsyncData<List<Map<String, dynamic>>>([])
         : ref.watch(userChantiersProvider(user.id));
-    final openTasksAsync = user == null
-        ? const AsyncData<List<Map<String, dynamic>>>([])
-        : ref.watch(openChantierTasksProvider(user.id));
     final quotesAsync = user == null
         ? const AsyncData<List<Map<String, dynamic>>>([])
         : ref.watch(userQuotesProvider(user.id));
@@ -281,7 +516,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Column(
       children: [
         // Header
-        HomeHeader(onMenuTap: () => _scaffoldKey.currentState?.openDrawer()),
+        HomeHeader(
+          onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+          onNotificationsTap: _openNotifications,
+        ),
 
         // Scrollable Body
         Expanded(
@@ -295,112 +533,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 const SizedBox(height: 32),
 
-                // A faire maintenant
+                // A faire maintenant — today's + overdue scheduled tasks,
+                // grouped by chantier (see HomeTodayTasks).
                 DashboardSection(
                   title: 'A faire maintenant',
                   onTap: () => context.push('/planning'),
-                  child: openTasksAsync.when(
-                    data: (tasks) {
-                      if (user == null) {
-                        return const DashboardEmptyState(
+                  child: user == null
+                      ? const DashboardEmptyState(
                           title: 'Connexion requise',
                           subtitle: 'Connectez-vous pour voir vos tâches',
-                        );
-                      }
-
-                      final now = DateTime.now();
-                      final startOfToday = DateTime(now.year, now.month, now.day);
-                      final endOfToday = startOfToday.add(const Duration(days: 1));
-
-                      final todayTasks = tasks.where((t) {
-                        final raw = t['created_at'];
-                        DateTime? createdAt;
-                        if (raw is String) createdAt = DateTime.tryParse(raw);
-                        if (raw is DateTime) createdAt = raw;
-                        return createdAt != null &&
-                            createdAt.isAfter(startOfToday.subtract(const Duration(milliseconds: 1))) &&
-                            createdAt.isBefore(endOfToday);
-                      }).toList();
-
-                      if (todayTasks.isEmpty) {
-                        return const DashboardEmptyState(
-                          title: 'Aucune tâche pour aujourd\'hui',
-                          subtitle: 'Vous êtes à jour !',
-                        );
-                      }
-
-                      int todayCount = todayTasks.length;
-                      final visible = todayTasks.take(5).toList();
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Aujourd’hui : $todayCount',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textSecondary(context),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          ...visible.map(
-                            (t) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      (t['label'] as String?)?.trim().isNotEmpty == true
-                                          ? (t['label'] as String)
-                                          : 'Tâche',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppTheme.textPrimary(context),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (tasks.length > visible.length)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                '+ ${tasks.length - visible.length} autres',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.textSecondary(context),
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                    loading: () => const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    error: (err, _) => DashboardEmptyState(
-                      title: 'Erreur de chargement',
-                      subtitle: err.toString(),
-                    ),
-                  ),
+                        )
+                      : const HomeTodayTasks(),
                 ),
 
                 const SizedBox(height: 24),
@@ -569,7 +712,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                '+ ${chantiers.length - visible.length} autres',
+                                '+ ${activeChantiers.length - visible.length} autres',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -618,14 +761,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         return seenRefs.add(ref);
                       }).toList();
 
-                      final inProgress = uniqueQuotes.where((q) {
-                        final s = (q['status'] ?? '').toString().toLowerCase();
-                        return s == 'en_cours' ||
-                            s == 'generated' ||
-                            s == 'draft' ||
-                            s == 'pending' ||
-                            s.contains('attente');
-                      }).toList();
+                      final inProgress = uniqueQuotes
+                          .where((q) => QuoteStatus.isInProgress(q))
+                          .toList();
 
                       if (inProgress.isEmpty) {
                         return const DashboardEmptyState(
@@ -875,23 +1013,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       for (final q in uniqueForSum) {
                         final totals = q['totals'] as Map<String, dynamic>? ?? {};
                         final amount = (totals['ttc'] as num?)?.toDouble() ?? 0;
-                        final status = (q['status'] ?? '').toString().toLowerCase();
 
-                        final isSigned = status == 'accepted' ||
-                            status == 'validated' ||
-                            status == 'signed' ||
-                            status.contains('sign') ||
-                            status.contains('accept');
-
-                        final isAwaiting = status == 'generated' ||
-                            status == 'en_cours' ||
-                            status == 'draft' ||
-                            status == 'pending' ||
-                            status.contains('attente');
-
-                        if (isSigned) {
+                        if (QuoteStatus.isSigned(q)) {
                           factured += amount;
-                        } else if (isAwaiting) {
+                        } else if (QuoteStatus.isInProgress(q)) {
                           awaitingSignature += amount;
                         }
                         // Archived or unknown statuses are not counted

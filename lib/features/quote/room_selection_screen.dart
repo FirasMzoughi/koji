@@ -21,6 +21,20 @@ class RoomSelectionScreen extends ConsumerStatefulWidget {
 
 class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
   final TextEditingController _customRoomController = TextEditingController();
+  bool _customRoomHasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _customRoomController.addListener(_handleCustomRoomChanged);
+  }
+
+  void _handleCustomRoomChanged() {
+    final hasText = _customRoomController.text.trim().isNotEmpty;
+    if (hasText != _customRoomHasText) {
+      setState(() => _customRoomHasText = hasText);
+    }
+  }
 
   // List of rooms with their selection state
   final List<RoomOption> _roomOptions = [
@@ -40,6 +54,7 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
 
   @override
   void dispose() {
+    _customRoomController.removeListener(_handleCustomRoomChanged);
     _customRoomController.dispose();
     super.dispose();
   }
@@ -198,15 +213,24 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Container(
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE5E7EB),
+                                  color: _customRoomHasText
+                                      ? AppTheme.darkNavy
+                                      : const Color(0xFFE5E7EB),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: IconButton(
-                                  icon: const Icon(Icons.add,
-                                      color: AppTheme.textLight),
-                                  onPressed: _addCustomRoom,
+                                  icon: Icon(
+                                    Icons.add,
+                                    color: _customRoomHasText
+                                        ? Colors.white
+                                        : AppTheme.textLight,
+                                  ),
+                                  onPressed: _customRoomHasText
+                                      ? _addCustomRoom
+                                      : null,
                                 ),
                               ),
                             ],

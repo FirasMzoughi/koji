@@ -118,4 +118,140 @@ class QuoteTaskRepository {
   Future<void> deleteQuoteTask(String id) async {
     await _client.from('quote_tasks').delete().eq('id', id);
   }
+
+  /// All devis tasks for a chantier, flattened across its quote's rooms, with
+  /// the room name attached. Returns a list of maps:
+  ///   { 'id', 'label', 'room_name' }
+  /// Used by the planning screen so the user plans the SAME tasks that appear
+  /// in the devis (quote → rooms → quote_tasks), not the separate
+  /// chantier_tasks checklist.
+  Future<List<Map<String, dynamic>>> getDevisTasksForChantier(
+      String chantierId) async {
+    // 1. Quotes directly linked by chantier_id (the normal case). A chantier
+    //    can have several quote rows (each re-save inserts a new one), so we must
+    //    NOT use .maybeSingle() — it errors on multiple rows.
+    var quoteIds = await _quoteIdsForChantier(chantierId);
+
+    // Read the chantier's reference + address once; used by the fallbacks below.
+    // When a devis is created from a chantier (chantier_devis_screen._createDevis)
+    // the chantier's `reference` is stored as the quote's client name, and the
+    // chantier address as the quote's siteAddress. So an orphan devis can be
+    // matched back to its chantier on EITHER of those, exactly.
+    String chantierRef = '';
+    String chantierAddr = '';
+    {
+      final chantier = await _client
+          .from('chantiers')
+          .select('reference, street, city')
+          .eq('id', chantierId)
+          .maybeSingle();
+      chantierRef = (chantier?['reference'] as String? ?? '').trim();
+      final street = (chantier?['street'] as String? ?? '').trim();
+      final city = (chantier?['city'] as String? ?? '').trim();
+      chantierAddr =
+          [street, city].where((s) => s.isNotEmpty).join(', ').toLowerCase();
+    }
+
+    // 2. Fallback: match by reference (saveQuote auto-creates a chantier named
+    //    after the devis reference when chantier_id is missing).
+    if (quoteIds.isEmpty && chantierRef.isNotEmpty) {
+      final byRef = await _client
+          .from('quotes')
+          .select('id, created_at')
+          .eq('reference', chantierRef)
+          .order('created_at', ascending: false);
+      quoteIds = (byRef as List).map((q) => q['id'] as String).toList();
+    }
+
+    // 3. Fallback for legacy orphan devis: those quotes hang off an auto-created
+    //    chantier whose id and reference both differ from the one picked here.
+    //    Match ONLY on a hard signal — the chantier's reference equals the quote's
+    //    stored client name, or the chantier address equals the quote siteAddress.
+    //    NO blind "most recent" guess: without a signal we show nothing, so each
+    //    chantier only ever displays ITS OWN devis (re-saving the devis from the
+    //    chantier makes step 1 link it permanently).
+    if (quoteIds.isEmpty) {
+      final userId = _client.auth.currentUser?.id;
+      final wantRef = chantierRef.toLowerCase();
+      if (userId != null && (wantRef.isNotEmpty || chantierAddr.isNotEmpty)) {
+        // NOTE: do NOT use .neq('chantier_id', chantierId) here — in Postgres
+        // a NULL chantier_id is excluded by `neq`, and orphan devis are exactly
+        // the ones with chantier_id = null. We fetch all the user's quotes and
+        // match on the hard signals below instead.
+        final orphanQuotes = await _client
+            .from('quotes')
+            .select('id, created_at, metadata, chantier_id')
+            .eq('user_id', userId)
+            .order('created_at', ascending: false);
+
+        final matches = <String>[];
+        for (final q in (orphanQuotes as List)) {
+          // Only adopt true orphans (no chantier link). Never steal a devis
+          // already tied to another real chantier.
+          if (q['chantier_id'] != null) continue;
+          final meta = (q['metadata'] as Map?)?.cast<String, dynamic>() ?? {};
+          final client = (meta['client'] as Map?)?.cast<String, dynamic>() ?? {};
+          final clientName =
+              (client['name'] as String? ?? '').toLowerCase().trim();
+          final siteAddr =
+              (meta['siteAddress'] as String? ?? '').toLowerCase().trim();
+          final refHit = wantRef.isNotEmpty && clientName == wantRef;
+          final addrHit = chantierAddr.isNotEmpty && siteAddr == chantierAddr;
+          if (refHit || addrHit) matches.add(q['id'] as String);
+        }
+        quoteIds = matches;
+
+        // Permanent repair: stamp the chantier_id onto the matched orphan devis
+        // so future loads hit step 1 directly and the diagnostic disappears.
+        for (final id in matches) {
+          try {
+            await _client
+                .from('quotes')
+                .update({'chantier_id': chantierId}).eq('id', id);
+          } catch (_) {/* best-effort; matching still works without it */}
+        }
+      }
+    }
+
+    // ignore: avoid_print
+    print('[DEVIS] chantier=$chantierId candidate quotes=${quoteIds.length}');
+
+    for (final quoteId in quoteIds) {
+      final rooms = await _client
+          .from('quote_rooms')
+          .select('id, name, room_order')
+          .eq('quote_id', quoteId)
+          .order('room_order', ascending: true);
+      // ignore: avoid_print
+      print('[DEVIS]   quote=$quoteId rooms=${(rooms as List).length}');
+
+      final result = <Map<String, dynamic>>[];
+      for (final room in (rooms as List)) {
+        final tasks = await _client
+            .from('quote_tasks')
+            .select('id, label')
+            .eq('room_id', room['id'])
+            .order('created_at', ascending: true);
+        for (final t in (tasks as List)) {
+          result.add({
+            'id': t['id'],
+            'label': t['label'] ?? 'Tâche',
+            'room_name': room['name'] ?? '',
+          });
+        }
+      }
+      // First quote (newest) that actually has tasks wins.
+      if (result.isNotEmpty) return result;
+    }
+    return [];
+  }
+
+  Future<List<String>> _quoteIdsForChantier(String chantierId) async {
+    final quotes = await _client
+        .from('quotes')
+        .select('id, created_at')
+        .eq('chantier_id', chantierId)
+        .order('created_at', ascending: false);
+    return (quotes as List).map((q) => q['id'] as String).toList();
+  }
 }

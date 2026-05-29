@@ -96,8 +96,16 @@ class AppDrawer extends ConsumerWidget {
                   context.push('/archives');
                 },
               ),
-              
-            
+              _DrawerItem(
+                icon: Icons.menu_book_outlined,
+                label: 'Bibliothèque d\'ouvrages',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  context.push('/ouvrage-library');
+                },
+              ),
+
+
 
               const Spacer(),
 

@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:koji/core/route_args.dart';
 import 'package:koji/core/theme.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,8 @@ import 'package:koji/features/quote/model/expense_item.dart';
 import 'package:koji/features/quote/repository/task_repository.dart';
 import 'package:koji/features/quote/model/custom_task.dart';
 import 'package:koji/features/quote/create_task_screen.dart';
+import 'package:koji/features/quote/ouvrage_library_screen.dart';
+import 'package:koji/features/quote/model/library_ouvrage.dart';
 import 'package:koji/features/pricing/models/pricing_models.dart';
 import 'package:koji/features/pricing/repository/pricing_repository.dart';
 
@@ -137,6 +140,8 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
           selectedProducts: selectedProducts,
           selectedFournitures: selectedFournitures,
           hours: (d['hours'] as num?)?.toDouble() ?? 0.0,
+          forfaitEnabled: d['forfaitEnabled'] as bool? ?? false,
+          forfaitPrice: (d['forfaitPrice'] as num?)?.toDouble() ?? 0.0,
         );
 
         final cond = (d['conditionCoeff'] as num?)?.toDouble();
@@ -238,6 +243,205 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       } catch(e) { debugPrint('err custom tasks: $e'); }
   }
   
+  /// Prompts the user for coefficient & réduction to apply for THIS chantier,
+  /// pre-filled with the library defaults. Returns null if cancelled.
+  Future<(double, double)?> _askCoefficientReduction(LibraryOuvrage o) {
+    final coeffCtrl =
+        TextEditingController(text: _formatNum(o.coefficient));
+    final reducCtrl =
+        TextEditingController(text: _formatNum(o.reduction));
+
+    double parse(String s) =>
+        double.tryParse(s.trim().replaceAll(',', '.')) ?? 0;
+
+    return showDialog<(double, double)>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSt) {
+            final coeff = parse(coeffCtrl.text);
+            final reduc = parse(reducCtrl.text);
+            final preview =
+                o.coutMoU * coeff * (1 - (reduc / 100.0));
+            return AlertDialog(
+              title: const Text('Adapter pour ce chantier'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${o.code} — ${o.designation}',
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF6B7280)),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Coefficient',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            TextField(
+                              controller: coeffCtrl,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              onChanged: (_) => setSt(() {}),
+                              decoration: const InputDecoration(
+                                hintText: '1.00',
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Réduction (%)',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            TextField(
+                              controller: reducCtrl,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              onChanged: (_) => setSt(() {}),
+                              decoration: const InputDecoration(
+                                hintText: '0',
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Prix MO/u : ${preview.toStringAsFixed(2)} €  '
+                      '(base ${o.coutMoU.toStringAsFixed(2)} €)',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF047857),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(
+                    ctx,
+                    (parse(coeffCtrl.text), parse(reducCtrl.text)),
+                  ),
+                  child: const Text('Ajouter'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _formatNum(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString();
+
+  Future<void> _openLibraryPicker() async {
+    final picked = await Navigator.push<LibraryOuvrage>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const OuvrageLibraryScreen(pickMode: true),
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    // Ask the user to confirm / override coefficient and réduction for THIS
+    // chantier — they change from one chantier to another even though the
+    // library defaults stay the same.
+    final overrides = await _askCoefficientReduction(picked);
+    if (overrides == null || !mounted) return;
+
+    final coeff = overrides.$1;
+    final reduc = overrides.$2;
+    final effectiveTemps =
+        picked.tempsHU * coeff * (1 - (reduc / 100.0));
+
+    try {
+      final professionForTask = picked.famille?.trim().isNotEmpty == true
+          ? picked.famille!.trim()
+          : (_selectedTrade.isNotEmpty ? _selectedTrade : 'Autres');
+
+      final created = await ref.read(taskRepositoryProvider).createTask(
+            title: picked.designation,
+            description: picked.commentaire,
+            profession: professionForTask,
+            code: picked.code,
+            famille: picked.famille,
+            unite: picked.unite,
+            tempsHU: effectiveTemps,
+            typePoste: 'POSTE',
+          );
+
+      if (!mounted) return;
+      // Switch the trade tab so the new task is visible right away.
+      if (_trades.contains(professionForTask) &&
+          _selectedTrade != professionForTask) {
+        setState(() => _selectedTrade = professionForTask);
+      }
+      await _fetchCustomTasksForTrade(_selectedTrade);
+      if (!mounted) return;
+
+      // Auto-select it for the current room with the library's temps.
+      final currentRoom = _roomIds[_selectedRoomTab];
+      _toggleTaskSelection(currentRoom, created.id, created.title, true);
+      final key = _getKey(currentRoom, created.id);
+      final state = _taskStates[key];
+      if (state != null) {
+        setState(() {
+          state.hours = effectiveTemps;
+        });
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ouvrage "${picked.code}" ajouté au chantier'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur ajout ouvrage: $e')),
+      );
+    }
+  }
+
   // Call this when trade changes or initially
   Future<void> _fetchCustomTasksForTrade(String trade) async {
     try {
@@ -455,13 +659,117 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   }
 
   double _calculateTotal(RoomTaskState state) {
-    double total = 0;
+    if (state.forfaitEnabled) return state.forfaitPrice;
+
+    // Fournitures HT
+    double fournitures = 0;
     state.selectedFournitures.forEach((_, data) {
       final qty = (data['quantity'] as num?)?.toDouble() ?? 1;
       final unitPrice = (data['unitPrice'] as num?)?.toDouble() ?? 0;
-      total += unitPrice * qty;
+      fournitures += unitPrice * qty;
     });
-    return total;
+
+    // Main d'œuvre HT = quantité × temps(h/u) × coefficient × taux horaire.
+    // This MUST match the "TOTAL LIGNE HT" breakdown (see _buildHoursInput),
+    // otherwise the bottom "Total Calculé" bar showed only fournitures and
+    // displayed 0 € whenever the line was labour-only.
+    final coeff =
+        (_roomContexts[state.roomId] ?? const RealityFactors()).totalCoefficient;
+    final qty = (state.inputs['quantity'] as num?)?.toDouble() ?? 0.0;
+    final mo = qty * state.hours * coeff * _tauxHoraire;
+
+    return mo + fournitures;
+  }
+
+  /// Toggle row that switches an ouvrage between detailed and flat-price modes.
+  Widget _buildForfaitToggle(RoomTaskState state) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: state.forfaitEnabled
+            ? const Color(0xFFEFF6FF)
+            : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: state.forfaitEnabled
+              ? const Color(0xFF1D74FF)
+              : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.request_quote_outlined,
+              size: 18, color: Color(0xFF1D74FF)),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Forfait (prix fixe, sans détail)',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF334155)),
+            ),
+          ),
+          Switch(
+            value: state.forfaitEnabled,
+            activeColor: const Color(0xFF1D74FF),
+            onChanged: (v) => setState(() => state.forfaitEnabled = v),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Single flat-price input shown when forfait mode is on.
+  Widget _buildForfaitPriceField(RoomTaskState state) {
+    final txt = state.forfaitPrice == 0 ? '' : _formatNum(state.forfaitPrice);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Prix forfaitaire (HT)',
+            style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500)),
+        const SizedBox(height: 6),
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      hintText: '0.00'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  controller: TextEditingController.fromValue(
+                    TextEditingValue(
+                      text: txt,
+                      selection: TextSelection.collapsed(offset: txt.length),
+                    ),
+                  ),
+                  onChanged: (val) {
+                    state.forfaitPrice =
+                        double.tryParse(val.replaceAll(',', '.')) ?? 0.0;
+                    setState(() {});
+                  },
+                ),
+              ),
+              const Text('€', style: TextStyle(color: Color(0xFF94A3B8))),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   List<Product> getAllProducts() {
@@ -846,11 +1154,40 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                   ),
                   const SizedBox(height: 16),
                   
+                  // BIBLIOTHÈQUE D'OUVRAGES BUTTON (pick from library)
+                  InkWell(
+                    onTap: _openLibraryPicker,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.menu_book_outlined, color: Color(0xFFEA580C)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Bibliothèque d\'ouvrages',
+                            style: TextStyle(
+                              color: Color(0xFFEA580C),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
                   // CREATE TASK BUTTON
                   InkWell(
                     onTap: () async {
                       final result = await Navigator.push(
-                        context, 
+                        context,
                         MaterialPageRoute(builder: (_) => CreateTaskScreen(profession: _selectedTrade))
                       );
                       if (result == true) {
@@ -872,7 +1209,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                           SizedBox(width: 8),
                           Text(
                             'Créer une ouvrage',
-                            style: TextStyle( 
+                            style: TextStyle(
                               color: Color(0xFF1D74FF),
                               fontWeight: FontWeight.bold,
                             ),
@@ -881,7 +1218,36 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                       ),
                     ),
                   ),
-                  
+                  const SizedBox(height: 10),
+
+                  // ADD FOURNITURE BUTTON (standalone material-only line)
+                  InkWell(
+                    onTap: () => _addStandaloneFourniture(currentRoom),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF16A34A).withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.shopping_cart_outlined, color: Color(0xFF16A34A)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Ajouter fourniture',
+                            style: TextStyle(
+                              color: Color(0xFF16A34A),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 24),
                   
                   // Tasks from backend
@@ -996,14 +1362,17 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
           }
 
           final hourlyRate = hoursPerDay > 0 ? dailyRate / hoursPerDay : dailyRate / 7.0;
-          final conditionCoeff = _roomContexts[roomId]?.condition ?? 1.0;
-          final hours = taskState.hours;
+          // Full chantier coefficient (access × condition × surface) — matches
+          // the badge shown to the user. Using only `.condition` here dropped
+          // the access/surface factors from the price.
+          final conditionCoeff =
+              (_roomContexts[roomId] ?? const RealityFactors()).totalCoefficient;
+          final hours = taskState.hours; // per-unit temps (h/u)
 
-          // Labor = hours × hourly rate × condition coefficient
-          // Stored as unit cost (per quantity unit), so divide by quantity
+          // Labor unit cost = temps(h/u) × hourly rate × coefficient.
+          // `hours` is already per-unit, so do NOT divide by quantity.
           if (hours > 0) {
-            final totalLabor = hours * hourlyRate * conditionCoeff;
-            laborUnitCost = quantity > 0 ? totalLabor / quantity : totalLabor;
+            laborUnitCost = hours * hourlyRate * conditionCoeff;
           }
 
           // Material cost from fournitures
@@ -1013,17 +1382,27 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
             materialUnitCost = totalProductCost;
           }
 
+          // Forfait: bill a single flat price. Quantity = 1, the whole price
+          // lives in laborCost, no temps/fournitures breakdown is emitted.
+          if (taskState.forfaitEnabled) {
+            quantity = 1.0;
+            laborUnitCost = taskState.forfaitPrice;
+            materialUnitCost = 0.0;
+          }
+
           expenseItems.add(ExpenseItem(
              id: taskState.taskId,
              title: taskState.label,
-             subtitle: hours > 0 ? '${hours.toStringAsFixed(1)}h × ${hourlyRate.toStringAsFixed(2)} €/h' : (totalProductCost > 0 ? 'Fournitures incluses' : 'Main d\'oeuvre'),
+             subtitle: taskState.forfaitEnabled
+                 ? 'Forfait'
+                 : (hours > 0 ? '${hours.toStringAsFixed(1)}h × ${hourlyRate.toStringAsFixed(2)} €/h' : (totalProductCost > 0 ? 'Fournitures incluses' : 'Main d\'oeuvre')),
              quantity: quantity,
              laborCost: laborUnitCost,
              materialCost: materialUnitCost,
              icon: _getRoomIcon(roomId),
              tax: 20.0,
-             hourlyRate: hourlyRate,
-             normativeTime: hours,
+             hourlyRate: taskState.forfaitEnabled ? 0.0 : hourlyRate,
+             normativeTime: taskState.forfaitEnabled ? 0.0 : hours,
           ));
           
           // Update Provider with context
@@ -1058,6 +1437,8 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
              'unite': customTask?.unite ?? 'u',
              'code': customTask?.code ?? '',
              'famille': customTask?.famille ?? '',
+             'forfaitEnabled': taskState.forfaitEnabled,
+             'forfaitPrice': taskState.forfaitPrice,
            };
        }
        
@@ -1071,9 +1452,14 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
        ref.read(quoteCreationProvider.notifier).setProfession(_selectedTrade);
     }
     
-    // 4. Navigate
+    // 4. Navigate straight to the Récapitulatif. The recap recomputes all
+    // totals from `roomTasks` (already saved above via updateRoomTasks), so the
+    // intermediate summary step was redundant.
     if (!mounted) return;
-    context.push('/quote/summary');
+    context.push(
+      '/quote/detail',
+      extra: QuoteDetailArgs(data: ref.read(quoteCreationProvider).toMap()),
+    );
   }
 
   Widget _buildCategorySection(TaskCategory category, String roomId) {
@@ -1449,32 +1835,47 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                    ],
                    
                    const SizedBox(height: 20),
-                   
-                   // Dynamic Inputs + Add Product Button Row
-                   _buildDynamicInputs(roomId, taskItem.id, state),
-                   
-                   const SizedBox(height: 20),
-                   
-                   // Fournitures List
-                   ...state.selectedFournitures.entries.map((entry) {
-                      return _buildFournitureRow(
-                        entry.value,
-                        (newQty) {
-                          setState(() {
-                            state.selectedFournitures[entry.key]!['quantity'] = newQty;
-                          });
-                        },
-                        () {
-                          setState(() {
-                            state.selectedFournitures.remove(entry.key);
-                          });
-                        },
-                      );
-                   }),
-                   
-                   // ── Hours Input ─────────────────────────────
-                   const SizedBox(height: 16),
-                   _buildHoursInput(roomId, taskItem.id, state, taskItem: taskItem),
+
+                   // ── Forfait toggle ──────────────────────────
+                   // When ON, the ouvrage is billed as a flat price and the
+                   // detailed quantité / fourniture / temps inputs are hidden.
+                   _buildForfaitToggle(state),
+
+                   if (state.forfaitEnabled) ...[
+                     const SizedBox(height: 16),
+                     _buildForfaitPriceField(state),
+                   ] else ...[
+                     const SizedBox(height: 20),
+
+                     // Dynamic Inputs + Add Product Button Row
+                     _buildDynamicInputs(roomId, taskItem.id, state),
+
+                     const SizedBox(height: 20),
+
+                     // Fournitures List
+                     ...state.selectedFournitures.entries.map((entry) {
+                        return _buildFournitureRow(
+                          entry.value,
+                          (newQty) {
+                            setState(() {
+                              state.selectedFournitures[entry.key]!['quantity'] = newQty;
+                            });
+                          },
+                          () {
+                            setState(() {
+                              state.selectedFournitures.remove(entry.key);
+                            });
+                          },
+                        );
+                     }),
+
+                     // NOTE: The "Main d'œuvre" (quantité + temps h/u) block used
+                     // to live here, but the recap screen (quote_detail_screen)
+                     // asks for those exact inputs again. We dropped it here to
+                     // avoid the duplicate — labor is captured on the recap.
+                     // When forfait is ON, the flat price flows straight through
+                     // to the recap/devis instead.
+                   ],
 
                    // Total Calculated Bar
                    Container(
@@ -1487,7 +1888,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                      child: Row(
                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                        children: [
-                         const Text('Total Calculé', style: TextStyle( fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+                         Text(state.forfaitEnabled ? 'Forfait' : 'Total Calculé', style: const TextStyle( fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
                          Text('${_calculateTotal(state).toStringAsFixed(2)} €', style: const TextStyle( fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A))),
                        ],
                      ),
@@ -1807,210 +2208,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     );
   }
   
-  Widget _buildHoursInput(String roomId, String taskId, RoomTaskState state, {TaskItem? taskItem}) {
-    final key = _getKey(roomId, taskId);
-    final condition = _roomContexts[roomId]?.condition ?? 1.0;
-    String conditionLabel;
-    if (condition == 1.40) {
-      conditionLabel = 'Dégradé ×1,40';
-    } else if (condition == 1.20) {
-      conditionLabel = 'Moyen ×1,20';
-    } else {
-      conditionLabel = 'Sain ×1,00';
-    }
-
-    final unite = taskItem?.unite ?? 'u';
-    final qty = (state.inputs['quantity'] as num?)?.toDouble() ?? 0.0;
-    // temps h/u is always user-entered per devis (stored in state.hours)
-    final tempsHU = state.hours;
-    final moEuro = qty * tempsHU * condition * _tauxHoraire;
-
-    double fournituresTotal = 0;
-    state.selectedFournitures.forEach((_, data) {
-      fournituresTotal += ((data['quantity'] as num?)?.toDouble() ?? 1) *
-          ((data['unitPrice'] as num?)?.toDouble() ?? 0);
-    });
-    final totalLigne = moEuro + fournituresTotal;
-
-    final qtyStr  = qty      > 0 ? qty.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '') : '';
-    final tempsStr = tempsHU > 0 ? tempsHU.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '') : '';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // ── Main d'œuvre inputs ──────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0FDF4),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF86EFAC)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Row(
-                children: [
-                  const Icon(Icons.access_time, color: Color(0xFF16A34A), size: 16),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Main d\'œuvre',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => _showRealityFactorsDialog(roomId, taskId, state.label),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        conditionLabel,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF166534)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Two inputs side by side: Quantité and Temps h/u
-              Row(
-                children: [
-                  // Quantité
-                  Expanded(
-                    child: _moInput(
-                      label: 'Quantité',
-                      suffix: unite,
-                      value: qtyStr,
-                      onChanged: (val) {
-                        if (_taskStates.containsKey(key)) {
-                          setState(() {
-                            _taskStates[key]!.inputs['quantity'] = double.tryParse(val) ?? 0.0;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Temps h/u
-                  Expanded(
-                    child: _moInput(
-                      label: 'Temps h/$unite',
-                      suffix: 'h',
-                      value: tempsStr,
-                      onChanged: (val) {
-                        if (_taskStates.containsKey(key)) {
-                          setState(() {
-                            _taskStates[key]!.hours = double.tryParse(val) ?? 0.0;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // ── Calculation breakdown (visible when both qty and tempsHU > 0) ──
-        if (qty > 0 && tempsHU > 0) ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.calculate_outlined, size: 14, color: Color(0xFF3B82F6)),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        '$qtyStr $unite × $tempsStr h/$unite × ${_tauxHoraire.toStringAsFixed(2)} €/h × $conditionLabel',
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Divider(height: 1, color: Color(0xFFBFDBFE)),
-                const SizedBox(height: 10),
-                _kojiCalcRow('Total MO HT', '${moEuro.toStringAsFixed(2)} €', const Color(0xFF1D4ED8)),
-                const SizedBox(height: 6),
-                _kojiCalcRow('Fournitures HT', '${fournituresTotal.toStringAsFixed(2)} €', const Color(0xFF0369A1)),
-                const Divider(height: 16, color: Color(0xFFBFDBFE)),
-                _kojiCalcRow('TOTAL LIGNE HT', '${totalLigne.toStringAsFixed(2)} €', const Color(0xFF0F172A), bold: true),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _moInput({
-    required String label,
-    required String suffix,
-    required String value,
-    required void Function(String) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
-        const SizedBox(height: 6),
-        Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF86EFAC)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    hintText: '0',
-                    hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
-                  ),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF15803D)),
-                  controller: TextEditingController.fromValue(
-                    TextEditingValue(text: value, selection: TextSelection.collapsed(offset: value.length)),
-                  ),
-                  onChanged: onChanged,
-                ),
-              ),
-              Text(suffix, style: const TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600, fontSize: 13)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _kojiCalcRow(String label, String value, Color color, {bool bold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: bold ? FontWeight.bold : FontWeight.w500)),
-        Text(value, style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
   Widget _buildAddProductButton(String roomId, String taskId) {
     return GestureDetector(
        onTap: () => _showAddProductModal(roomId, taskId),
@@ -2128,6 +2325,52 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
        );
   }
   
+
+  /// Adds a standalone fourniture (material-only) line to the current room.
+  /// Implemented as a pseudo-task with no labor (hours = 0): the recap renders
+  /// it as a line where Main d'œuvre = 0 and Fournitures = unitPrice × qty.
+  Future<void> _addStandaloneFourniture(String roomId) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const FournituresScreen(selectionMode: true),
+      ),
+    );
+    if (result == null || result is! Map<String, dynamic>) return;
+
+    final fournId = (result['id'] ?? '').toString();
+    if (fournId.isEmpty) return;
+    final name = (result['name'] ?? 'Fourniture').toString();
+    final unitPrice = (result['unitPrice'] as num?)?.toDouble() ?? 0.0;
+
+    // Synthesize a unique task id so multiple fournitures can coexist.
+    final pseudoTaskId =
+        'fourniture_${fournId}_${DateTime.now().millisecondsSinceEpoch}';
+    final key = _getKey(roomId, pseudoTaskId);
+
+    setState(() {
+      final state = RoomTaskState(
+        taskId: pseudoTaskId,
+        roomId: roomId,
+        label: name,
+        isExpanded: false,
+        hours: 0.0, // no labor — material-only line
+      );
+      state.inputs['quantity'] = 1.0;
+      state.selectedFournitures[fournId] = {
+        ...result,
+        'quantity': 1.0,
+        'unitPrice': unitPrice,
+      };
+      _taskStates[key] = state;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fourniture ajoutée : $name')),
+      );
+    }
+  }
 
   Future<void> _showAddProductModal(String roomId, String taskId) async {
     final result = await Navigator.push(

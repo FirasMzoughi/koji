@@ -17,6 +17,7 @@ class _ChantierCreationScreenState
   final _streetController = TextEditingController();
   final _postalCodeController = TextEditingController();
   final _cityController = TextEditingController();
+  final _clientEmailController = TextEditingController();
 
   String _selectedPropertyType = 'Maison';
   bool _dropdownOpen = false;
@@ -34,6 +35,7 @@ class _ChantierCreationScreenState
     _streetController.dispose();
     _postalCodeController.dispose();
     _cityController.dispose();
+    _clientEmailController.dispose();
     super.dispose();
   }
 
@@ -44,6 +46,17 @@ class _ChantierCreationScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez renseigner la référence du chantier'),
+          backgroundColor: Color(0xFF0F172A),
+        ),
+      );
+      return;
+    }
+
+    final clientEmail = _clientEmailController.text.trim();
+    if (clientEmail.isNotEmpty && !clientEmail.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Adresse e-mail du client invalide'),
           backgroundColor: Color(0xFF0F172A),
         ),
       );
@@ -61,6 +74,7 @@ class _ChantierCreationScreenState
         'postalCode': _postalCodeController.text.trim(),
         'city': _cityController.text.trim(),
         'propertyType': _selectedPropertyType,
+        'clientEmail': clientEmail,
       };
 
       final chantierId = await repository.createChantier(data);
@@ -190,6 +204,19 @@ class _ChantierCreationScreenState
                       _buildTextField(
                         controller: _cityController,
                         hint: 'Rajouter votre texte...',
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Adresse e-mail du client
+                      // This email gates the devis signature link: the client
+                      // must open the link with this exact address. It is
+                      // auto-filled into every devis created from this chantier.
+                      _buildLabel('Adresse e-mail du client'),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _clientEmailController,
+                        hint: 'client@exemple.com',
+                        keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 20),
 

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koji/core/theme.dart';
 
-/// Custom room input widget
-/// STATELESS & CONST for performance
-class CustomRoomInput extends StatelessWidget {
+class CustomRoomInput extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onAdd;
 
@@ -12,6 +10,33 @@ class CustomRoomInput extends StatelessWidget {
     required this.controller,
     required this.onAdd,
   });
+
+  @override
+  State<CustomRoomInput> createState() => _CustomRoomInputState();
+}
+
+class _CustomRoomInputState extends State<CustomRoomInput> {
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasText = widget.controller.text.trim().isNotEmpty;
+    widget.controller.addListener(_handleChange);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleChange);
+    super.dispose();
+  }
+
+  void _handleChange() {
+    final hasText = widget.controller.text.trim().isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() => _hasText = hasText);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +74,7 @@ class CustomRoomInput extends StatelessWidget {
             children: [
               Expanded(
                 child: TextField(
-                  controller: controller,
+                  controller: widget.controller,
                   decoration: InputDecoration(
                     hintText: 'Ex: Buanderie, Garage...',
                     hintStyle: TextStyle(
@@ -74,14 +99,22 @@ class CustomRoomInput extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Container(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
+                  color: _hasText
+                      ? AppTheme.darkNavy
+                      : const Color(0xFFE5E7EB),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.add, color: Color(0xFF6B7280)),
-                  onPressed: onAdd,
+                  icon: Icon(
+                    Icons.add,
+                    color: _hasText
+                        ? Theme.of(context).colorScheme.surface
+                        : const Color(0xFF6B7280),
+                  ),
+                  onPressed: _hasText ? widget.onAdd : null,
                 ),
               ),
             ],

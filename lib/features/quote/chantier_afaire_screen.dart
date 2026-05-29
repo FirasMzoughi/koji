@@ -30,7 +30,9 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
       return const Scaffold(body: Center(child: Text("ID Chantier manquant")));
     }
 
-    final tasksAsync = ref.watch(chantierTasksProvider(chantierId));
+    // Shows devis tasks (same as the planner's "Tâches du chantier"), falling
+    // back to the manual chantier_tasks checklist when there's no devis.
+    final tasksAsync = ref.watch(chantierAFaireTasksProvider(chantierId));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0EB),
@@ -113,7 +115,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                                   () async {
                                     try {
                                       await _repository.updateTaskStatus(task['id'], true);
-                                      ref.invalidate(chantierTasksProvider(chantierId));
+                                      ref.invalidate(chantierAFaireTasksProvider(chantierId));
                                     } catch (e) {
                                       debugPrint('Error toggling task: $e');
                                     }
@@ -160,7 +162,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                                   () async {
                                     try {
                                       await _repository.updateTaskStatus(task['id'], false);
-                                      ref.invalidate(chantierTasksProvider(chantierId));
+                                      ref.invalidate(chantierAFaireTasksProvider(chantierId));
                                     } catch (e) {
                                       debugPrint('Error toggling task: $e');
                                     }
@@ -340,7 +342,7 @@ class _ChantierAFaireScreenState extends ConsumerState<ChantierAFaireScreen> {
                 if (!mounted) return;
                 // Force the stream provider to refetch in case the realtime
                 // event takes a moment to arrive.
-                ref.invalidate(chantierTasksProvider(chantierId));
+                ref.invalidate(chantierAFaireTasksProvider(chantierId));
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Tâche "$label" ajoutée'),

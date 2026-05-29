@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:koji/features/quote/repository/task_repository.dart';
-import 'package:koji/features/pricing/repository/pricing_repository.dart';
-import 'package:koji/features/auth/repository/user_repository.dart';
-import 'package:koji/features/auth/repository/auth_repository.dart';
 
 class CreateTaskScreen extends ConsumerStatefulWidget {
   final String profession;
@@ -29,60 +26,21 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   final _designationController = TextEditingController();
   final _quantiteController    = TextEditingController();
   final _commentaireController = TextEditingController();
-  final _mainOeuvreController  = TextEditingController();
-  final _fournituresController = TextEditingController();
 
   String _selectedUnite = 'm²';
   bool   _isSaving      = false;
 
-  // Toggle: show main d'oeuvre / fournitures in devis
-  bool _showMainOeuvre  = true;
-  bool _showFournitures = true;
-
   // Photo / pièce jointe
   final List<File> _attachments = [];
 
-  double _tauxHoraire = 56.25;
-
   static const List<String> _unites = ['m²', 'ml', 'u', 'h', 'forfait', 'ens', 'kg', 'L'];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTauxHoraire();
-  }
 
   @override
   void dispose() {
     _designationController.dispose();
     _quantiteController.dispose();
     _commentaireController.dispose();
-    _mainOeuvreController.dispose();
-    _fournituresController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadTauxHoraire() async {
-    try {
-      if (widget.profession.isNotEmpty) {
-        final profile = await ref
-            .read(pricingRepositoryProvider)
-            .getProfileForProfession(widget.profession);
-        if (profile != null && profile.hoursPerDay > 0) {
-          if (mounted) setState(() => _tauxHoraire = profile.hourlyRate);
-          return;
-        }
-      }
-      final user = ref.read(authRepositoryProvider).currentUser;
-      if (user == null) return;
-      final userData = await ref.read(userRepositoryProvider).getUser(user.id);
-      final biz = userData?['business_info'] as Map<String, dynamic>?;
-      if (biz != null) {
-        final daily = (biz['dailyRate'] as num?)?.toDouble() ?? 450.0;
-        final hours = (biz['hoursPerDay'] as num?)?.toDouble() ?? 8.0;
-        if (mounted) setState(() => _tauxHoraire = hours > 0 ? daily / hours : 56.25);
-      }
-    } catch (_) {}
   }
 
   bool get _isSubTask => widget.parentId != null;
@@ -310,75 +268,9 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             ),
 
             const SizedBox(height: 24),
-
-            // ── Divider ──────────────────────────────────────────────
-            const Divider(color: Color(0xFFE2E8F0)),
-            const SizedBox(height: 16),
-
-            // ── MAIN D'OEUVRE ────────────────────────────────────────
-            _buildToggleSection(
-              label: "Main d'œuvre",
-              icon: Icons.engineering_outlined,
-              color: const Color(0xFF0369A1),
-              isEnabled: _showMainOeuvre,
-              onToggle: (v) => setState(() => _showMainOeuvre = v),
-              child: _showMainOeuvre
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: _buildTextField(
-                        controller: _mainOeuvreController,
-                        hint: 'Montant en € (ex: 350)',
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      ),
-                    )
-                  : null,
-            ),
-
-            const SizedBox(height: 14),
-
-            // ── FOURNITURES ──────────────────────────────────────────
-            _buildToggleSection(
-              label: 'Fournitures',
-              icon: Icons.inventory_2_outlined,
-              color: const Color(0xFFB45309),
-              isEnabled: _showFournitures,
-              onToggle: (v) => setState(() => _showFournitures = v),
-              child: _showFournitures
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: _buildTextField(
-                        controller: _fournituresController,
-                        hint: 'Montant en € (ex: 120)',
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      ),
-                    )
-                  : null,
-            ),
-
-            const SizedBox(height: 10),
-            // Hint about toggle
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFDE68A)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, size: 15, color: Color(0xFFB45309)),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Activez ou désactivez pour afficher ou masquer dans le devis.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
+            // NOTE: The "Main d'œuvre" and "Fournitures" amount toggles were
+            // removed here — those amounts are entered later in the devis flow,
+            // so collecting them on the ouvrage definition was redundant.
           ],
         ),
       ),
@@ -496,59 +388,4 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     );
   }
 
-  Widget _buildToggleSection({
-    required String label,
-    required IconData icon,
-    required Color color,
-    required bool isEnabled,
-    required void Function(bool) onToggle,
-    Widget? child,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isEnabled ? color.withValues(alpha: 0.04) : const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isEnabled ? color.withValues(alpha: 0.3) : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 20, color: isEnabled ? color : const Color(0xFF94A3B8)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isEnabled ? color : const Color(0xFF94A3B8),
-                  ),
-                ),
-              ),
-              // Toggle label
-              Text(
-                isEnabled ? 'Visible dans le devis' : 'Masqué',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: isEnabled ? color : const Color(0xFF94A3B8),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Switch.adaptive(
-                value: isEnabled,
-                onChanged: onToggle,
-                activeColor: color,
-              ),
-            ],
-          ),
-          if (child != null) child,
-        ],
-      ),
-    );
-  }
 }

@@ -285,13 +285,37 @@ class ChantierDevisScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            Text(
-              statusLabel,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: statusColor,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => context.push('/quote/messages', extra: {
+                    'quoteId': devis['id'],
+                    'clientName': clientName,
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.forum_outlined,
+                      size: 18,
+                      color: _kDark,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -314,6 +338,13 @@ class ChantierDevisScreen extends ConsumerWidget {
         (data['postalCode'] as String?)?.trim() ??
         '';
     final city = (data['city'] as String?)?.trim() ?? '';
+    // Email the client must use to open the devis signature link. Reads both
+    // snake_case (chantier loaded from DB) and camelCase (freshly-created
+    // chantier in-memory map), mirroring the postal_code handling above.
+    final clientEmail =
+        (data['client_email'] as String?)?.trim() ??
+        (data['clientEmail'] as String?)?.trim() ??
+        '';
     final addressParts = <String>[
       if (street.isNotEmpty) street,
       if (postalCode.isNotEmpty || city.isNotEmpty)
@@ -321,11 +352,12 @@ class ChantierDevisScreen extends ConsumerWidget {
     ];
     final address = addressParts.join(', ');
 
-    if (reference.isNotEmpty || address.isNotEmpty) {
+    if (reference.isNotEmpty || address.isNotEmpty || clientEmail.isNotEmpty) {
       ref.read(quoteCreationProvider.notifier).updateClientInfo(
             ClientInfo(
               name: reference,
               address: address,
+              email: clientEmail,
             ),
           );
     }

@@ -22,6 +22,12 @@ class NotificationService {
   static const _dailySummaryId = 1001;
   static const _nextTaskBaseId = 2000;
 
+  // Signature notifications get their own channel/id-range so they show with
+  // high priority and don't collide with planning notifications.
+  static const _signatureChannelId = 'koji_signature';
+  static const _signatureChannelName = 'Signatures';
+  static const _signatureBaseId = 3000;
+
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialised = false;
 
@@ -101,6 +107,43 @@ class NotificationService {
       );
     } catch (e) {
       if (kDebugMode) debugPrint('refreshDailySummary error: $e');
+    }
+  }
+
+  /// Immediate notification raised when a client signs a quote.
+  ///
+  /// [quoteId] keeps the notification id stable per quote so re-raising it
+  /// (e.g. on a stream replay) updates rather than stacks the same alert.
+  Future<void> notifySignature({
+    required String quoteId,
+    required String clientName,
+    String? amountLabel,
+  }) async {
+    try {
+      if (!_initialised) await init();
+
+      final body = amountLabel != null && amountLabel.isNotEmpty
+          ? '$clientName a signé le devis ($amountLabel).'
+          : '$clientName a signé le devis.';
+      final id = _signatureBaseId + quoteId.hashCode.abs() % 10000;
+
+      await _plugin.show(
+        id,
+        'Devis signé ✍️',
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _signatureChannelId,
+            _signatureChannelName,
+            channelDescription: 'Alertes de signature de devis par le client',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('notifySignature error: $e');
     }
   }
 
