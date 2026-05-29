@@ -400,6 +400,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       },
                     ),
+                    _buildPlusActionItem(
+                      label: 'Messages',
+                      icon: Icons.forum_outlined,
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/messages');
+                      },
+                    ),
                   ],
                 ),
               ],

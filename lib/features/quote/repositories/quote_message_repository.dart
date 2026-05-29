@@ -136,6 +136,48 @@ class QuoteMessageRepository {
     return result;
   }
 
+  /// One summary per quote that has at least one message, for the global
+  /// Messages inbox. Each summary carries the latest message (any author) and
+  /// the latest *client* message time, so the inbox can show a preview and an
+  /// unread indicator. Keyed by quoteId.
+  Future<Map<String, QuoteMessageSummary>> messageSummariesForQuotes(
+    List<String> quoteIds,
+    String companyEmail,
+  ) async {
+    if (quoteIds.isEmpty) return {};
+    final rows = await _client
+        .from('quote_messages')
+        .select('quote_id, text, author_name, author_email, created_at')
+        .inFilter('quote_id', quoteIds)
+        .order('created_at', ascending: false);
+
+    final result = <String, QuoteMessageSummary>{};
+    for (final r in rows) {
+      final qId = r['quote_id'] as String?;
+      if (qId == null) continue;
+      final email = (r['author_email'] as String?) ?? '';
+      final createdAt = (r['created_at'] as String?) ?? '';
+      final fromCompany = isFromCompany(email, companyEmail);
+
+      final existing = result[qId];
+      if (existing == null) {
+        // First (newest) row for this quote = the latest message overall.
+        result[qId] = QuoteMessageSummary(
+          quoteId: qId,
+          lastText: (r['text'] as String?) ?? '',
+          lastAuthor: (r['author_name'] as String?) ?? '',
+          lastFromCompany: fromCompany,
+          lastAt: createdAt,
+          lastClientAt: fromCompany ? null : createdAt,
+        );
+      } else if (existing.lastClientAt == null && !fromCompany) {
+        // Fill in the most recent client message time once we reach it.
+        result[qId] = existing.copyWith(lastClientAt: createdAt);
+      }
+    }
+    return result;
+  }
+
   Future<String?> _signedUrl(String path) async {
     try {
       return await _client.storage.from(_bucket).createSignedUrl(path, 300);
@@ -165,4 +207,32 @@ class QuoteMessageRepository {
     }
     return 'application/octet-stream';
   }
+}
+
+/// Compact view of a devis conversation for the global Messages inbox.
+class QuoteMessageSummary {
+  const QuoteMessageSummary({
+    required this.quoteId,
+    required this.lastText,
+    required this.lastAuthor,
+    required this.lastFromCompany,
+    required this.lastAt,
+    this.lastClientAt,
+  });
+
+  final String quoteId;
+  final String lastText; // latest message text (any author)
+  final String lastAuthor; // latest message author name
+  final bool lastFromCompany; // true if the latest message is the entreprise's
+  final String lastAt; // ISO timestamp of the latest message
+  final String? lastClientAt; // ISO timestamp of the latest CLIENT message
+
+  QuoteMessageSummary copyWith({String? lastClientAt}) => QuoteMessageSummary(
+        quoteId: quoteId,
+        lastText: lastText,
+        lastAuthor: lastAuthor,
+        lastFromCompany: lastFromCompany,
+        lastAt: lastAt,
+        lastClientAt: lastClientAt ?? this.lastClientAt,
+      );
 }

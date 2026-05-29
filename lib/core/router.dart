@@ -19,6 +19,7 @@ import 'package:koji/features/quote/ouvrage_library_screen.dart';
 import 'package:koji/features/quote/quote_detail_screen.dart';
 import 'package:koji/features/quote/quote_success_screen.dart';
 import 'package:koji/features/quote/quote_messages_screen.dart';
+import 'package:koji/features/quote/quote_messages_inbox_screen.dart';
 import 'package:koji/features/quote/client_details_screen.dart';
 
 import 'package:koji/features/signature/signature_list_screen.dart';
@@ -413,6 +414,14 @@ final router = GoRouter(
           QuoteMessagesScreen(quoteId: quoteId, clientName: clientName),
         );
       },
+    ),
+    GoRoute(
+      path: '/messages',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const QuoteMessagesInboxScreen(),
+      ),
     ),
     GoRoute(
       path: '/fournitures',
