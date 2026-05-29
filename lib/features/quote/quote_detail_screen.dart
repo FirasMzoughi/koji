@@ -456,6 +456,9 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         'rcs': _companyRcs,
         'tva': _companyTva,
         'formeJuridique': _companyLegalForm,
+        // Public logo URL so the client signature website can show the
+        // entreprise's real logo instead of the default Koji mark.
+        'logo': _logoPath,
       },
       'siteAddress': _siteAddress,
       'travauxStart': _startCtrl.text.trim(),
