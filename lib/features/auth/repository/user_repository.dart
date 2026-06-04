@@ -168,23 +168,140 @@ class UserRepository {
     }
   }
 
-  /// Fetch all quotes where the client email matches the user's email.
-  /// Falls back to returning quotes owned by the user uid.
-  Future<List<Map<String, dynamic>>> getClientQuotes(String uid) async {
-    _logger.i('📋 [UserRepository] Fetching client quotes for uid=$uid');
+  /// Fetch all quotes addressed to a client, matched by the client's email.
+  ///
+  /// A chantier created by an entreprise stores the client's address in
+  /// `chantiers.client_email`. Quotes link back to a chantier via
+  /// `quotes.chantier_id`. So a client (a "particulier" account) finds *their*
+  /// devis by:
+  ///   1. selecting the chantiers whose `client_email` == their login email,
+  ///   2. loading every quote attached to those chantiers.
+  ///
+  /// The result is normalized to the same shape produced by
+  /// [QuoteRepository.getUserQuotes] so the client screens and the signature
+  /// flow can consume it unchanged.
+  ///
+  /// NOTE: the previous implementation filtered `quotes.user_id == uid`, but
+  /// `user_id` is the *entreprise* owner — never the client — so clients saw
+  /// nothing. We now match by email instead. Reading another user's chantiers
+  /// requires an RLS policy allowing `client_email = auth.jwt() ->> 'email'`
+  /// (see supabase/client_access.sql). Without it this returns an empty list.
+  Future<List<Map<String, dynamic>>> getClientQuotes(String uid,
+      {String? email}) async {
+    final clientEmail =
+        (email ?? _supabase.auth.currentUser?.email ?? '').trim().toLowerCase();
+    _logger.i('📋 [UserRepository] Fetching client quotes for email=$clientEmail');
+    if (clientEmail.isEmpty) return [];
     try {
-      // Try to get quotes linked by user_id (client side)
+      final chantierIds = await _clientChantierIds(clientEmail);
+      if (chantierIds.isEmpty) {
+        _logger.i('⚠️ [UserRepository] No chantiers match this client email');
+        return [];
+      }
+
       final response = await _supabase
           .from('quotes')
           .select()
-          .eq('user_id', uid)
+          .inFilter('chantier_id', chantierIds)
           .order('created_at', ascending: false);
-      _logger.i('✅ [UserRepository] Got ${response.length} client quotes');
-      return List<Map<String, dynamic>>.from(response);
+
+      final quotes =
+          List<Map<String, dynamic>>.from(response).map(_normalizeQuote).toList();
+      _logger.i('✅ [UserRepository] Got ${quotes.length} client quotes');
+      return quotes;
     } catch (e) {
       _logger.e('❌ [UserRepository] Failed to fetch client quotes', error: e);
       return [];
     }
+  }
+
+  /// Read-only list of the works (tasks) for every chantier addressed to this
+  /// client, so they can follow progress. Each task carries its chantier
+  /// reference for grouping in the UI.
+  Future<List<Map<String, dynamic>>> getClientTasks(String uid,
+      {String? email}) async {
+    final clientEmail =
+        (email ?? _supabase.auth.currentUser?.email ?? '').trim().toLowerCase();
+    _logger.i('🧱 [UserRepository] Fetching client tasks for email=$clientEmail');
+    if (clientEmail.isEmpty) return [];
+    try {
+      final chantiers = await _supabase
+          .from('chantiers')
+          .select('id, reference')
+          .ilike('client_email', clientEmail);
+
+      final byId = {
+        for (final c in chantiers)
+          c['id'] as String: (c['reference'] as String?) ?? 'Chantier'
+      };
+      if (byId.isEmpty) return [];
+
+      final tasks = await _supabase
+          .from('chantier_tasks')
+          .select()
+          .inFilter('chantier_id', byId.keys.toList())
+          .order('created_at', ascending: true);
+
+      return List<Map<String, dynamic>>.from(tasks).map((t) {
+        return {
+          ...t,
+          'chantier_reference': byId[t['chantier_id']] ?? 'Chantier',
+        };
+      }).toList();
+    } catch (e) {
+      _logger.e('❌ [UserRepository] Failed to fetch client tasks', error: e);
+      return [];
+    }
+  }
+
+  /// IDs of the chantiers whose `client_email` matches [clientEmail]
+  /// (case-insensitive).
+  Future<List<String>> _clientChantierIds(String clientEmail) async {
+    final rows = await _supabase
+        .from('chantiers')
+        .select('id')
+        .ilike('client_email', clientEmail);
+    return rows.map((r) => r['id'] as String).toList();
+  }
+
+  /// Maps a raw `quotes` row to the UI shape used across the client screens and
+  /// the signature flow (mirrors QuoteRepository.getUserQuotes).
+  Map<String, dynamic> _normalizeQuote(Map<String, dynamic> quote) {
+    Map<String, dynamic> asMap(dynamic v) {
+      if (v is Map<String, dynamic>) return v;
+      if (v is Map) return Map<String, dynamic>.from(v);
+      return {};
+    }
+
+    final metadata = asMap(quote['metadata']);
+    final client = asMap(metadata['client']);
+    final totalHt = quote['total_ht'] ?? 0;
+    final tvaRate = quote['tva_rate'] ?? 20;
+
+    return {
+      'id': quote['id'],
+      'chantier_id': quote['chantier_id'],
+      'status': quote['status'] ?? 'Draft',
+      'created_at': quote['created_at'],
+      'signed_at': quote['signed_at'],
+      'signature_data': quote['signature_data'],
+      'client': client,
+      'quoteNumber': metadata['quoteNumber'] ?? quote['reference'] ?? 'N/A',
+      'reference': quote['reference'] ?? metadata['quoteNumber'] ?? 'N/A',
+      'date': metadata['date'] ?? '',
+      'validity': metadata['validity'] ?? '',
+      'siteAddress': metadata['siteAddress'] ?? '',
+      'travauxStart': metadata['travauxStart'] ?? '',
+      'travauxDuration': metadata['travauxDuration'] ?? '',
+      'company': metadata['company'] ?? {},
+      'totals': {
+        'ht': totalHt,
+        'tva': (totalHt is num ? totalHt : 0) * (tvaRate is num ? tvaRate : 20) / 100,
+        'ttc': quote['total_ttc'] ?? 0,
+      },
+      'expenses': {},
+      'tasks': {},
+    };
   }
 
   Future<void> updateClientProfile({

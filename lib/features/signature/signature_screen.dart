@@ -97,7 +97,7 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
             if (Navigator.canPop(context)) {
               context.pop();
             } else {
-              context.go('/home');
+              context.go('/client-home');
             }
           },
         ),

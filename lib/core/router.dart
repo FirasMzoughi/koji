@@ -62,6 +62,8 @@ import 'package:koji/features/quote/chantier_documents_screen.dart';
 import 'package:koji/features/quote/budget_category_detail_screen.dart';
 import 'package:koji/features/quote/budget_history_screen.dart';
 import 'package:koji/features/client/client_home_screen.dart';
+import 'package:koji/features/client/client_tasks_screen.dart';
+import 'package:koji/features/client/client_messages_screen.dart';
 import 'package:koji/features/archives/archives_screen.dart';
 
 // Custom page transition for faster navigation - OPTIMIZED
@@ -174,6 +176,35 @@ final router = GoRouter(
         state,
         const ClientHomeScreen(),
       ),
+    ),
+    // Espace Client (particulier) — works follow-up & messaging
+    GoRoute(
+      path: '/client/tasks',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const ClientTasksScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/client/messages',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const ClientMessagesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/client/messages/:quoteId',
+      pageBuilder: (context, state) {
+        final quoteId = state.pathParameters['quoteId']!;
+        final artisanName = state.extra as String?;
+        return _buildPageWithTransition(
+          context,
+          state,
+          ClientChatScreen(quoteId: quoteId, artisanName: artisanName),
+        );
+      },
     ),
     GoRoute(
       path: '/chantier/create',

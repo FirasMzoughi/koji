@@ -9,7 +9,16 @@ import 'package:koji/features/quote/repository/ouvrage_library_repository.dart';
 class OuvrageLibraryFormScreen extends ConsumerStatefulWidget {
   final LibraryOuvrage? existing;
 
-  const OuvrageLibraryFormScreen({super.key, this.existing});
+  /// When set, the form creates a sous-ouvrage attached to this parent ouvrage.
+  final String? parentId;
+  final String? parentCode;
+
+  const OuvrageLibraryFormScreen({
+    super.key,
+    this.existing,
+    this.parentId,
+    this.parentCode,
+  });
 
   @override
   ConsumerState<OuvrageLibraryFormScreen> createState() =>
@@ -60,6 +69,13 @@ class _OuvrageLibraryFormScreenState
   ];
 
   bool get _isEdit => widget.existing != null;
+
+  /// The parent this row hangs under: an existing sous-ouvrage keeps its own
+  /// parent_id; a brand-new one uses the parentId passed into the form.
+  String? get _effectiveParentId =>
+      widget.existing?.parentId ?? widget.parentId;
+
+  bool get _isSubOuvrage => _effectiveParentId != null;
 
   @override
   void initState() {
@@ -140,6 +156,7 @@ class _OuvrageLibraryFormScreenState
           : _commentaireCtrl.text.trim(),
       coefficient: _toDouble(_coefficientCtrl.text),
       reduction: _toDouble(_reductionCtrl.text),
+      parentId: _effectiveParentId,
     );
 
     try {
@@ -168,7 +185,9 @@ class _OuvrageLibraryFormScreenState
         backgroundColor: const Color(0xFFF8F9FA),
         elevation: 0,
         title: Text(
-          _isEdit ? 'Modifier ouvrage' : 'Nouvel ouvrage',
+          _isEdit
+              ? (_isSubOuvrage ? 'Modifier sous-ouvrage' : 'Modifier ouvrage')
+              : (_isSubOuvrage ? 'Nouveau sous-ouvrage' : 'Nouvel ouvrage'),
           style: AppTheme.headingStyle(context).copyWith(fontSize: 18),
         ),
         leading: IconButton(
@@ -181,6 +200,34 @@ class _OuvrageLibraryFormScreenState
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            // Sous-ouvrage parent indicator
+            if (_isSubOuvrage) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F9FF),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.account_tree,
+                        size: 16, color: Color(0xFF0369A1)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Sous-ouvrage de ${widget.parentCode ?? widget.existing?.code ?? "l'ouvrage parent"}',
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0369A1)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             _label('Code'),
             _field(
               _codeCtrl,

@@ -8,14 +8,33 @@ class OuvrageLibraryRepository {
 
   static const _table = 'ouvrage_library';
 
+  /// Returns only top-level ouvrages, each with its sous-ouvrages nested in
+  /// [LibraryOuvrage.subOuvrages] (assembled from parent_id).
   Future<List<LibraryOuvrage>> getAll() async {
     final rows = await _client
         .from(_table)
         .select()
         .order('famille', ascending: true)
         .order('code', ascending: true);
-    return (rows as List)
+
+    final all = (rows as List)
         .map((e) => LibraryOuvrage.fromMap(e as Map<String, dynamic>))
+        .toList();
+
+    // Group sous-ouvrages by their parent_id.
+    final childrenByParent = <String, List<LibraryOuvrage>>{};
+    for (final o in all) {
+      if (o.parentId != null) {
+        childrenByParent.putIfAbsent(o.parentId!, () => []).add(o);
+      }
+    }
+
+    // Return top-level ouvrages, attaching their sous-ouvrages.
+    return all
+        .where((o) => o.parentId == null)
+        .map((o) => childrenByParent.containsKey(o.id)
+            ? o.copyWith(subOuvrages: childrenByParent[o.id])
+            : o)
         .toList();
   }
 

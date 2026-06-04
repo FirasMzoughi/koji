@@ -2,70 +2,124 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koji/core/route_args.dart';
-import 'package:koji/features/auth/repository/auth_repository.dart';
-import 'package:koji/features/quote/repository/quote_repository.dart';
+import 'package:koji/features/client/providers/client_providers.dart';
+import 'package:koji/features/client/repository/client_repository.dart';
 
+/// "Mes devis à signer" — the client's list of devis addressed to their email.
+///
+/// Sourced from [clientQuotesProvider] (chantiers.client_email match), not the
+/// entreprise's owned quotes. Only the devis still awaiting signature are shown
+/// here; signed ones move to the Documents tab.
 class SignatureListScreen extends ConsumerWidget {
   const SignatureListScreen({super.key});
 
+  static const _darkNavy = Color(0xFF0F172A);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authRepositoryProvider).currentUser;
-    final quotesAsync = user != null
-        ? ref.watch(quoteRepositoryProvider).getUserQuotes(user.id)
-        : const Stream<List<Map<String, dynamic>>>.empty();
+    final quotesAsync = ref.watch(clientQuotesProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Signer un devis',
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F2648))),
+        title: const Text('Mes devis à signer',
+            style: TextStyle(fontWeight: FontWeight.w800, color: _darkNavy)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: Color(0xFF0F2648), size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: _darkNavy, size: 20),
           onPressed: () {
             if (Navigator.canPop(context)) {
               context.pop();
             } else {
-              context.go('/home');
+              context.go('/client-home');
             }
           },
         ),
       ),
-      body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: quotesAsync,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Erreur: ${snapshot.error}"));
-          }
+      body: quotesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => _ErrorState(message: '$e'),
+        data: (allQuotes) {
+          final pending =
+              allQuotes.where((q) => ClientRepository.isPending(q['status'])).toList();
 
-          final quotes = snapshot.data ?? [];
+          if (pending.isEmpty) return const _EmptyState();
 
-          if (quotes.isEmpty)
-            return const Center(child: Text("Aucun devis à signer."));
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(20),
-            itemCount: quotes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              return _SignatureQuoteCard(
-                  quote: quotes[index],
-                  onTap: () {
-                    context.push('/signature/sign',
-                        extra: SignatureArgs(quote: quotes[index]));
-                  });
-            },
+          return RefreshIndicator(
+            onRefresh: () async => ref.invalidate(clientQuotesProvider),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(20),
+              itemCount: pending.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                return _SignatureQuoteCard(
+                  quote: pending[index],
+                  onTap: () async {
+                    await context.push('/signature/sign',
+                        extra: SignatureArgs(quote: pending[index]));
+                    // Coming back after a signing attempt: refresh so a freshly
+                    // signed devis drops out of the pending list.
+                    ref.invalidate(clientQuotesProvider);
+                  },
+                );
+              },
+            ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.task_alt_rounded, size: 72, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          const Text('Aucun devis à signer',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF94A3B8))),
+          const SizedBox(height: 6),
+          const Text(
+            'Les devis envoyés par votre artisan\napparaîtront ici.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Color(0xFFCBD5E1)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            const SizedBox(height: 12),
+            Text('Impossible de charger vos devis.\n$message',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF64748B))),
+          ],
+        ),
       ),
     );
   }
@@ -77,31 +131,18 @@ class _SignatureQuoteCard extends StatelessWidget {
 
   const _SignatureQuoteCard({required this.quote, required this.onTap});
 
+  static const _darkNavy = Color(0xFF0F172A);
+  static const _slate = Color(0xFF64748B);
+
   @override
   Widget build(BuildContext context) {
-    final client = quote['client'] ?? {};
-    final status = quote['status'] ?? 'pending';
-    final totals = quote['totals'] ?? {};
-    final totalTTC = totals['ttc'] ?? 0.0;
-
-    // Determine Status Badge
-    String statusLabel = 'Brouillon';
-    Color statusColor = Colors.orange;
-    Color statusBg = Colors.orange.withAlpha((0.1 * 255).round());
-
-    if (status == 'en_cours' || status == 'pending') {
-      statusLabel = 'Prêt à Signer';
-      statusColor = Colors.green;
-      statusBg = Colors.green.withAlpha((0.1 * 255).round());
-    } else if (status == 'envoye') {
-      statusLabel = 'Envoyé';
-      statusColor = Colors.blue;
-      statusBg = Colors.blue.withAlpha((0.1 * 255).round());
-    } else if (status == 'signed' || status == 'completed') {
-      statusLabel = 'Signé';
-      statusColor = Colors.grey;
-      statusBg = Colors.grey.withAlpha((0.1 * 255).round());
-    }
+    final client = (quote['client'] as Map?)?.cast<String, dynamic>() ?? {};
+    final company = (quote['company'] as Map?)?.cast<String, dynamic>() ?? {};
+    final totals = (quote['totals'] as Map?)?.cast<String, dynamic>() ?? {};
+    final totalTTC = (totals['ttc'] as num?)?.toDouble() ?? 0.0;
+    final artisan = (company['raisonSociale'] as String?) ??
+        (company['name'] as String?) ??
+        'Votre artisan';
 
     return Container(
       decoration: BoxDecoration(
@@ -109,9 +150,9 @@ class _SignatureQuoteCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha((0.03 * 255).round()),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -129,7 +170,7 @@ class _SignatureQuoteCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Devis N° #${quote['quoteNumber'] ?? '??'}",
+                      "N° ${quote['quoteNumber'] ?? quote['reference'] ?? '—'}",
                       style: const TextStyle(
                           color: Color(0xFF94A3B8),
                           fontWeight: FontWeight.bold),
@@ -138,22 +179,21 @@ class _SignatureQuoteCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: statusBg,
+                        color: const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: statusColor.withAlpha((0.2 * 255).round())),
+                            color: const Color(0xFFF59E0B)
+                                .withValues(alpha: 0.25)),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (status == 'en_cours' || status == 'pending')
-                            Icon(Icons.check_circle,
-                                size: 12, color: statusColor),
-                          if (status == 'en_cours' || status == 'pending')
-                            const SizedBox(width: 4),
-                          Text(statusLabel,
+                          Icon(Icons.draw_outlined,
+                              size: 12, color: Color(0xFFD97706)),
+                          SizedBox(width: 4),
+                          Text('À signer',
                               style: TextStyle(
-                                  color: statusColor,
+                                  color: Color(0xFFD97706),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12)),
                         ],
@@ -163,38 +203,42 @@ class _SignatureQuoteCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  // Use Quote Title or Client Name
-                  quote['company']?['name'] != null
-                      ? "Rénovation ${quote['client']?['name']?.split(' ').first}"
-                      : "Rénovation",
+                  client['name'] != null
+                      ? "Devis — ${(client['name'] as String).split(' ').first}"
+                      : "Votre devis",
                   style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF0F2648)),
+                      color: _darkNavy),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.person,
+                    const Icon(Icons.storefront_outlined,
                         size: 16, color: Color(0xFF94A3B8)),
                     const SizedBox(width: 6),
-                    Text(client['name'] ?? 'Client Inconnu',
-                        style: const TextStyle( color: Color(0xFF64748B))),
+                    Expanded(
+                      child: Text(artisan,
+                          style: const TextStyle(color: _slate),
+                          overflow: TextOverflow.ellipsis),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today,
-                        size: 16, color: Color(0xFF94A3B8)),
-                    const SizedBox(width: 6),
-                    Text("Crée le ${quote['date'] ?? '??'}",
-                        style: const TextStyle( color: Color(0xFF64748B))),
-                  ],
-                ),
+                if ((quote['date'] ?? '').toString().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today,
+                          size: 16, color: Color(0xFF94A3B8)),
+                      const SizedBox(width: 6),
+                      Text("Reçu le ${quote['date']}",
+                          style: const TextStyle(color: _slate)),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 8),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -203,26 +247,33 @@ class _SignatureQuoteCard extends StatelessWidget {
                       children: [
                         const Text("Total TTC",
                             style: TextStyle(
-                                fontSize: 10,
-                                color: Color(0xFF94A3B8))),
+                                fontSize: 10, color: Color(0xFF94A3B8))),
                         Text(
-                            "${(totalTTC as num).toDouble().toStringAsFixed(2)} €",
+                            "${totalTTC.toStringAsFixed(2)} €",
                             style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFF0F2648))),
+                                color: _darkNavy)),
                       ],
                     ),
-                    Row(
-                      children: [
-                        const Text("Détails",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1D3557))),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.arrow_forward,
-                            size: 16, color: Color(0xFF1D3557)),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        children: [
+                          Text("Signer",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                          SizedBox(width: 6),
+                          Icon(Icons.arrow_forward,
+                              size: 16, color: Colors.white),
+                        ],
+                      ),
                     )
                   ],
                 )

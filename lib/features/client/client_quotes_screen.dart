@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:koji/features/auth/repository/auth_repository.dart';
-import 'package:koji/features/auth/repository/user_repository.dart';
+import 'package:koji/features/client/repository/client_repository.dart';
 
 class ClientQuotesScreen extends ConsumerStatefulWidget {
   const ClientQuotesScreen({super.key});
@@ -36,11 +35,8 @@ class _ClientQuotesScreenState extends ConsumerState<ClientQuotesScreen>
   }
 
   Future<void> _loadQuotes() async {
-    final user = ref.read(authRepositoryProvider).currentUser;
-    if (user == null) return;
     try {
-      final quotes =
-          await ref.read(userRepositoryProvider).getClientQuotes(user.id);
+      final quotes = await ref.read(clientRepositoryProvider).getQuotes();
       if (mounted) setState(() { _quotes = quotes; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -375,7 +371,7 @@ class _ClientQuotesScreenState extends ConsumerState<ClientQuotesScreen>
                         children: [
                           Icon(Icons.draw_outlined,
                               color: Theme.of(context).colorScheme.surface, size: 14),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
                             'Signer',
                             style: TextStyle(

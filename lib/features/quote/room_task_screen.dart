@@ -254,15 +254,24 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     double parse(String s) =>
         double.tryParse(s.trim().replaceAll(',', '.')) ?? 0;
 
+    // The client asked for "soit coefficient, soit réduction" — OR, not AND.
+    // The user picks one mode; the other field is cleared/neutralised so the
+    // two adjustments can never stack.
+    // 0 = coefficient, 1 = réduction. Default to whichever the library row
+    // already carries; coefficient wins if both are set.
+    int mode = (o.reduction > 0 && o.coefficient == 1) ? 1 : 0;
+
     return showDialog<(double, double)>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSt) {
-            final coeff = parse(coeffCtrl.text);
-            final reduc = parse(reducCtrl.text);
-            final preview =
-                o.coutMoU * coeff * (1 - (reduc / 100.0));
+            final isCoeff = mode == 0;
+            // Only the active field contributes; the other is neutral.
+            final coeff = isCoeff ? parse(coeffCtrl.text) : 1.0;
+            final reduc = isCoeff ? 0.0 : parse(reducCtrl.text);
+            final preview = o.coutMoU * coeff * (1 - (reduc / 100.0));
+
             return AlertDialog(
               title: const Text('Adapter pour ce chantier'),
               content: Column(
@@ -275,59 +284,69 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                         fontSize: 13, color: Color(0xFF6B7280)),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Coefficient',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            TextField(
-                              controller: coeffCtrl,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              onChanged: (_) => setSt(() {}),
-                              decoration: const InputDecoration(
-                                hintText: '1.00',
-                                isDense: true,
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Réduction (%)',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            TextField(
-                              controller: reducCtrl,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              onChanged: (_) => setSt(() {}),
-                              decoration: const InputDecoration(
-                                hintText: '0',
-                                isDense: true,
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  // Mode selector — coefficient OR réduction, never both.
+                  SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment(value: 0, label: Text('Coefficient')),
+                      ButtonSegment(value: 1, label: Text('Réduction (%)')),
                     ],
+                    selected: {mode},
+                    onSelectionChanged: (s) => setSt(() {
+                      mode = s.first;
+                      // Reset the now-inactive field to its neutral value.
+                      if (mode == 0) {
+                        reducCtrl.text = '0';
+                      } else {
+                        coeffCtrl.text = '1';
+                      }
+                    }),
+                    showSelectedIcon: false,
                   ),
+                  const SizedBox(height: 16),
+                  if (isCoeff)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Coefficient',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: coeffCtrl,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
+                          onChanged: (_) => setSt(() {}),
+                          decoration: const InputDecoration(
+                            hintText: '1.00',
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Réduction (%)',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: reducCtrl,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
+                          onChanged: (_) => setSt(() {}),
+                          decoration: const InputDecoration(
+                            hintText: '0',
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
@@ -354,9 +373,13 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                   child: const Text('Annuler'),
                 ),
                 ElevatedButton(
+                  // Return only the active adjustment; the other stays neutral
+                  // (coefficient 1 / réduction 0) so they can't stack.
                   onPressed: () => Navigator.pop(
                     ctx,
-                    (parse(coeffCtrl.text), parse(reducCtrl.text)),
+                    mode == 0
+                        ? (parse(coeffCtrl.text), 0.0)
+                        : (1.0, parse(reducCtrl.text)),
                   ),
                   child: const Text('Ajouter'),
                 ),
@@ -927,6 +950,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     final allTaskItems = filteredCustomTasks.map((t) => TaskItem(
       id: t.id,
       label: t.title,
+      description: t.description,
       code: t.code,
       famille: t.famille ?? t.profession, // Use profession as category title if famille is null
       unite: t.unite,
@@ -937,6 +961,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       subTasks: t.subTasks.map((s) => TaskItem(
         id: s.id,
         label: s.title,
+        description: s.description,
         code: s.code,
         famille: s.famille ?? s.profession,
         unite: s.unite,
@@ -1183,15 +1208,20 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // CREATE TASK BUTTON
+                  // CREATE TASK BUTTON — top-level ouvrage only. Sous-ouvrages
+                  // are added from inside their parent ouvrage card via the
+                  // "Ajouter un sous-poste" button.
                   InkWell(
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => CreateTaskScreen(profession: _selectedTrade))
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              CreateTaskScreen(profession: _selectedTrade),
+                        ),
                       );
                       if (result == true) {
-                         _fetchCustomTasksForTrade(_selectedTrade);
+                        _fetchCustomTasksForTrade(_selectedTrade);
                       }
                     },
                     borderRadius: BorderRadius.circular(12),
@@ -1727,7 +1757,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                           children: [
                             Icon(Icons.add, size: 14, color: Color(0xFF0369A1)),
                             SizedBox(width: 4),
-                            Text('Ajouter un sous-poste', style: TextStyle(fontSize: 12, color: Color(0xFF0369A1), fontWeight: FontWeight.w600)),
+                            Text('Ajouter un sous-ouvrage', style: TextStyle(fontSize: 12, color: Color(0xFF0369A1), fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -2027,34 +2057,111 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
 
   /// Edit dialog — works for both parent postes and sous-postes.
   Future<void> _editTask(TaskItem item) async {
+    // Expose every editable attribute of the task — not just désignation/code.
+    // The client asked to be able to modify "from désignation to commentaire
+    // and everything else" in one place.
     final titleCtrl = TextEditingController(text: item.label);
     final codeCtrl = TextEditingController(text: item.code ?? '');
+    final descCtrl = TextEditingController(text: item.description ?? '');
+    final uniteCtrl = TextEditingController(text: item.unite ?? '');
+    // Sous-postes derive their temps individually; a parent with children sums
+    // them, so editing the parent temps directly would be ignored.
+    final isParentWithChildren = item.subTasks.isNotEmpty;
+    final tempsCtrl = TextEditingController(
+      text: item.tempsHU == null ? '' : _formatNum(item.tempsHU!),
+    );
 
-    final saved = await showDialog<bool>(
+    InputDecoration deco(String label, {String? hint}) => InputDecoration(
+          labelText: label,
+          hintText: hint,
+          isDense: true,
+          border: const OutlineInputBorder(),
+        );
+
+    final saved = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Modifier la tâche',
             style: TextStyle(
                 fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: 'Désignation'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  autofocus: true,
+                  textInputAction: TextInputAction.next,
+                  decoration: deco('Désignation'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: codeCtrl,
+                  decoration: deco('Code'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  minLines: 2,
+                  maxLines: 5,
+                  decoration: deco('Commentaire',
+                      hint: 'Détails affichés sous la tâche'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: uniteCtrl,
+                        decoration: deco('Unité', hint: 'm², u, ml…'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: tempsCtrl,
+                        enabled: !isParentWithChildren,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration: deco(
+                          'Temps (h/u)',
+                          hint: isParentWithChildren ? 'somme sous-postes' : '0',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (isParentWithChildren) ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Le temps est calculé à partir des sous-postes.',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: codeCtrl,
-              decoration: const InputDecoration(labelText: 'Code'),
-            ),
-          ],
+          ),
         ),
+        actionsPadding:
+            const EdgeInsets.fromLTRB(12, 0, 12, 8),
         actions: [
+          // Delete lives in the same dialog so a task is always "modifiable
+          // ou à supprimer" from one place.
+          TextButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'delete'),
+            icon: const Icon(Icons.delete_outline,
+                size: 18, color: Color(0xFFEF4444)),
+            label: const Text('Supprimer',
+                style: TextStyle(color: Color(0xFFEF4444))),
+          ),
+          const Spacer(),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.pop(ctx, null),
             child: const Text('Annuler',
                 style: TextStyle(color: Color(0xFF64748B))),
           ),
@@ -2067,6 +2174,9 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
             ),
             onPressed: () async {
               if (titleCtrl.text.trim().isEmpty) return;
+              final descText = descCtrl.text.trim();
+              final tempsText =
+                  tempsCtrl.text.trim().replaceAll(',', '.');
               try {
                 await ref.read(taskRepositoryProvider).updateTask(
                       id: item.id,
@@ -2074,8 +2184,16 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                       code: codeCtrl.text.trim().isEmpty
                           ? null
                           : codeCtrl.text.trim(),
+                      description: descText.isEmpty ? null : descText,
+                      clearDescription: descText.isEmpty,
+                      unite: uniteCtrl.text.trim().isEmpty
+                          ? null
+                          : uniteCtrl.text.trim(),
+                      tempsHU: isParentWithChildren
+                          ? null
+                          : double.tryParse(tempsText),
                     );
-                if (ctx.mounted) Navigator.pop(ctx, true);
+                if (ctx.mounted) Navigator.pop(ctx, 'saved');
               } catch (e) {
                 if (!ctx.mounted) return;
                 ScaffoldMessenger.of(ctx).showSnackBar(
@@ -2092,8 +2210,11 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
         ],
       ),
     );
-    if (saved == true) {
+
+    if (saved == 'saved') {
       _fetchCustomTasksForTrade(_selectedTrade);
+    } else if (saved == 'delete') {
+      await _confirmDeleteTask(item);
     }
   }
 

@@ -10,6 +10,7 @@ class TaskItem {
   final String label;
 
   // KOJI Banque de Temps fields (null for legacy tasks)
+  final String? description; // commentaire shown under the task
   final String? code;
   final String? famille;
   final String? unite;
@@ -22,6 +23,7 @@ class TaskItem {
   TaskItem({
     required this.id,
     required this.label,
+    this.description,
     this.code,
     this.famille,
     this.unite,

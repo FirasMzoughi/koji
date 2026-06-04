@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koji/features/auth/repository/auth_repository.dart';
-import 'package:koji/features/auth/repository/user_repository.dart';
+import 'package:koji/features/client/repository/client_repository.dart';
 
 class ClientDocumentsScreen extends ConsumerStatefulWidget {
   const ClientDocumentsScreen({super.key});
@@ -28,17 +27,9 @@ class _ClientDocumentsScreenState
   }
 
   Future<void> _loadDocs() async {
-    final user = ref.read(authRepositoryProvider).currentUser;
-    if (user == null) return;
     try {
-      final quotes =
-          await ref.read(userRepositoryProvider).getClientQuotes(user.id);
-      // Only show finalized (signed / accepted) quotes as "documents"
-      final docs = quotes.where((q) {
-        final s = (q['status'] ?? '').toString().toLowerCase();
-        return s == 'signed' || s == 'accepted' || s == 'validated' ||
-            s.contains('sign') || s.contains('accept') || s == 'generated';
-      }).toList();
+      // Only the finalized (signed / accepted) devis count as "documents".
+      final docs = await ref.read(clientRepositoryProvider).getSignedDocuments();
       if (mounted) setState(() { _quotes = docs; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);

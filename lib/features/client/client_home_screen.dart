@@ -7,6 +7,7 @@ import 'package:koji/features/auth/repository/user_repository.dart';
 import 'package:koji/features/client/client_quotes_screen.dart';
 import 'package:koji/features/client/client_documents_screen.dart';
 import 'package:koji/features/client/client_profile_screen.dart';
+import 'package:koji/features/client/repository/client_repository.dart';
 
 class ClientHomeScreen extends ConsumerStatefulWidget {
   const ClientHomeScreen({super.key});
@@ -126,10 +127,9 @@ class _ClientDashboardState extends ConsumerState<_ClientDashboard> {
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user == null) return;
     try {
-      final repo = ref.read(userRepositoryProvider);
-      final data = await repo.getUser(user.id);
-      // Load recent quotes for this client
-      final quotes = await repo.getClientQuotes(user.id);
+      final data = await ref.read(userRepositoryProvider).getUser(user.id);
+      // Devis are matched by the client's email via their chantiers.
+      final quotes = await ref.read(clientRepositoryProvider).getQuotes();
       if (mounted) {
         setState(() {
           _userData = data;
@@ -257,6 +257,30 @@ class _ClientDashboardState extends ConsumerState<_ClientDashboard> {
                                   subtitle: 'Devis en attente',
                                   color: const Color(0xFF10B981),
                                   onTap: () => context.push('/signature/list'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _actionCard(
+                                  icon: Icons.construction_outlined,
+                                  title: 'Suivi travaux',
+                                  subtitle: 'Avancement',
+                                  color: const Color(0xFFEF4444),
+                                  onTap: () => context.push('/client/tasks'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _actionCard(
+                                  icon: Icons.forum_outlined,
+                                  title: 'Messages',
+                                  subtitle: 'Contacter l\'artisan',
+                                  color: const Color(0xFF0EA5E9),
+                                  onTap: () => context.push('/client/messages'),
                                 ),
                               ),
                               const SizedBox(width: 12),

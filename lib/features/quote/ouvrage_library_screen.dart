@@ -36,11 +36,19 @@ class _OuvrageLibraryScreenState extends ConsumerState<OuvrageLibraryScreen> {
     super.dispose();
   }
 
-  Future<void> _openForm({LibraryOuvrage? existing}) async {
+  Future<void> _openForm({
+    LibraryOuvrage? existing,
+    String? parentId,
+    String? parentCode,
+  }) async {
     final created = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => OuvrageLibraryFormScreen(existing: existing),
+        builder: (_) => OuvrageLibraryFormScreen(
+          existing: existing,
+          parentId: parentId,
+          parentCode: parentCode,
+        ),
       ),
     );
     if (created == true) {
@@ -285,7 +293,54 @@ class _OuvrageLibraryScreenState extends ConsumerState<OuvrageLibraryScreen> {
     );
   }
 
+  /// A top-level ouvrage with its sous-ouvrages nested underneath, plus the
+  /// "Ajouter un sous-ouvrage" action. Available in both browse and pick mode.
   Widget _ouvrageCard(LibraryOuvrage o) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _singleCard(o),
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...o.subOuvrages.map((s) => _singleCard(s, isSub: true)),
+              GestureDetector(
+                onTap: () => _openForm(
+                  parentId: o.id,
+                  parentCode: o.code,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F9FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFBAE6FD)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, size: 14, color: Color(0xFF0369A1)),
+                      SizedBox(width: 4),
+                      Text('Ajouter un sous-ouvrage',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF0369A1),
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _singleCard(LibraryOuvrage o, {bool isSub = false}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -342,23 +397,23 @@ class _OuvrageLibraryScreenState extends ConsumerState<OuvrageLibraryScreen> {
                       ),
                     ),
                   const Spacer(),
-                  if (!widget.pickMode)
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert,
-                          size: 18, color: Color(0xFF6B7280)),
-                      onSelected: (v) {
-                        if (v == 'edit') _openForm(existing: o);
-                        if (v == 'delete') _confirmDelete(o);
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(
-                            value: 'edit', child: Text('Modifier')),
-                        PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Supprimer',
-                                style: TextStyle(color: Color(0xFFDC2626)))),
-                      ],
-                    ),
+                  // Edit / delete available in both browse and pick mode.
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert,
+                        size: 18, color: Color(0xFF6B7280)),
+                    onSelected: (v) {
+                      if (v == 'edit') _openForm(existing: o);
+                      if (v == 'delete') _confirmDelete(o);
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                          value: 'edit', child: Text('Modifier')),
+                      PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Supprimer',
+                              style: TextStyle(color: Color(0xFFDC2626)))),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 8),

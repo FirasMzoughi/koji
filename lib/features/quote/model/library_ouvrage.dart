@@ -11,6 +11,13 @@ class LibraryOuvrage {
   final double coefficient;
   final double reduction;
 
+  /// Non-null when this row is a sous-ouvrage nested under another ouvrage.
+  final String? parentId;
+
+  /// Sous-ouvrages nested under this ouvrage. Populated in memory after fetch
+  /// (assembled from parent_id) — never a DB column itself.
+  final List<LibraryOuvrage> subOuvrages;
+
   const LibraryOuvrage({
     required this.id,
     required this.code,
@@ -23,7 +30,12 @@ class LibraryOuvrage {
     this.commentaire,
     this.coefficient = 1.0,
     this.reduction = 0.0,
+    this.parentId,
+    this.subOuvrages = const [],
   });
+
+  bool get isSubOuvrage => parentId != null;
+  bool get hasSubOuvrages => subOuvrages.isNotEmpty;
 
   double get finalUnitPrice =>
       coutMoU * coefficient * (1 - (reduction / 100.0));
@@ -40,6 +52,7 @@ class LibraryOuvrage {
         commentaire: map['commentaire'] as String?,
         coefficient: (map['coefficient'] as num?)?.toDouble() ?? 1.0,
         reduction: (map['reduction'] as num?)?.toDouble() ?? 0.0,
+        parentId: map['parent_id'] as String?,
       );
 
   Map<String, dynamic> toInsertMap(String userId) => {
@@ -54,6 +67,7 @@ class LibraryOuvrage {
         'commentaire': commentaire,
         'coefficient': coefficient,
         'reduction': reduction,
+        if (parentId != null) 'parent_id': parentId,
       };
 
   Map<String, dynamic> toUpdateMap() => {
@@ -67,6 +81,7 @@ class LibraryOuvrage {
         'commentaire': commentaire,
         'coefficient': coefficient,
         'reduction': reduction,
+        'parent_id': parentId,
         'updated_at': DateTime.now().toIso8601String(),
       };
 
@@ -81,6 +96,8 @@ class LibraryOuvrage {
     String? commentaire,
     double? coefficient,
     double? reduction,
+    String? parentId,
+    List<LibraryOuvrage>? subOuvrages,
   }) {
     return LibraryOuvrage(
       id: id,
@@ -94,6 +111,8 @@ class LibraryOuvrage {
       commentaire: commentaire ?? this.commentaire,
       coefficient: coefficient ?? this.coefficient,
       reduction: reduction ?? this.reduction,
+      parentId: parentId ?? this.parentId,
+      subOuvrages: subOuvrages ?? this.subOuvrages,
     );
   }
 }

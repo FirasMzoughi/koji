@@ -154,13 +154,22 @@ class TaskRepository {
     String? code,
     String? famille,
     String? unite,
+    double? tempsHU,
+    // Pass clearDescription: true to explicitly null out an existing
+    // commentaire (a null `description` is treated as "leave unchanged").
+    bool clearDescription = false,
   }) async {
     final updates = <String, dynamic>{};
     if (title != null) updates['title'] = title;
-    if (description != null) updates['description'] = description;
+    if (description != null) {
+      updates['description'] = description;
+    } else if (clearDescription) {
+      updates['description'] = null;
+    }
     if (code != null) updates['code'] = code;
     if (famille != null) updates['famille'] = famille;
     if (unite != null) updates['unite'] = unite;
+    if (tempsHU != null) updates['temps_hu'] = tempsHU;
     if (updates.isEmpty) return;
     await _supabase.from('tasks').update(updates).eq('id', id);
   }
