@@ -141,11 +141,12 @@ class QuoteRepository {
         }
       }
 
-      // Generate signature URL and store in metadata (or it could be its own table later)
-      final clientEmail = client?['email'] ?? '';
+      // Generate signature URL and store in metadata (or it could be its own
+      // table later). The link no longer carries the client email: access is by
+      // the per-chantier Identifiant + Mot de passe (sent alongside), and the
+      // unguessable quote id authorizes the view.
       final signatureUrl =
-          'https://koji-signature.vercel.app/?quoteId=$finalQuoteId'
-          '&email=${Uri.encodeComponent(clientEmail)}';
+          'https://koji-signature.vercel.app/?quoteId=$finalQuoteId';
 
       // Per-chantier access credentials (Identifiant + Mot de passe) the client
       // uses to log in and sign. Generated ONCE per quote: if this quote was
