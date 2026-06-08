@@ -104,6 +104,14 @@ class AppDrawer extends ConsumerWidget {
                   context.push('/ouvrage-library');
                 },
               ),
+              _DrawerItem(
+                icon: Icons.receipt_long_outlined,
+                label: 'Facturation',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  context.push('/facturation');
+                },
+              ),
 
 
 

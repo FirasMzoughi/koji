@@ -79,13 +79,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                 color: const Color(0xFF1E3A8A), // Dark blue
               ),
             ),
-            Text(
-              'Etape 1/6',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.textLight,
-              ),
-            ),
+            
           ],
         ),
         actions: [

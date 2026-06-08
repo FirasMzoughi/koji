@@ -22,6 +22,8 @@ void main() async {
   // Local notifications for the contractor's planning reminders.
   await NotificationService.instance.init();
   unawaited(NotificationService.instance.refreshDailySummary());
+  // Alert on any invoice that has passed its échéance without full payment.
+  unawaited(NotificationService.instance.notifyOverdueInvoices());
 
   runApp(
     const ProviderScope(

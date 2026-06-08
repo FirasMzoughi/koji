@@ -12,8 +12,8 @@ import 'dart:io';
 import 'dart:typed_data'; // For Uint8List
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:koji/core/supabase_config.dart'; // For Supabase directly
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:koji/features/quote/services/devis_pdf_service.dart';
 
 class QuoteSuccessScreen extends StatefulWidget {
   final String quoteId;
@@ -40,7 +40,8 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
   // Bundled Koji logo bytes, reused for the watermark and the footer mark.
   Uint8List? _kojiLogoBytes;
 
-  String get _quoteNumber => widget.quoteData['quoteNumber'] ?? 'D-XXXX';
+  String get _quoteNumber =>
+      widget.quoteData['quoteNumber'] ?? '${DateTime.now().year}-0001';
 
   @override
   void initState() {
@@ -93,401 +94,17 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
     }
   }
 
+  // Delegates to the shared DevisPdfService so the devis sent by the entreprise
+  // (here) and the devis previewed/signed by the client render the exact same
+  // document (design harmonized — single source of truth).
   Future<pw.Document> _generatePdf(
       {PdfPageFormat format = PdfPageFormat.a4}) async {
-    final pdf = pw.Document();
-
-    final company = widget.quoteData['company'] ?? {};
-    final client = widget.quoteData['client'] ?? {};
-    final totals = widget.quoteData['totals'] ?? {};
-    final expenses =
-        widget.quoteData['expenses'] as Map<String, dynamic>? ?? {};
-
-    final fontRegular = await PdfGoogleFonts.interRegular();
-    final fontBold = await PdfGoogleFonts.interBold();
-    final colorNavy = PdfColor.fromInt(0xFF0F172A);
-    final colorAccent = PdfColor.fromInt(0xFFA18B73);
-
-    // Bundled Koji logo, used as a faint background watermark on every page
-    // and as a small mark in the footer.
-    pw.MemoryImage? kojiWatermark;
-    try {
-      _kojiLogoBytes ??= (await rootBundle.load('assets/icons/LOGO.png')).buffer.asUint8List();
-      kojiWatermark = pw.MemoryImage(_kojiLogoBytes!);
-    } catch (e) {
-      debugPrint('Could not load Koji watermark: $e');
-    }
-
-    final siteAddress = (widget.quoteData['siteAddress'] as String?) ?? '';
-    final travauxLieu = siteAddress.isNotEmpty
-        ? siteAddress
-        : (client['address']?.toString() ?? '');
-    final travauxStart = (widget.quoteData['travauxStart'] as String?) ?? '';
-    final travauxDuration = (widget.quoteData['travauxDuration'] as String?) ?? '';
-
-    pdf.addPage(pw.MultiPage(
-        pageTheme: pw.PageTheme(
-          pageFormat: format,
-          theme: pw.ThemeData.withFont(base: fontRegular, bold: fontBold),
-          // Faint Koji logo watermark, centered behind the content on every page.
-          buildBackground: (context) => kojiWatermark == null
-              ? pw.SizedBox()
-              : pw.Center(
-                  child: pw.Opacity(
-                    opacity: 0.04,
-                    child: pw.Image(kojiWatermark, width: 320, height: 320),
-                  ),
-                ),
-        ),
-        // Legal footer (pied de page) repeated on every page, like classic
-        // French devis: company identification in small print, plus "Créé par Koji".
-        footer: (context) => _buildLegalFooter(context, company, colorAccent),
-        build: (context) {
-          return [
-            // ── Header ─────────────────────────────────────────────────────
-            pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Container(
-                  width: 50,
-                  height: 50,
-                  decoration: pw.BoxDecoration(
-                    color: (_logoBytes != null || _logoPath != null) ? PdfColors.white : colorNavy,
-                    borderRadius: pw.BorderRadius.circular(8),
-                    image: _logoBytes != null
-                        ? pw.DecorationImage(
-                            image: pw.MemoryImage(_logoBytes!), fit: pw.BoxFit.cover)
-                        : _logoPath != null
-                            ? pw.DecorationImage(
-                                image: pw.MemoryImage(File(_logoPath!).readAsBytesSync()),
-                                fit: pw.BoxFit.cover)
-                            : null,
-                  ),
-                  child: (_logoBytes == null && _logoPath == null)
-                      ? pw.Center(child: pw.PdfLogo(color: PdfColors.white))
-                      : null,
-                ),
-                pw.SizedBox(width: 14),
-                pw.Expanded(
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(company['name'] ?? 'Koji',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16, color: colorNavy)),
-                      pw.Text(company['address'] ?? '', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-                      pw.Text(company['phone'] ?? '', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-                      pw.Text(company['email'] ?? '', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-                    ],
-                  ),
-                ),
-                pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColor.fromInt(0xFFFFF7ED),
-                    borderRadius: pw.BorderRadius.circular(6),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text("DEVIS N°", style: pw.TextStyle(fontSize: 8, color: colorAccent)),
-                      pw.Text(_quoteNumber,
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12, color: colorNavy)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 16),
-            pw.Divider(color: PdfColors.grey300),
-            pw.SizedBox(height: 16),
-
-            // ── Client & Date ───────────────────────────────────────────────
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text("CLIENT", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
-                    pw.SizedBox(height: 4),
-                    pw.Text(client['name'] ?? 'Client',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12, color: colorNavy)),
-                    pw.Text(client['address'] ?? '', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-                  ],
-                ),
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
-                  children: [
-                    pw.Text("DATE", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
-                    pw.Text(widget.quoteData['date'] ?? '', style: pw.TextStyle(fontSize: 11, color: colorNavy)),
-                    pw.SizedBox(height: 4),
-                    pw.Text("VALIDITÉ", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
-                    pw.Text(widget.quoteData['validity'] ?? '', style: pw.TextStyle(fontSize: 11, color: colorNavy)),
-                  ],
-                ),
-              ],
-            ),
-            if ((widget.quoteData['siteAddress'] as String?)?.isNotEmpty ?? false) ...[
-              pw.SizedBox(height: 12),
-              pw.Container(
-                padding: const pw.EdgeInsets.all(8),
-                decoration: pw.BoxDecoration(
-                  color: PdfColors.grey50,
-                  borderRadius: pw.BorderRadius.circular(6),
-                  border: pw.Border.all(color: PdfColors.grey200),
-                ),
-                child: pw.Row(children: [
-                  pw.Text("Lieu : ", style: pw.TextStyle(fontSize: 9, color: colorAccent)),
-                  pw.Text(widget.quoteData['siteAddress'] ?? '',
-                      style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                ]),
-              ),
-            ],
-
-            pw.SizedBox(height: 20),
-
-            // ── Table Header ────────────────────────────────────────────────
-            pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: pw.BoxDecoration(color: colorNavy, borderRadius: pw.BorderRadius.circular(6)),
-              child: pw.Row(children: [
-                pw.Expanded(flex: 4, child: pw.Text("DÉSIGNATION", style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white))),
-                pw.Expanded(flex: 1, child: pw.Text("QTÉ", style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white), textAlign: pw.TextAlign.center)),
-                pw.Expanded(flex: 1, child: pw.Text("P.UNIT", style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white), textAlign: pw.TextAlign.center)),
-                pw.Expanded(flex: 1, child: pw.Text("TOTAL HT", style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white), textAlign: pw.TextAlign.right)),
-              ]),
-            ),
-
-            // ── Room Sections ───────────────────────────────────────────────
-            ...expenses.entries.map((entry) {
-              final roomName = entry.key;
-              final items = (entry.value as List).cast<Map<String, dynamic>>();
-
-              double roomTotal = 0;
-              for (var i in items) {
-                roomTotal += ((i['quantity'] ?? 0) * (i['laborCost'] ?? 0) +
-                    (i['quantity'] ?? 0) * (i['materialCost'] ?? 0));
-              }
-
-              return pw.Column(children: [
-                pw.SizedBox(height: 12),
-                pw.Text(roomName.toUpperCase(),
-                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: colorAccent)),
-                pw.SizedBox(height: 6),
-                ...items.map((item) {
-                  final totalItem = ((item['quantity'] ?? 0) * (item['laborCost'] ?? 0) +
-                      (item['quantity'] ?? 0) * (item['materialCost'] ?? 0));
-                  final unitPrice = (item['laborCost'] ?? 0) + (item['materialCost'] ?? 0);
-                  final qty = item['quantity'] ?? 0;
-
-                  return pw.Container(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200))),
-                    child: pw.Row(children: [
-                      pw.Expanded(flex: 4, child: pw.Text(item['title'] ?? 'Prestation',
-                          style: pw.TextStyle(fontSize: 10, color: colorNavy))),
-                      pw.Expanded(flex: 1, child: pw.Text("$qty",
-                          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700), textAlign: pw.TextAlign.center)),
-                      pw.Expanded(flex: 1, child: pw.Text("${unitPrice.toStringAsFixed(2)} €",
-                          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700), textAlign: pw.TextAlign.center)),
-                      pw.Expanded(flex: 1, child: pw.Text("${totalItem.toStringAsFixed(2)} €",
-                          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: colorNavy),
-                          textAlign: pw.TextAlign.right)),
-                    ]),
-                  );
-                }).toList(),
-                // Room subtotal
-                pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: pw.BoxDecoration(color: PdfColors.grey50, borderRadius: pw.BorderRadius.circular(4)),
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Sous-total $roomName",
-                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                      pw.Text("${roomTotal.toStringAsFixed(2)} €",
-                          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                    ],
-                  ),
-                ),
-              ]);
-            }).toList(),
-
-            pw.SizedBox(height: 20),
-
-            // ── Mentions obligatoires (lieu / dates / durée) ─────────────────
-            pw.Container(
-              padding: const pw.EdgeInsets.all(10),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.grey50,
-                borderRadius: pw.BorderRadius.circular(6),
-                border: pw.Border.all(color: PdfColors.grey200),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text("MENTIONS LÉGALES DU CHANTIER",
-                      style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
-                  pw.SizedBox(height: 4),
-                  pw.Text("Lieu d'exécution des travaux : ${travauxLieu.isNotEmpty ? travauxLieu : '____________________'}",
-                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
-                  pw.SizedBox(height: 2),
-                  pw.Text("Date de début des travaux : ${travauxStart.isNotEmpty ? travauxStart : '____________________'}",
-                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
-                  pw.SizedBox(height: 2),
-                  pw.Text("Durée des travaux : ${travauxDuration.isNotEmpty ? travauxDuration : '____________________'}",
-                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
-                ],
-              ),
-            ),
-
-            pw.SizedBox(height: 20),
-
-            // ── Financial Summary ───────────────────────────────────────────
-            pw.Container(
-              padding: const pw.EdgeInsets.all(16),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: colorAccent),
-                borderRadius: pw.BorderRadius.circular(8),
-                color: PdfColors.white,
-              ),
-              child: pw.Column(children: [
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text("Total HT", style: pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
-                    pw.Text("${(totals['ht'] ?? 0).toStringAsFixed(2)} €",
-                        style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                  ],
-                ),
-                pw.SizedBox(height: 6),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text("TVA 20%", style: pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
-                    pw.Text("${(totals['tva'] ?? 0).toStringAsFixed(2)} €",
-                        style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                  ],
-                ),
-                pw.SizedBox(height: 8),
-                pw.Divider(color: PdfColors.grey300),
-                pw.SizedBox(height: 8),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text("Total TTC",
-                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                    pw.Text("${(totals['ttc'] ?? 0).toStringAsFixed(2)} €",
-                        style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                  ],
-                ),
-              ]),
-            ),
-
-            pw.SizedBox(height: 20),
-
-            // ── Conditions de règlement (échéancier / mode / RIB) ────────────
-            _buildPaymentTerms(company, totals, colorNavy, colorAccent),
-
-            pw.SizedBox(height: 20),
-
-            // ── Signatures (entreprise + client avec mention manuscrite) ─────
-            pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                // Client side: Fait à / le + mention "Lu et approuvé, bon pour accord"
-                pw.Expanded(
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text("Signature du client",
-                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                      pw.SizedBox(height: 4),
-                      pw.Text("Fait à ______________  le ____________",
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
-                      pw.SizedBox(height: 4),
-                      pw.Text("Mention manuscrite obligatoire :",
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
-                      pw.Text("« Lu et approuvé, bon pour accord »",
-                          style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                      pw.SizedBox(height: 40),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(width: 24),
-                // Company side
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Text("Signature de l'entreprise",
-                        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy)),
-                    pw.SizedBox(height: 8),
-                    if (_signatureBytes != null)
-                      pw.Container(height: 50, width: 90,
-                          child: pw.Image(pw.MemoryImage(_signatureBytes!), fit: pw.BoxFit.contain))
-                    else
-                      pw.SizedBox(height: 50),
-                  ],
-                ),
-              ],
-            ),
-
-            pw.SizedBox(height: 12),
-            pw.Center(
-              child: pw.Text("Ce devis est valable 30 jours. Merci pour votre confiance.",
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
-            ),
-          ];
-        }));
-    return pdf;
-  }
-
-  // ── Conditions de règlement (échéancier de paiement) ─────────────────────────
-  // States in writing how the payment is split: 30% à la signature, 50% en
-  // cours de chantier, 20% à la réception (réserves). Amounts computed from TTC.
-  pw.Widget _buildPaymentTerms(
-      Map<dynamic, dynamic> company, Map<dynamic, dynamic> totals, PdfColor colorNavy, PdfColor colorAccent) {
-    final ttc = (totals['ttc'] as num?)?.toDouble() ?? 0.0;
-    String money(double v) => '${v.toStringAsFixed(2)} €';
-
-    final schedule = <List<String>>[
-      ['Acompte à la signature', '30 %', money(ttc * 0.30)],
-      ['En cours de chantier', '50 %', money(ttc * 0.50)],
-      ['Solde à la réception (réserves levées)', '20 %', money(ttc * 0.20)],
-    ];
-
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey50,
-        borderRadius: pw.BorderRadius.circular(6),
-        border: pw.Border.all(color: PdfColors.grey200),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text("CONDITIONS DE RÈGLEMENT",
-              style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
-          pw.SizedBox(height: 6),
-          // Échéancier rows
-          ...schedule.map((row) => pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 3),
-                child: pw.Row(
-                  children: [
-                    pw.Expanded(flex: 5, child: pw.Text(row[0],
-                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800))),
-                    pw.Expanded(flex: 1, child: pw.Text(row[1],
-                        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy),
-                        textAlign: pw.TextAlign.center)),
-                    pw.Expanded(flex: 2, child: pw.Text(row[2],
-                        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: colorNavy),
-                        textAlign: pw.TextAlign.right)),
-                  ],
-                ),
-              )),
-        ],
-      ),
+    return DevisPdfService().generate(
+      quoteData: widget.quoteData,
+      logoBytes: _logoBytes,
+      logoPath: _logoPath,
+      signatureBytes: _signatureBytes,
+      format: format,
     );
   }
 
@@ -502,7 +119,8 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
     final rcs = company['rcs']?.toString() ?? '';
     final tva = company['tva']?.toString() ?? '';
 
-    if (name.isNotEmpty) parts.add(legalForm.isNotEmpty ? '$name ($legalForm)' : name);
+    if (name.isNotEmpty)
+      parts.add(legalForm.isNotEmpty ? '$name ($legalForm)' : name);
     if (address.isNotEmpty) parts.add('Siège : $address');
     if (siret.isNotEmpty) parts.add('SIRET : $siret');
     if (rcs.isNotEmpty) parts.add('RCS/SIREN : $rcs');
@@ -513,7 +131,8 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
       margin: const pw.EdgeInsets.only(top: 8),
       padding: const pw.EdgeInsets.only(top: 6),
       decoration: const pw.BoxDecoration(
-        border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
+        border:
+            pw.Border(top: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
       ),
       child: pw.Column(
         mainAxisSize: pw.MainAxisSize.min,
@@ -531,12 +150,14 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
               pw.Expanded(
                 child: pw.Text(
                   'Page ${context.pageNumber} / ${context.pagesCount}',
-                  style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+                  style:
+                      const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
                 ),
               ),
               pw.Text(
                 'Créé par ',
-                style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+                style:
+                    const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
               ),
               if (_kojiLogoBytes != null) ...[
                 pw.Image(pw.MemoryImage(_kojiLogoBytes!), width: 8, height: 8),
@@ -544,7 +165,10 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
               ],
               pw.Text(
                 'Kôji',
-                style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: colorAccent),
+                style: pw.TextStyle(
+                    fontSize: 7,
+                    fontWeight: pw.FontWeight.bold,
+                    color: colorAccent),
               ),
             ],
           ),
@@ -559,13 +183,22 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
 
     final company = widget.quoteData['company'] ?? {};
     final client = widget.quoteData['client'] ?? {};
-    final expenses = widget.quoteData['expenses'] as Map<String, dynamic>? ?? {};
+    final expenses =
+        widget.quoteData['expenses'] as Map<String, dynamic>? ?? {};
     final tasks = widget.quoteData['tasks'] as Map<String, dynamic>? ?? {};
 
     final fontRegular = await PdfGoogleFonts.interRegular();
     final fontBold = await PdfGoogleFonts.interBold();
     final colorNavy = PdfColor.fromInt(0xFF0F172A);
     final colorAccent = PdfColor.fromInt(0xFFA18B73);
+
+    // The legal footer (shared) renders the small Koji mark from these bytes.
+    try {
+      _kojiLogoBytes ??=
+          (await rootBundle.load('assets/icons/LOGO.png')).buffer.asUint8List();
+    } catch (e) {
+      debugPrint('Could not load Koji footer logo: $e');
+    }
 
     final Map<String, List<Map<String, dynamic>>> fournituresByGroup = {};
     double totalMaterialCost = 0.0;
@@ -644,14 +277,18 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                   width: 50,
                   height: 50,
                   decoration: pw.BoxDecoration(
-                    color: (_logoBytes != null || _logoPath != null) ? PdfColors.white : colorNavy,
+                    color: (_logoBytes != null || _logoPath != null)
+                        ? PdfColors.white
+                        : colorNavy,
                     borderRadius: pw.BorderRadius.circular(8),
                     image: _logoBytes != null
                         ? pw.DecorationImage(
-                            image: pw.MemoryImage(_logoBytes!), fit: pw.BoxFit.cover)
+                            image: pw.MemoryImage(_logoBytes!),
+                            fit: pw.BoxFit.cover)
                         : _logoPath != null
                             ? pw.DecorationImage(
-                                image: pw.MemoryImage(File(_logoPath!).readAsBytesSync()),
+                                image: pw.MemoryImage(
+                                    File(_logoPath!).readAsBytesSync()),
                                 fit: pw.BoxFit.cover)
                             : null,
                   ),
@@ -665,13 +302,19 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(company['name'] ?? 'Koji',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16, color: colorNavy)),
-                      pw.Text(company['address'] ?? '', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              fontSize: 16,
+                              color: colorNavy)),
+                      pw.Text(company['address'] ?? '',
+                          style: const pw.TextStyle(
+                              fontSize: 9, color: PdfColors.grey600)),
                     ],
                   ),
                 ),
                 pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
                   decoration: pw.BoxDecoration(
                     color: PdfColor.fromInt(0xFFFFF7ED),
                     borderRadius: pw.BorderRadius.circular(6),
@@ -679,9 +322,13 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text("LISTE DE", style: pw.TextStyle(fontSize: 8, color: colorAccent)),
+                      pw.Text("LISTE DE",
+                          style: pw.TextStyle(fontSize: 8, color: colorAccent)),
                       pw.Text("FOURNITURES",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12, color: colorNavy)),
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              fontSize: 12,
+                              color: colorNavy)),
                     ],
                   ),
                 ),
@@ -698,16 +345,28 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text("DEVIS N°", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
+                    pw.Text("DEVIS N°",
+                        style: pw.TextStyle(
+                            fontSize: 8,
+                            fontWeight: pw.FontWeight.bold,
+                            color: colorAccent)),
                     pw.Text(_quoteNumber,
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12, color: colorNavy)),
+                        style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 12,
+                            color: colorNavy)),
                   ],
                 ),
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text("CLIENT", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: colorAccent)),
-                    pw.Text(client['name'] ?? '', style: pw.TextStyle(fontSize: 11, color: colorNavy)),
+                    pw.Text("CLIENT",
+                        style: pw.TextStyle(
+                            fontSize: 8,
+                            fontWeight: pw.FontWeight.bold,
+                            color: colorAccent)),
+                    pw.Text(client['name'] ?? '',
+                        style: pw.TextStyle(fontSize: 11, color: colorNavy)),
                   ],
                 ),
               ],
@@ -717,12 +376,34 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
 
             // ─ Table Header ────────────────────────────────────────────────
             pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: pw.BoxDecoration(color: colorNavy, borderRadius: pw.BorderRadius.circular(6)),
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: pw.BoxDecoration(
+                  color: colorNavy, borderRadius: pw.BorderRadius.circular(6)),
               child: pw.Row(children: [
-                pw.Expanded(flex: 4, child: pw.Text("FOURNITURE", style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white))),
-                pw.Expanded(flex: 2, child: pw.Text("QTÉ × P.UNIT", style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white), textAlign: pw.TextAlign.center)),
-                pw.Expanded(flex: 1, child: pw.Text("TOTAL HT", style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white), textAlign: pw.TextAlign.right)),
+                pw.Expanded(
+                    flex: 4,
+                    child: pw.Text("FOURNITURE",
+                        style: pw.TextStyle(
+                            fontSize: 9,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white))),
+                pw.Expanded(
+                    flex: 2,
+                    child: pw.Text("QTÉ × P.UNIT",
+                        style: pw.TextStyle(
+                            fontSize: 9,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white),
+                        textAlign: pw.TextAlign.center)),
+                pw.Expanded(
+                    flex: 1,
+                    child: pw.Text("TOTAL HT",
+                        style: pw.TextStyle(
+                            fontSize: 9,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white),
+                        textAlign: pw.TextAlign.right)),
               ]),
             ),
 
@@ -732,7 +413,8 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                 padding: const pw.EdgeInsets.all(20),
                 child: pw.Center(
                   child: pw.Text("Aucune fourniture nécessaire.",
-                      style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600)),
+                      style: const pw.TextStyle(
+                          fontSize: 12, color: PdfColors.grey600)),
                 ),
               )
             else
@@ -743,22 +425,40 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                 return pw.Column(children: [
                   pw.SizedBox(height: 12),
                   pw.Text(groupName.toUpperCase(),
-                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: colorAccent)),
+                      style: pw.TextStyle(
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                          color: colorAccent)),
                   pw.SizedBox(height: 6),
                   ...items.map((item) {
                     return pw.Container(
-                      padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200))),
+                      padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: const pw.BoxDecoration(
+                          border: pw.Border(
+                              bottom: pw.BorderSide(color: PdfColors.grey200))),
                       child: pw.Row(children: [
-                        pw.Expanded(flex: 4, child: pw.Text(item['title'] ?? '',
-                            style: pw.TextStyle(fontSize: 10, color: colorNavy))),
-                        pw.Expanded(flex: 2, child: pw.Text(
-                            "${item['quantity']} × ${(item['unitPrice'] as double).toStringAsFixed(2)} €",
-                            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700), textAlign: pw.TextAlign.center)),
-                        pw.Expanded(flex: 1, child: pw.Text(
-                            "${(item['total'] as double).toStringAsFixed(2)} €",
-                            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: colorNavy),
-                            textAlign: pw.TextAlign.right)),
+                        pw.Expanded(
+                            flex: 4,
+                            child: pw.Text(item['title'] ?? '',
+                                style: pw.TextStyle(
+                                    fontSize: 10, color: colorNavy))),
+                        pw.Expanded(
+                            flex: 2,
+                            child: pw.Text(
+                                "${item['quantity']} × ${(item['unitPrice'] as double).toStringAsFixed(2)} €",
+                                style: const pw.TextStyle(
+                                    fontSize: 10, color: PdfColors.grey700),
+                                textAlign: pw.TextAlign.center)),
+                        pw.Expanded(
+                            flex: 1,
+                            child: pw.Text(
+                                "${(item['total'] as double).toStringAsFixed(2)} €",
+                                style: pw.TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: pw.FontWeight.bold,
+                                    color: colorNavy),
+                                textAlign: pw.TextAlign.right)),
                       ]),
                     );
                   }).toList(),
@@ -782,13 +482,20 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text("TOTAL DES MATÉRIAUX",
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12, color: colorNavy)),
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              fontSize: 12,
+                              color: colorNavy)),
                       pw.Text("$totalItemsCount éléments",
-                          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+                          style: const pw.TextStyle(
+                              fontSize: 9, color: PdfColors.grey500)),
                     ],
                   ),
                   pw.Text("${totalMaterialCost.toStringAsFixed(2)} €",
-                      style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: colorNavy)),
+                      style: pw.TextStyle(
+                          fontSize: 16,
+                          fontWeight: pw.FontWeight.bold,
+                          color: colorNavy)),
                 ],
               ),
             ),
@@ -799,7 +506,9 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
 
   Future<void> _openPdf(bool isDevis) async {
     final pdf = isDevis ? await _generatePdf() : await _generateFourniturePdf();
-    final name = isDevis ? 'Devis_${_quoteNumber}.pdf' : 'Fournitures_${_quoteNumber}.pdf';
+    final name = isDevis
+        ? 'Devis_${_quoteNumber}.pdf'
+        : 'Fournitures_${_quoteNumber}.pdf';
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: name,
@@ -807,54 +516,53 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
   }
 
   Future<void> _downloadPdf(bool isDevis) async {
+    Uint8List? bytes;
+    late final String name;
     try {
-      final pdf = isDevis ? await _generatePdf() : await _generateFourniturePdf();
-      final name = isDevis ? 'Devis_${_quoteNumber}.pdf' : 'Fournitures_${_quoteNumber}.pdf';
-      final bytes = await pdf.save();
+      final pdf =
+          isDevis ? await _generatePdf() : await _generateFourniturePdf();
+      name = isDevis
+          ? 'Devis_${_quoteNumber}.pdf'
+          : 'Fournitures_${_quoteNumber}.pdf';
+      bytes = await pdf.save();
 
-      String? savedPath;
-
+      // Best case: write straight to the public Downloads folder. This only
+      // works on older Android (pre-scoped-storage) or with the legacy storage
+      // flag; on Android 10+ it throws a permission error, which is expected —
+      // we simply fall through to the system share/save sheet below.
       if (Platform.isAndroid) {
-        // Try saving to public Downloads folder directly
-        try {
-          final downloadDir = Directory('/storage/emulated/0/Download');
-          if (await downloadDir.exists()) {
-            final file = File('${downloadDir.path}/$name');
-            await file.writeAsBytes(bytes);
-            savedPath = file.path;
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (await downloadDir.exists()) {
+          final file = File('${downloadDir.path}/$name');
+          await file.writeAsBytes(bytes);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text("✅ PDF téléchargé : ${file.path}"),
+              backgroundColor: const Color(0xFF22C55E),
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                  label: "Ouvrir",
+                  textColor: Colors.white,
+                  onPressed: () => _openPdf(isDevis)),
+            ));
           }
-        } catch (e) {
-          debugPrint("Primary Android download failed: $e");
+          return;
         }
       }
+    } catch (e) {
+      // Direct write failed (scoped storage / permissions). Not fatal — we
+      // still have the bytes and fall back to sharing below.
+      debugPrint("Direct download failed, falling back to share sheet: $e");
+    }
 
-      if (savedPath != null) {
-        // Success - Native Download
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("✅ PDF téléchargé : $savedPath"),
-            backgroundColor: const Color(0xFF22C55E),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-                label: "Ouvrir", textColor: Colors.white, onPressed: () => _openPdf(isDevis)),
-          ));
-        }
-      } else {
-        // Fallback: App Documents + Share/Save Intent
-        final output = await getApplicationDocumentsDirectory();
-        final file = File('${output.path}/$name');
-        await file.writeAsBytes(bytes);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-                "⚠️ Sauvegarde directe impossible. Veuillez choisir 'Enregistrer' dans le menu."),
-            backgroundColor: Color(0xFFA18B73),
-            duration: Duration(seconds: 3),
-          ));
-          await Printing.sharePdf(bytes: bytes, filename: name);
-        }
-      }
+    // Fallback for all platforms: open the system share/save sheet so the user
+    // can save the file wherever they like (incl. "Save to Downloads").
+    try {
+      bytes ??= await (isDevis
+              ? await _generatePdf()
+              : await _generateFourniturePdf())
+          .save();
+      await Printing.sharePdf(bytes: bytes, filename: name);
     } catch (e) {
       debugPrint("Error downloading: $e");
       if (mounted) {
@@ -866,16 +574,18 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
 
   Future<void> _sharePdf(bool isDevis) async {
     final pdf = isDevis ? await _generatePdf() : await _generateFourniturePdf();
-    final name = isDevis ? 'Devis_${_quoteNumber}.pdf' : 'Fournitures_${_quoteNumber}.pdf';
-    await Printing.sharePdf(
-        bytes: await pdf.save(), filename: name);
+    final name = isDevis
+        ? 'Devis_${_quoteNumber}.pdf'
+        : 'Fournitures_${_quoteNumber}.pdf';
+    await Printing.sharePdf(bytes: await pdf.save(), filename: name);
   }
 
   String _generateWordHtml(bool isDevis) {
     final company = widget.quoteData['company'] ?? {};
     final client = widget.quoteData['client'] ?? {};
     final totals = widget.quoteData['totals'] ?? {};
-    final expenses = widget.quoteData['expenses'] as Map<String, dynamic>? ?? {};
+    final expenses =
+        widget.quoteData['expenses'] as Map<String, dynamic>? ?? {};
 
     final sb = StringBuffer();
     sb.write('''
@@ -946,18 +656,30 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
         if (items is List) {
           double roomTotal = 0;
           for (var item in items) {
-            roomTotal += ((item['quantity'] ?? 0) * (item['laborCost'] ?? 0) +
-                (item['quantity'] ?? 0) * (item['materialCost'] ?? 0));
+            final qty = ((item['quantity'] ?? 0) as num).toDouble();
+            final materialQty =
+                ((item['materialQuantity'] ?? item['quantity'] ?? 0) as num)
+                    .toDouble();
+            roomTotal += (qty * (item['laborCost'] ?? 0) +
+                materialQty * (item['materialCost'] ?? 0));
           }
-          sb.write('<tr><td colspan="4" class="room-title">$roomName</td></tr>');
+          sb.write(
+              '<tr><td colspan="4" class="room-title">$roomName</td></tr>');
           for (var item in items) {
-            final totalItem = ((item['quantity'] ?? 0) * (item['laborCost'] ?? 0) +
-                (item['quantity'] ?? 0) * (item['materialCost'] ?? 0));
-            final unitPrice = (item['laborCost'] ?? 0) + (item['materialCost'] ?? 0);
-            final qty = item['quantity'] ?? 0;
-            sb.write('<tr><td>${item['title'] ?? 'Prestation'}</td><td style="text-align:center;">$qty</td><td style="text-align:center;">${unitPrice.toStringAsFixed(2)} €</td><td style="text-align:right;font-weight:bold;">${totalItem.toStringAsFixed(2)} €</td></tr>');
+            final qty = ((item['quantity'] ?? 0) as num).toDouble();
+            final materialQty =
+                ((item['materialQuantity'] ?? item['quantity'] ?? 0) as num)
+                    .toDouble();
+            final totalItem = (qty * (item['laborCost'] ?? 0) +
+                materialQty * (item['materialCost'] ?? 0));
+            final unitPrice = qty > 0
+                ? totalItem / qty
+                : ((item['laborCost'] ?? 0) + (item['materialCost'] ?? 0));
+            sb.write(
+                '<tr><td>${item['title'] ?? 'Prestation'}</td><td style="text-align:center;">$qty</td><td style="text-align:center;">${unitPrice.toStringAsFixed(2)} €</td><td style="text-align:right;font-weight:bold;">${totalItem.toStringAsFixed(2)} €</td></tr>');
           }
-          sb.write('<tr class="subtotal"><td colspan="3">Sous-total</td><td style="text-align:right;">${roomTotal.toStringAsFixed(2)} €</td></tr>');
+          sb.write(
+              '<tr class="subtotal"><td colspan="3">Sous-total</td><td style="text-align:right;">${roomTotal.toStringAsFixed(2)} €</td></tr>');
         }
       });
 
@@ -980,15 +702,24 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
           if (roomData is Map) {
             roomData.forEach((_, taskData) {
               if (taskData is Map) {
-                final sf = taskData['selectedFournitures'] as Map<String, dynamic>? ?? {};
+                final sf =
+                    taskData['selectedFournitures'] as Map<String, dynamic>? ??
+                        {};
                 sf.forEach((__, itemData) {
                   if (itemData is Map) {
                     final qty = (itemData['quantity'] as num?)?.toDouble() ?? 1;
-                    final price = (itemData['unitPrice'] as num?)?.toDouble() ?? 0;
-                    final fournisseur = (itemData['fournisseur'] ?? 'Divers').toString();
+                    final price =
+                        (itemData['unitPrice'] as num?)?.toDouble() ?? 0;
+                    final fournisseur =
+                        (itemData['fournisseur'] ?? 'Divers').toString();
                     final totalLine = qty * price;
                     byGroup.putIfAbsent(fournisseur, () => []);
-                    byGroup[fournisseur]!.add({'title': itemData['name'] ?? 'Article', 'quantity': qty, 'unitPrice': price, 'total': totalLine});
+                    byGroup[fournisseur]!.add({
+                      'title': itemData['name'] ?? 'Article',
+                      'quantity': qty,
+                      'unitPrice': price,
+                      'total': totalLine
+                    });
                     totalCost += totalLine;
                     totalCount++;
                   }
@@ -1028,7 +759,8 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
       byGroup.forEach((groupName, items) {
         sb.write('<tr><td colspan="3" class="room-title">$groupName</td></tr>');
         for (var item in items) {
-          sb.write('<tr><td>${item['title']}</td><td style="text-align:center;">${item['quantity']} × ${(item['unitPrice'] as double).toStringAsFixed(2)} €</td><td style="text-align:right;font-weight:bold;">${(item['total'] as double).toStringAsFixed(2)} €</td></tr>');
+          sb.write(
+              '<tr><td>${item['title']}</td><td style="text-align:center;">${item['quantity']} × ${(item['unitPrice'] as double).toStringAsFixed(2)} €</td><td style="text-align:right;font-weight:bold;">${(item['total'] as double).toStringAsFixed(2)} €</td></tr>');
         }
       });
 
@@ -1040,63 +772,60 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
 ''');
     }
 
-    sb.write('<div class="footer">Ce devis est valable 30 jours. Merci pour votre confiance.</div>');
+    sb.write(
+        '<div class="footer">Ce devis est valable 30 jours. Merci pour votre confiance.</div>');
     sb.write('</body></html>');
     return sb.toString();
   }
 
   Future<void> _downloadWord(bool isDevis) async {
+    final html = _generateWordHtml(isDevis);
+    final bytes = Uint8List.fromList(html.codeUnits);
+    final name =
+        isDevis ? 'Devis_$_quoteNumber.doc' : 'Fournitures_$_quoteNumber.doc';
+
     try {
-      final html = _generateWordHtml(isDevis);
-      final bytes = html.codeUnits;
-      final name = isDevis ? 'Devis_$_quoteNumber.doc' : 'Fournitures_$_quoteNumber.doc';
-
-      String? savedPath;
+      // Best case: direct write to public Downloads (older Android only).
       if (Platform.isAndroid) {
-        try {
-          final downloadDir = Directory('/storage/emulated/0/Download');
-          if (await downloadDir.exists()) {
-            final file = File('${downloadDir.path}/$name');
-            await file.writeAsBytes(Uint8List.fromList(bytes));
-            savedPath = file.path;
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (await downloadDir.exists()) {
+          final file = File('${downloadDir.path}/$name');
+          await file.writeAsBytes(bytes);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text("✅ Word téléchargé : ${file.path}"),
+              backgroundColor: const Color(0xFF22C55E),
+              duration: const Duration(seconds: 5),
+            ));
           }
-        } catch (e) {
-          debugPrint("Primary Android download failed: $e");
-        }
-      }
-
-      if (savedPath != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("✅ Word téléchargé : $savedPath"),
-            backgroundColor: const Color(0xFF22C55E),
-            duration: const Duration(seconds: 5),
-          ));
-        }
-      } else {
-        final output = await getApplicationDocumentsDirectory();
-        final file = File('${output.path}/$name');
-        await file.writeAsBytes(Uint8List.fromList(bytes));
-        if (mounted) {
-          await Printing.sharePdf(bytes: Uint8List.fromList(bytes), filename: name);
+          return;
         }
       }
     } catch (e) {
+      debugPrint("Direct Word download failed, falling back to share: $e");
+    }
+
+    // Fallback: system share/save sheet (no storage permission required).
+    try {
+      await Printing.sharePdf(bytes: bytes, filename: name);
+    } catch (e) {
       debugPrint("Error downloading Word: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Erreur lors du téléchargement Word")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Erreur lors du téléchargement Word")));
       }
     }
   }
 
   Future<void> _shareWord(bool isDevis) async {
     final html = _generateWordHtml(isDevis);
-    final name = isDevis ? 'Devis_$_quoteNumber.doc' : 'Fournitures_$_quoteNumber.doc';
+    final name =
+        isDevis ? 'Devis_$_quoteNumber.doc' : 'Fournitures_$_quoteNumber.doc';
     final output = await getApplicationDocumentsDirectory();
     final file = File('${output.path}/$name');
     await file.writeAsBytes(Uint8List.fromList(html.codeUnits));
-    await Printing.sharePdf(bytes: Uint8List.fromList(html.codeUnits), filename: name);
+    await Printing.sharePdf(
+        bytes: Uint8List.fromList(html.codeUnits), filename: name);
   }
 
   Future<void> _shareSignatureLink() async {
@@ -1109,19 +838,36 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
       final clientName = client['name'] as String? ?? 'Client';
       final totalAmount = (totals['ttc'] as num?)?.toDouble() ?? 0.0;
 
+      // Per-chantier login the client uses to open + sign the devis. Generated
+      // and persisted by QuoteRepository.saveQuote, surfaced here on quoteData.
+      final accessCode =
+          (widget.quoteData['accessCode'] as String?)?.trim() ?? '';
+      final accessPassword =
+          (widget.quoteData['accessPassword'] as String?)?.trim() ?? '';
+
       // Generate signature URL
       final signatureUrl =
           'https://koji-signature.vercel.app/?quoteId=$quoteId&email=${Uri.encodeComponent(clientEmail)}';
+
+      // Credentials block — only included when we actually have them.
+      final credentialsBlock = (accessCode.isNotEmpty && accessPassword.isNotEmpty)
+          ? '''
+Vos identifiants de connexion :
+🔑 Identifiant : $accessCode
+🔒 Mot de passe : $accessPassword
+
+'''
+          : '';
 
       // Create share message
       final shareMessage = '''
 Bonjour $clientName,
 
-Votre devis #$_quoteNumber est prêt pour signature.
+Votre devis n° $_quoteNumber est prêt pour signature.
 
 📋 Montant total: ${totalAmount.toStringAsFixed(2)} €
 
-Pour consulter et signer votre devis, cliquez sur le lien ci-dessous:
+${credentialsBlock}Pour consulter et signer votre devis, cliquez sur le lien ci-dessous:
 $signatureUrl
 
 Ce devis est valable 30 jours.
@@ -1427,14 +1173,6 @@ Koji Rénovation
               'Détails de la Pièce(s)',
               style: AppTheme.headingStyle(context).copyWith(fontSize: 18),
             ),
-            Text(
-              'Etape 5/5',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.textLight,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
           ],
         ),
       ),
@@ -1456,7 +1194,10 @@ Koji Rénovation
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -1489,7 +1230,10 @@ Koji Rénovation
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.1),
                                       blurRadius: 4)
                                 ]),
                             child: const Icon(Icons.description_outlined,
@@ -1511,8 +1255,7 @@ Koji Rénovation
                         textAlign: TextAlign.center,
                         text: TextSpan(
                           style: TextStyle(
-                              fontSize: 14,
-                              color: const Color(0xFF6B7280)),
+                              fontSize: 14, color: const Color(0xFF6B7280)),
                           children: [
                             const TextSpan(text: "Le devis "),
                             TextSpan(
@@ -1574,7 +1317,7 @@ Koji Rénovation
                   ),
 
                   const SizedBox(height: 24),
-                  
+
                   // Fournitures PDF Section
                   _buildDocumentCard(
                     title: "Fournitures_${_quoteNumber}.pdf",
@@ -1602,9 +1345,8 @@ Koji Rénovation
                     minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
-                    textStyle: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold),
+                    textStyle:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
 
@@ -1615,9 +1357,9 @@ Koji Rénovation
                 // this success screen).
                 OutlinedButton.icon(
                   onPressed: () {
-                    final client = widget.quoteData['client']
-                            as Map<String, dynamic>? ??
-                        {};
+                    final client =
+                        widget.quoteData['client'] as Map<String, dynamic>? ??
+                            {};
                     context.push('/quote/messages', extra: {
                       'quoteId': widget.quoteId,
                       'clientName': client['name'] as String?,
@@ -1667,7 +1409,10 @@ Koji Rénovation
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 )
@@ -1733,9 +1478,8 @@ Koji Rénovation
                   minimumSize: const Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
-                  textStyle: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold),
+                  textStyle:
+                      TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -1751,9 +1495,8 @@ Koji Rénovation
                   minimumSize: const Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
-                  textStyle: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold),
+                  textStyle:
+                      TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -1766,7 +1509,8 @@ Koji Rénovation
               child: TextButton.icon(
                 onPressed: onShare,
                 icon: const Icon(Icons.share, size: 16),
-                label: const Text("Partager PDF", style: TextStyle(fontSize: 12)),
+                label:
+                    const Text("Partager PDF", style: TextStyle(fontSize: 12)),
                 style: TextButton.styleFrom(
                   foregroundColor: AppTheme.darkNavy,
                   minimumSize: const Size(double.infinity, 40),
@@ -1778,7 +1522,8 @@ Koji Rénovation
               child: TextButton.icon(
                 onPressed: onShareWord,
                 icon: const Icon(Icons.share, size: 16),
-                label: const Text("Partager Word", style: TextStyle(fontSize: 12)),
+                label:
+                    const Text("Partager Word", style: TextStyle(fontSize: 12)),
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFF2B579A),
                   minimumSize: const Size(double.infinity, 40),
@@ -1791,4 +1536,3 @@ Koji Rénovation
     );
   }
 }
-

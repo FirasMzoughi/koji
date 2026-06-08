@@ -38,6 +38,11 @@ class RoomTaskState {
   /// Flat price (HT) used when [forfaitEnabled] is true.
   double forfaitPrice;
 
+  /// When true, the fournitures of this ouvrage are NOT itemised in the devis /
+  /// facture sent to the client. The entrepreneur keeps the internal detail but
+  /// the client only sees the line total (material cost is folded into it).
+  bool hideFournitures;
+
   RoomTaskState({
     required this.taskId,
     required this.roomId,
@@ -51,6 +56,7 @@ class RoomTaskState {
     this.hours = 0.0,
     this.forfaitEnabled = false,
     this.forfaitPrice = 0.0,
+    this.hideFournitures = false,
   })  : inputs = inputs ?? {},
         photoPaths = photoPaths ?? [],
         selectedProducts = selectedProducts ?? {},
@@ -66,6 +72,7 @@ class RoomTaskState {
     double? hours,
     bool? forfaitEnabled,
     double? forfaitPrice,
+    bool? hideFournitures,
   }) {
     return RoomTaskState(
       taskId: taskId,
@@ -86,6 +93,7 @@ class RoomTaskState {
       hours: hours ?? this.hours,
       forfaitEnabled: forfaitEnabled ?? this.forfaitEnabled,
       forfaitPrice: forfaitPrice ?? this.forfaitPrice,
+      hideFournitures: hideFournitures ?? this.hideFournitures,
     );
   }
 }

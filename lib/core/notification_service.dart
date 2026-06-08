@@ -28,6 +28,11 @@ class NotificationService {
   static const _signatureChannelName = 'Signatures';
   static const _signatureBaseId = 3000;
 
+  // Facturation / overdue-payment notifications.
+  static const _invoiceChannelId = 'koji_facturation';
+  static const _invoiceChannelName = 'Facturation';
+  static const _invoiceOverdueId = 4000;
+
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialised = false;
 
@@ -144,6 +149,71 @@ class NotificationService {
       );
     } catch (e) {
       if (kDebugMode) debugPrint('notifySignature error: $e');
+    }
+  }
+
+  /// Scans the user's invoices for any that are past their échéance (due_date)
+  /// and not fully paid, then raises a single summary notification. Call on app
+  /// start and after creating/paying an invoice. No-op when nothing is overdue.
+  Future<void> notifyOverdueInvoices() async {
+    try {
+      if (!_initialised) await init();
+      await _plugin.cancel(_invoiceOverdueId);
+
+      final userId = SupabaseConfig.client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final today = DateTime.now();
+      final todayStr = today.toIso8601String().substring(0, 10);
+
+      // Overdue = due_date strictly before today and not yet fully settled.
+      final rows = await SupabaseConfig.client
+          .from('invoices')
+          .select('reference, amount, paid_amount, due_date, client_name')
+          .eq('user_id', userId)
+          .lt('due_date', todayStr);
+
+      final overdue = (rows as List).where((r) {
+        final amount = (r['amount'] as num?)?.toDouble() ?? 0;
+        final paid = (r['paid_amount'] as num?)?.toDouble() ?? 0;
+        return amount - paid > 0.009;
+      }).toList();
+
+      if (overdue.isEmpty) return;
+
+      final totalDue = overdue.fold<double>(
+        0,
+        (sum, r) =>
+            sum +
+            (((r['amount'] as num?)?.toDouble() ?? 0) -
+                ((r['paid_amount'] as num?)?.toDouble() ?? 0)),
+      );
+
+      final count = overdue.length;
+      final body = count == 1
+          ? 'La facture ${overdue.first['reference'] ?? ''} est en retard de '
+              'paiement (${totalDue.toStringAsFixed(0)} € dus).'
+          : '$count factures en retard de paiement '
+              '(${totalDue.toStringAsFixed(0)} € dus au total).';
+
+      await _plugin.show(
+        _invoiceOverdueId,
+        'Paiement en retard ⏰',
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _invoiceChannelId,
+            _invoiceChannelName,
+            channelDescription:
+                'Alertes de retard de paiement des factures clients',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('notifyOverdueInvoices error: $e');
     }
   }
 

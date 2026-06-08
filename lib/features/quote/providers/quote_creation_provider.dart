@@ -202,11 +202,11 @@ class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
               )
             : <String, Map<String, dynamic>>{};
 
-        final laborUnit =
-            (t['unit_price_ht'] as num?)?.toDouble() ?? 0.0;
-        final materialUnit =
-            (t['total_price_ht'] as num?)?.toDouble() ?? 0.0;
+        final laborUnit = (t['unit_price_ht'] as num?)?.toDouble() ?? 0.0;
+        final materialUnit = (t['total_price_ht'] as num?)?.toDouble() ?? 0.0;
         final qty = (inputs['quantity'] as num?)?.toDouble() ?? 1.0;
+        final materialQty =
+            (inputs['fournituresQty'] as num?)?.toDouble() ?? qty;
 
         expenseItems.add(ExpenseItem(
           id: taskId,
@@ -232,7 +232,8 @@ class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
           ..remove('conditionCoeff')
           ..remove('unite')
           ..remove('code')
-          ..remove('famille');
+          ..remove('famille')
+          ..remove('hideFournitures');
         // Quantity is also mirrored at the top level for the recap, but the
         // task screen reads it from inputs['surface'] / inputs['quantity'],
         // so leave it in cleanInputs.
@@ -244,7 +245,8 @@ class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
           'selectedProducts': selectedProducts,
           'selectedFournitures': selectedFournitures,
           'note': t['note'],
-          'photoPaths': (t['photo_paths'] as List?)?.cast<String>() ?? <String>[],
+          'photoPaths':
+              (t['photo_paths'] as List?)?.cast<String>() ?? <String>[],
           'hours': (inputs['hours'] as num?)?.toDouble() ?? 0.0,
           'quantity': qty,
           'tauxHoraire': (inputs['tauxHoraire'] as num?)?.toDouble() ?? 0.0,
@@ -253,6 +255,12 @@ class QuoteCreationNotifier extends StateNotifier<QuoteCreationState> {
           'unite': (inputs['unite'] as String?) ?? 'u',
           'code': (inputs['code'] as String?) ?? '',
           'famille': (inputs['famille'] as String?) ?? '',
+          'fournituresQty': materialQty,
+          'fournituresUnitPrice': materialUnit,
+          'fournituresTotal':
+              (inputs['fournituresTotal'] as num?)?.toDouble() ??
+                  materialQty * materialUnit,
+          'hideFournitures': inputs['hideFournitures'] as bool? ?? false,
         };
       }
 

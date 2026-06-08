@@ -142,6 +142,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
           hours: (d['hours'] as num?)?.toDouble() ?? 0.0,
           forfaitEnabled: d['forfaitEnabled'] as bool? ?? false,
           forfaitPrice: (d['forfaitPrice'] as num?)?.toDouble() ?? 0.0,
+          hideFournitures: d['hideFournitures'] as bool? ?? false,
         );
 
         final cond = (d['conditionCoeff'] as num?)?.toDouble();
@@ -243,129 +244,221 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       } catch(e) { debugPrint('err custom tasks: $e'); }
   }
   
-  /// Prompts the user for coefficient & réduction to apply for THIS chantier,
-  /// pre-filled with the library defaults. Returns null if cancelled.
-  Future<(double, double)?> _askCoefficientReduction(LibraryOuvrage o) {
-    final coeffCtrl =
-        TextEditingController(text: _formatNum(o.coefficient));
-    final reducCtrl =
-        TextEditingController(text: _formatNum(o.reduction));
+  // Predefined ajustement reasons → coefficient (surcoût en %). The client
+  // asked for a quick way to apply common site difficulties. The user can also
+  // type a custom reason; either way the coefficient drives the price.
+  static const List<(String, double)> _adjustmentReasons = [
+    ('Mur fissuré', 1.15),
+    ('Dernier étage', 1.10),
+    ('Accès difficile', 1.20),
+    ('Support dégradé', 1.15),
+    ('Intervention complexe', 1.25),
+  ];
+
+  /// Prompts the user for an ajustement (coefficient/surcoût) AND a réduction
+  /// to apply for THIS chantier, plus the quantity. The two adjustments are
+  /// combinable (ajustement then réduction). Returns null if cancelled.
+  /// Tuple = (coefficient, réduction %, quantité, raison ajustement).
+  Future<(double, double, double, String)?> _askCoefficientReduction(
+      LibraryOuvrage o) {
+    final coeffCtrl = TextEditingController(text: _formatNum(o.coefficient));
+    final reducCtrl = TextEditingController(text: _formatNum(o.reduction));
+    final qtyCtrl = TextEditingController(text: '1');
+    final reasonCtrl = TextEditingController();
 
     double parse(String s) =>
         double.tryParse(s.trim().replaceAll(',', '.')) ?? 0;
 
-    // The client asked for "soit coefficient, soit réduction" — OR, not AND.
-    // The user picks one mode; the other field is cleared/neutralised so the
-    // two adjustments can never stack.
-    // 0 = coefficient, 1 = réduction. Default to whichever the library row
-    // already carries; coefficient wins if both are set.
-    int mode = (o.reduction > 0 && o.coefficient == 1) ? 1 : 0;
-
-    return showDialog<(double, double)>(
+    return showDialog<(double, double, double, String)>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSt) {
-            final isCoeff = mode == 0;
-            // Only the active field contributes; the other is neutral.
-            final coeff = isCoeff ? parse(coeffCtrl.text) : 1.0;
-            final reduc = isCoeff ? 0.0 : parse(reducCtrl.text);
-            final preview = o.coutMoU * coeff * (1 - (reduc / 100.0));
+            final coeff = parse(coeffCtrl.text);
+            final reduc = parse(reducCtrl.text);
+            final qty = parse(qtyCtrl.text);
+            // Ajustement applied first, then réduction — both stack.
+            final unit = o.coutMoU * coeff * (1 - (reduc / 100.0));
+            final preview = unit * (qty > 0 ? qty : 1);
+            final surchargePct = ((coeff - 1) * 100);
 
             return AlertDialog(
               title: const Text('Adapter pour ce chantier'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${o.code} — ${o.designation}',
-                    style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF6B7280)),
-                  ),
-                  const SizedBox(height: 16),
-                  // Mode selector — coefficient OR réduction, never both.
-                  SegmentedButton<int>(
-                    segments: const [
-                      ButtonSegment(value: 0, label: Text('Coefficient')),
-                      ButtonSegment(value: 1, label: Text('Réduction (%)')),
-                    ],
-                    selected: {mode},
-                    onSelectionChanged: (s) => setSt(() {
-                      mode = s.first;
-                      // Reset the now-inactive field to its neutral value.
-                      if (mode == 0) {
-                        reducCtrl.text = '0';
-                      } else {
-                        coeffCtrl.text = '1';
-                      }
-                    }),
-                    showSelectedIcon: false,
-                  ),
-                  const SizedBox(height: 16),
-                  if (isCoeff)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${o.code} — ${o.designation}',
+                      style: const TextStyle(
+                          fontSize: 13, color: Color(0xFF6B7280)),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── Quantité ──
+                    const Text('Quantité',
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: qtyCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setSt(() {}),
+                      decoration: InputDecoration(
+                        hintText: '1',
+                        isDense: true,
+                        suffixText: o.unite,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── Ajustement de prix (coefficient / surcoût) ──
+                    Row(
+                      children: [
+                        const Text('Ajustement de prix',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                        const Spacer(),
+                        if (surchargePct.abs() > 0.01)
+                          Text(
+                            '${surchargePct > 0 ? '+' : ''}${surchargePct.toStringAsFixed(0)} %',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFB45309)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Predefined reasons as chips.
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _adjustmentReasons.map((r) {
+                        final selected = reasonCtrl.text == r.$1;
+                        return GestureDetector(
+                          onTap: () => setSt(() {
+                            reasonCtrl.text = r.$1;
+                            coeffCtrl.text = _formatNum(r.$2);
+                          }),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? const Color(0xFFFEF3C7)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: selected
+                                    ? const Color(0xFFF59E0B)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Text(
+                              '${r.$1} (+${((r.$2 - 1) * 100).toStringAsFixed(0)}%)',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: selected
+                                    ? const Color(0xFFB45309)
+                                    : const Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    // Custom reason (free text).
+                    TextField(
+                      controller: reasonCtrl,
+                      onChanged: (_) => setSt(() {}),
+                      decoration: const InputDecoration(
+                        hintText: 'Raison personnalisée (optionnel)',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
                       children: [
                         const Text('Coefficient',
                             style: TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 4),
-                        TextField(
-                          controller: coeffCtrl,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          onChanged: (_) => setSt(() {}),
-                          decoration: const InputDecoration(
-                            hintText: '1.00',
-                            isDense: true,
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Réduction (%)',
-                            style: TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 4),
-                        TextField(
-                          controller: reducCtrl,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          onChanged: (_) => setSt(() {}),
-                          decoration: const InputDecoration(
-                            hintText: '0',
-                            isDense: true,
-                            border: OutlineInputBorder(),
+                                fontSize: 12, color: Color(0xFF64748B))),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: coeffCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            onChanged: (_) => setSt(() {}),
+                            decoration: const InputDecoration(
+                              hintText: '1.00',
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  const SizedBox(height: 14),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Prix MO/u : ${preview.toStringAsFixed(2)} €  '
-                      '(base ${o.coutMoU.toStringAsFixed(2)} €)',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF047857),
+                    const SizedBox(height: 16),
+
+                    // ── Réduction (remise %) — combinable avec l'ajustement ──
+                    const Text('Réduction (%)',
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: reducCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setSt(() {}),
+                      decoration: const InputDecoration(
+                        hintText: '0',
+                        isDense: true,
+                        suffixText: '%',
+                        border: OutlineInputBorder(),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 14),
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Prix MO/u : ${unit.toStringAsFixed(2)} €  '
+                            '(base ${o.coutMoU.toStringAsFixed(2)} €)',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF047857),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Total MO : ${preview.toStringAsFixed(2)} €',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF047857),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -373,13 +466,15 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                   child: const Text('Annuler'),
                 ),
                 ElevatedButton(
-                  // Return only the active adjustment; the other stays neutral
-                  // (coefficient 1 / réduction 0) so they can't stack.
+                  // Return both adjustments + qty + reason; they combine.
                   onPressed: () => Navigator.pop(
                     ctx,
-                    mode == 0
-                        ? (parse(coeffCtrl.text), 0.0)
-                        : (1.0, parse(reducCtrl.text)),
+                    (
+                      parse(coeffCtrl.text),
+                      parse(reducCtrl.text),
+                      parse(qtyCtrl.text),
+                      reasonCtrl.text.trim(),
+                    ),
                   ),
                   child: const Text('Ajouter'),
                 ),
@@ -411,6 +506,8 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
 
     final coeff = overrides.$1;
     final reduc = overrides.$2;
+    final qtyOverride = overrides.$3;
+    final adjustReason = overrides.$4;
     final effectiveTemps =
         picked.tempsHU * coeff * (1 - (reduc / 100.0));
 
@@ -447,6 +544,20 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
       if (state != null) {
         setState(() {
           state.hours = effectiveTemps;
+          // Quantity entered in the "Adapter" dialog seeds the line; it stays
+          // editable afterwards in the recap.
+          if (qtyOverride > 0) {
+            state.inputs['quantity'] = qtyOverride;
+            state.inputs['surface'] = qtyOverride;
+          }
+          // Record the price-adjustment reason as the line note so it surfaces
+          // on the ouvrage (e.g. "Mur fissuré").
+          if (adjustReason.isNotEmpty) {
+            final existing = state.note?.trim() ?? '';
+            state.note = existing.isEmpty
+                ? 'Ajustement : $adjustReason'
+                : '$existing — Ajustement : $adjustReason';
+          }
         });
       }
 
@@ -524,9 +635,9 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
            } catch(e) {/* ignore */}
 
            _taskStates[key] = newState;
-           
-           // Show reality factors dialog after selection
-           Future.microtask(() => _showRealityFactorsDialog(roomId, taskId, label));
+           // Price adjustment is no longer prompted globally per room on
+           // selection (client request). It is set per ouvrage when added from
+           // the library. The room coefficient stays at its neutral default.
         } else {
           // Just expand
           _taskStates[key]!.isExpanded = true;
@@ -535,101 +646,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     });
   }
   
-  void _showRealityFactorsDialog(String roomId, String taskId, String label) {
-    // Get current room context or default
-    RealityFactors current = _roomContexts[roomId] ?? const RealityFactors();
-    
-    int conditionIndex = 0;
-    if (current.condition == 1.20) conditionIndex = 1;
-    if (current.condition == 1.40) conditionIndex = 2;
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Text(
-                'État des supports - $label',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Sélectionnez l\'état des supports pour ce chantier',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Sain
-                  RadioListTile<int>(
-                    value: 0,
-                    groupValue: conditionIndex,
-                    onChanged: (v) => setStateDialog(() => conditionIndex = v!),
-                    title: const Text('Sain', style: TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: const Text('×1,00 - Supports en bon état'),
-                  ),
-                  
-                  // Moyen
-                  RadioListTile<int>(
-                    value: 1,
-                    groupValue: conditionIndex,
-                    onChanged: (v) => setStateDialog(() => conditionIndex = v!),
-                    title: const Text('Moyen', style: TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: const Text('×1,20 - Supports moyens'),
-                  ),
-                  
-                  // Dégradé
-                  RadioListTile<int>(
-                    value: 2,
-                    groupValue: conditionIndex,
-                    onChanged: (v) => setStateDialog(() => conditionIndex = v!),
-                    title: const Text('Dégradé', style: TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: const Text('×1,40 - Supports dégradés'),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Annuler'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E3A8A),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    double condition = 1.0;
-                    if (conditionIndex == 1) condition = 1.20;
-                    if (conditionIndex == 2) condition = 1.40;
-                    
-                    setState(() {
-                      _roomContexts[roomId] = RealityFactors(
-                        access: current.access,
-                        condition: condition,
-                        surface: current.surface,
-                      );
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Valider'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-
   double _calculateQuantity(Product product, Map<String, dynamic> inputs) {
     double qty = 0;
     final rule = product.consumptionRule;
@@ -743,6 +759,49 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     );
   }
 
+  /// Toggle controlling whether this ouvrage's fournitures are itemised in the
+  /// devis / facture sent to the client. When hidden, the entrepreneur keeps the
+  /// internal detail but the client only sees the line total.
+  Widget _buildHideFournituresToggle(RoomTaskState state) {
+    final hidden = state.hideFournitures;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: hidden ? const Color(0xFFFEF3C7) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: hidden ? const Color(0xFFF59E0B) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              size: 18,
+              color: hidden ? const Color(0xFFB45309) : const Color(0xFF64748B)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              hidden
+                  ? 'Fournitures masquées au client'
+                  : 'Afficher les fournitures au client',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: hidden
+                      ? const Color(0xFFB45309)
+                      : const Color(0xFF334155)),
+            ),
+          ),
+          Switch(
+            value: !hidden,
+            activeColor: const Color(0xFF22C55E),
+            onChanged: (v) => setState(() => state.hideFournitures = !v),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Single flat-price input shown when forfait mode is on.
   Widget _buildForfaitPriceField(RoomTaskState state) {
     final txt = state.forfaitPrice == 0 ? '' : _formatNum(state.forfaitPrice);
@@ -797,87 +856,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
 
   List<Product> getAllProducts() {
     return ref.read(productsProvider).valueOrNull ?? [];
-  }
-
-  void _showContextDialog(String roomId) {
-    RealityFactors current = _roomContexts[roomId] ?? const RealityFactors();
-    
-    // Convert logic for UI helpers (using index or labels)
-    // Access: 0=House(1.0), 1=Apt(1.15), 2=Constrained(1.30)
-    int accessIndex = 0;
-    if (current.access == 1.15) accessIndex = 1;
-    if (current.access == 1.30) accessIndex = 2;
-    
-    int conditionIndex = 0;
-    if (current.condition == 1.20) conditionIndex = 1;
-    if (current.condition == 1.40) conditionIndex = 2;
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-             return AlertDialog(
-               title: const Text("Paramètres du chantier"),
-               content: Column(
-                 mainAxisSize: MainAxisSize.min,
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   const Text("Accès / Logistique", style: TextStyle(fontWeight: FontWeight.bold)),
-                   DropdownButton<int>(
-                     value: accessIndex,
-                     isExpanded: true,
-                     items: const [
-                       DropdownMenuItem(value: 0, child: Text("Maison (x1.00)")),
-                       DropdownMenuItem(value: 1, child: Text("Appartement (x1.15)")),
-                       DropdownMenuItem(value: 2, child: Text("Difficile / Etage sans asc. (x1.30)")),
-                     ],
-                     onChanged: (v) => setStateDialog(() => accessIndex = v!),
-                   ),
-                   const SizedBox(height: 16),
-                   const Text("État des supports", style: TextStyle(fontWeight: FontWeight.bold)),
-                   DropdownButton<int>(
-                     value: conditionIndex,
-                     isExpanded: true,
-                     items: const [
-                       DropdownMenuItem(value: 0, child: Text("Bon état (x1.00)")),
-                       DropdownMenuItem(value: 1, child: Text("Moyen (x1.20)")),
-                       DropdownMenuItem(value: 2, child: Text("Dégradé (x1.40)")),
-                     ],
-                     onChanged: (v) => setStateDialog(() => conditionIndex = v!),
-                   ),
-                 ],
-               ),
-               actions: [
-                 TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
-                 ElevatedButton(
-                   onPressed: () {
-                     // Map back to coefficients
-                     double access = 1.0;
-                     if (accessIndex == 1) access = 1.15;
-                     if (accessIndex == 2) access = 1.30;
-                     
-                     double condition = 1.0;
-                     if (conditionIndex == 1) condition = 1.20;
-                     if (conditionIndex == 2) condition = 1.40;
-                     
-                     setState(() {
-                       _roomContexts[roomId] = RealityFactors(
-                         access: access,
-                         condition: condition,
-                         surface: 1.0, 
-                       );
-                     });
-                     Navigator.pop(context);
-                   },
-                   child: const Text("Valider"),
-                 )
-               ],
-             );
-          }
-        );
-      }
-    );
   }
 
   // --- UI Parts ---
@@ -1128,31 +1106,14 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                     style: AppTheme.headingStyle(context).copyWith(color: const Color(0xFF111827), fontSize: 22),
                   ),
                   const SizedBox(height: 8),
-                  
-                  // Context Button
-                  InkWell(
-                     onTap: () => _showContextDialog(currentRoom),
-                     child: Container(
-                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                       margin: const EdgeInsets.only(bottom: 16),
-                       decoration: BoxDecoration(
-                         color: const Color(0xFFFFF7ED), // Orange tint
-                         borderRadius: BorderRadius.circular(8),
-                         border: Border.all(color: const Color(0xFFFDBA74)),
-                       ),
-                       child: Row(
-                         mainAxisSize: MainAxisSize.min,
-                         children: [
-                           const Icon(Icons.settings_input_component, color: Color(0xFFC2410C), size: 18),
-                           const SizedBox(width: 8),
-                           Text(
-                             "Paramètres du chantier (Coeff: ${(_roomContexts[currentRoom]?.totalCoefficient ?? 1.0).toStringAsFixed(2)})",
-                             style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF9A3412)),
-                           ),
-                         ],
-                       ),
-                     ),
-                  ),
+
+                  // NOTE: The global "Paramètres du chantier (Coeff)" button was
+                  // removed (client request): price adjustment is no longer set
+                  // globally on the devis. It is now defined per ouvrage when it
+                  // is added from the library ("Adapter pour ce chantier" →
+                  // ajustement + réduction). The room coefficient defaults to
+                  // 1.0 (neutral) so existing math stays intact.
+                  const SizedBox(height: 8),
                   
                   // Search
                   TextField(
@@ -1469,6 +1430,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
              'famille': customTask?.famille ?? '',
              'forfaitEnabled': taskState.forfaitEnabled,
              'forfaitPrice': taskState.forfaitPrice,
+             'hideFournitures': taskState.hideFournitures,
            };
        }
        
@@ -1881,6 +1843,13 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                      _buildDynamicInputs(roomId, taskItem.id, state),
 
                      const SizedBox(height: 20),
+
+                     // Hide/show fournitures toggle — only relevant when this
+                     // ouvrage actually has fournitures attached.
+                     if (state.selectedFournitures.isNotEmpty) ...[
+                       _buildHideFournituresToggle(state),
+                       const SizedBox(height: 12),
+                     ],
 
                      // Fournitures List
                      ...state.selectedFournitures.entries.map((entry) {

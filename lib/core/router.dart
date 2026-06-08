@@ -56,6 +56,9 @@ import 'package:koji/features/quote/chantier_info_screen.dart';
 import 'package:koji/features/quote/chantier_afaire_screen.dart';
 import 'package:koji/features/quote/chantier_budget_screen.dart';
 import 'package:koji/features/quote/chantier_devis_screen.dart';
+import 'package:koji/features/quote/chantier_facturation_screen.dart';
+import 'package:koji/features/quote/facturation_create_screen.dart';
+import 'package:koji/features/quote/facturation_chantier_picker_screen.dart';
 import 'package:koji/features/quote/chantier_rdv_screen.dart';
 import 'package:koji/features/quote/chantier_add_task_screen.dart';
 import 'package:koji/features/quote/chantier_documents_screen.dart';
@@ -288,6 +291,36 @@ final router = GoRouter(
           context,
           state,
           ChantierDevisScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/facturation',
+      pageBuilder: (context, state) => _buildPageWithTransition(
+        context,
+        state,
+        const FacturationChantierPickerScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/chantier/facturation',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierFacturationScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/facturation/create',
+      pageBuilder: (context, state) {
+        final args = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          FacturationCreateScreen(args: args),
         );
       },
     ),

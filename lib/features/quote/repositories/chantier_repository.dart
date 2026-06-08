@@ -66,6 +66,15 @@ class ChantierRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
+    // Canonicalise the client email (trim + lowercase) before storing it. The
+    // client logs in with their own email and is matched to this chantier; the
+    // signature web app also validates the link's email param against it. Saving
+    // a canonical form keeps all three (stored value, JWT email, link param)
+    // in agreement and avoids "profil client introuvable" from a casing/space
+    // mismatch.
+    final rawEmail = (data['clientEmail'] as String?)?.trim().toLowerCase();
+    final clientEmail = (rawEmail != null && rawEmail.isNotEmpty) ? rawEmail : null;
+
     // 1. Insert the Chantier
     final chantierResponse = await _client
         .from('chantiers')
@@ -76,7 +85,7 @@ class ChantierRepository {
           'postal_code': data['postalCode'],
           'city': data['city'],
           'property_type': data['propertyType'],
-          'client_email': data['clientEmail'],
+          'client_email': clientEmail,
           'status': 'En attente',
         })
         .select('id')

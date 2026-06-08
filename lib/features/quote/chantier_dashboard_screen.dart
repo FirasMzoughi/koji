@@ -94,6 +94,9 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
             case 'Devis':
               context.push('/chantier/devis', extra: data);
               break;
+            case 'Facturation':
+              context.push('/chantier/facturation', extra: data);
+              break;
             case 'Mes RDV':
               context.push('/chantier/rdv', extra: data);
               break;
@@ -149,8 +152,9 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                               const SizedBox(height: 14),
                               _buildBudgetCard(budget),
                               const SizedBox(height: 14),
-                              _buildDevisRdvRow(), 
+                              _buildDevisRdvRow(),
                               const SizedBox(height: 14),
+                              // Facturation moved to the app sidebar (drawer).
                               _buildDocumentsCard(documents),
                             ]),
                           ),
@@ -577,6 +581,7 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
   }
 
   // ──────────────────────────────────────────
+  // ──────────────────────────────────────────
   Widget _buildDocumentsCard(List<Map<String, dynamic>> documents) {
     return GestureDetector(
       onTap: () => context.push('/chantier/documents', extra: widget.data),
@@ -727,6 +732,7 @@ class _AddMenuSheet extends StatelessWidget {
     'À faire',
     'Budget',
     'Devis',
+    'Facturation',
     'Mes RDV',
     'Documents',
   ];

@@ -77,7 +77,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       // Has account - check user type and profile completion
       try {
         final userRepository = ref.read(userRepositoryProvider);
-        final userData = await userRepository.getUser(user.id);
+        var userData = await userRepository.getUser(user.id);
+        // Post-signup race: a client who just created their account from the
+        // devis link may hit splash before the `users` row is written. Retry
+        // once so we read their real `is_pro` instead of defaulting to
+        // entreprise and misrouting them away from /client-home.
+        if (userData == null) {
+          await Future.delayed(const Duration(milliseconds: 600));
+          userData = await userRepository.getUser(user.id);
+        }
         final isProRaw = userData?['is_pro'] as bool? ?? true;
         final isProfileComplete = userData?['is_profile_complete'] == true;
         final isBusinessInfoComplete =

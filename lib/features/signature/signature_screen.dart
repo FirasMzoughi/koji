@@ -3,7 +3,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
 import 'package:koji/features/signature/providers/signature_provider.dart';
+import 'package:koji/features/quote/repository/quote_task_repository.dart';
+import 'package:koji/features/quote/services/devis_pdf_service.dart';
 
 class SignatureScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> quote;
@@ -19,6 +22,17 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
   List<Offset?> _points = [];
   bool _isSaving = false;
 
+  // Lieu de signature ("Fait à …, le …"). Pre-filled from the quote's site
+  // address / city when available; editable by the signer.
+  final TextEditingController _lieuController = TextEditingController();
+  bool _lieuPrefilled = false;
+
+  @override
+  void dispose() {
+    _lieuController.dispose();
+    super.dispose();
+  }
+
   void _saveSignature() async {
     if (_points.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -31,23 +45,32 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
     try {
       // 1. Export canvas to PNG
       final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder, Rect.fromPoints(const Offset(0.0, 0.0), const Offset(500.0, 300.0)));
+      final canvas = Canvas(recorder,
+          Rect.fromPoints(const Offset(0.0, 0.0), const Offset(500.0, 300.0)));
       final painter = SignaturePainter(points: _points);
-      
+
       // We give it a white background so it's not transparent with black ink
-      canvas.drawRect(const Rect.fromLTWH(0, 0, 500, 300), Paint()..color = Colors.white);
+      canvas.drawRect(
+          const Rect.fromLTWH(0, 0, 500, 300), Paint()..color = Colors.white);
       painter.paint(canvas, const Size(500, 300));
-      
+
       final picture = recorder.endRecording();
       final img = await picture.toImage(500, 300);
-      final ByteData? byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-      
+      final ByteData? byteData =
+          await img.toByteData(format: ui.ImageByteFormat.png);
+
       if (byteData != null) {
         final quoteId = widget.quote['id'] as String;
-        final clientName = widget.quote['client']?['name']?.toString() ?? 'Client';
-        
+        final clientName =
+            widget.quote['client']?['name']?.toString() ?? 'Client';
+
         final repo = ref.read(signatureRepositoryProvider);
-        await repo.saveSignature(quoteId, clientName, byteData.buffer.asUint8List());
+        await repo.saveSignature(
+          quoteId,
+          clientName,
+          byteData.buffer.asUint8List(),
+          lieu: _lieuController.text.trim(),
+        );
       }
 
       if (!mounted) return;
@@ -67,6 +90,120 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
     });
   }
 
+  bool _loadingPreview = false;
+
+  /// Renders the SAME devis PDF the client received by message, so the document
+  /// reviewed before signing is identical to the one sent (design harmonized).
+  /// The signature-list quote carries only summary fields, so we load the rooms
+  /// & tasks here to rebuild the full `expenses` map the PDF needs.
+  Future<void> _previewDevisPdf() async {
+    final quoteId = widget.quote['id'] as String?;
+    if (quoteId == null || quoteId.isEmpty) return;
+
+    setState(() => _loadingPreview = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final repo = QuoteTaskRepository();
+      final rooms = await repo.getQuoteRooms(quoteId);
+      final expenses = <String, List<Map<String, dynamic>>>{};
+      // Per-lot HT so the client PDF récapitulatif matches the contractor's.
+      final lotTotals = <String, double>{};
+
+      for (final room in rooms) {
+        final roomName = (room['name'] as String?) ?? '';
+        if (roomName.isEmpty) continue;
+        final tasks = await repo.getQuoteTasks(room['id'] as String);
+        final items = <Map<String, dynamic>>[];
+        double lotHT = 0;
+        for (final t in tasks) {
+          final inputs = (t['inputs'] is Map)
+              ? Map<String, dynamic>.from(t['inputs'] as Map)
+              : <String, dynamic>{};
+          final qty = (inputs['quantity'] as num?)?.toDouble() ?? 1.0;
+          final materialQty =
+              (inputs['fournituresQty'] as num?)?.toDouble() ?? qty;
+          // hideFournitures folds the material cost into labor so the client
+          // PDF shows a single combined unit price without itemising fournitures.
+          final hide = inputs['hideFournitures'] == true;
+          final labor = (t['unit_price_ht'] as num?)?.toDouble() ?? 0.0;
+          final material = (t['total_price_ht'] as num?)?.toDouble() ?? 0.0;
+          final materialTotal = materialQty * material;
+          final hiddenMaterialUnit =
+              hide && qty > 0 ? materialTotal / qty : 0.0;
+          final taskId = (t['task_id'] as String?) ?? '';
+          final lineType = inputs['lineType']?.toString() ?? 'normal';
+          items.add({
+            'title': (t['label'] as String?) ?? 'Prestation',
+            'quantity': qty,
+            'materialQuantity': materialQty,
+            'laborCost': hide ? labor + hiddenMaterialUnit : labor,
+            'materialCost': hide ? 0.0 : material,
+            'isFourniture': taskId.startsWith('fourniture_'),
+            'lineType': lineType,
+          });
+          if (lineType == 'normal') {
+            lotHT += qty * labor + materialQty * material;
+          }
+        }
+        if (items.isNotEmpty) {
+          expenses[roomName] = items;
+          lotTotals[roomName] = lotHT;
+        }
+      }
+
+      // Rebuild the récapitulatif totals from the stored global % (recap) and the
+      // summed lot HT, so the client PDF shows the same provision lines + TVA.
+      final recap = (widget.quote['recap'] is Map)
+          ? Map<String, dynamic>.from(widget.quote['recap'] as Map)
+          : <String, dynamic>{};
+      double pct(String k, double dflt) =>
+          (recap[k] as num?)?.toDouble() ?? dflt;
+      final subtotalLots = lotTotals.values.fold<double>(0, (s, v) => s + v);
+      final coordPct = pct('coordPct', 10);
+      final aleasPct = pct('aleasPct', 5);
+      final decennalePct = pct('decennalePct', 8);
+      final coordAmount = subtotalLots * coordPct / 100;
+      final aleasAmount = subtotalLots * aleasPct / 100;
+      final decennaleAmount = subtotalLots * decennalePct / 100;
+      final generalHT =
+          subtotalLots + coordAmount + aleasAmount + decennaleAmount;
+      final tvaRate = (recap['tvaRate'] as num?)?.toInt() ??
+          ((widget.quote['totals'] is Map
+                  ? (widget.quote['totals'] as Map)['tvaRate'] as num?
+                  : null)
+              ?.toInt()) ??
+          20;
+      final tva = generalHT * tvaRate / 100;
+
+      final quoteData = <String, dynamic>{
+        ...widget.quote,
+        'expenses': expenses,
+        'lotTotals': lotTotals,
+        'totals': {
+          'subtotalLots': subtotalLots,
+          'coordPct': coordPct,
+          'coordAmount': coordAmount,
+          'aleasPct': aleasPct,
+          'aleasAmount': aleasAmount,
+          'decennalePct': decennalePct,
+          'decennaleAmount': decennaleAmount,
+          'ht': generalHT,
+          'tvaRate': tvaRate,
+          'tva': tva,
+          'ttc': generalHT + tva,
+        },
+        // 'lots' (lot labels) rides through from widget.quote (metadata).
+      };
+
+      final pdf = await DevisPdfService().generate(quoteData: quoteData);
+      await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Erreur aperçu : $e')));
+    } finally {
+      if (mounted) setState(() => _loadingPreview = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final quote = widget.quote;
@@ -80,13 +217,24 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
     final address = quote['siteAddress'] ?? '';
     final totalTTC = quote['totals']?['ttc'] ?? 0.0;
 
+    // Prefill the "lieu" once from the site address / client city if present.
+    if (!_lieuPrefilled) {
+      _lieuPrefilled = true;
+      final addrStr = address.toString().trim();
+      if (addrStr.isNotEmpty) {
+        // Use the last comma-separated segment (usually the city) as a sensible
+        // default for "Fait à …".
+        final city = addrStr.split(',').last.trim();
+        _lieuController.text = city.isNotEmpty ? city : addrStr;
+      }
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text('Signer un devis',
             style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F2648))),
+                fontWeight: FontWeight.bold, color: Color(0xFF0F2648))),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -123,7 +271,10 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                      color: Theme.of(context).colorScheme.onSurface.withAlpha((0.02 * 255).round()),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withAlpha((0.02 * 255).round()),
                       blurRadius: 10)
                 ],
               ),
@@ -177,8 +328,7 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                     children: [
                       const Text("Total TTC",
                           style: TextStyle(
-                              color: Color(0xFF94A3B8),
-                              fontSize: 12)),
+                              color: Color(0xFF94A3B8), fontSize: 12)),
                       Text(
                           "${(totalTTC as num).toDouble().toStringAsFixed(2)} €",
                           style: const TextStyle(
@@ -191,15 +341,87 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
               ),
             ),
 
+            const SizedBox(height: 16),
+
+            // Full devis preview — identical to the PDF sent by message.
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _loadingPreview ? null : _previewDevisPdf,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF1D74FF),
+                  side: const BorderSide(color: Color(0xFF1D74FF)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: _loadingPreview
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Color(0xFF1D74FF)),
+                      )
+                    : const Icon(Icons.picture_as_pdf_outlined, size: 20),
+                label: Text(
+                  _loadingPreview
+                      ? "Chargement…"
+                      : "Aperçu du devis complet (PDF)",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 32),
+
+            // Lieu de signature — appears on the signed devis as "Fait à …, le …"
+            const Text("Lieu de signature",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: Color(0xFF0F2648))),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _lieuController,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: "Ex : Paris",
+                prefixIcon: const Icon(Icons.location_city,
+                    color: Color(0xFF94A3B8), size: 20),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF1D74FF)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Builder(builder: (context) {
+              final lieu = _lieuController.text.trim();
+              final today =
+                  "${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year}";
+              return Text(
+                lieu.isEmpty ? "Fait le $today" : "Fait à $lieu, le $today",
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    color: Color(0xFF64748B)),
+              );
+            }),
+
+            const SizedBox(height: 24),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Signez dans le cadre ci-dessous",
                     style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F2648))),
+                        fontWeight: FontWeight.bold, color: Color(0xFF0F2648))),
                 IconButton(
                   icon: const Icon(Icons.delete_outline,
                       color: Color(0xFF1D74FF)),
@@ -224,7 +446,10 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                           .none), // Dashed implied by design, using solid for MVP
                   boxShadow: [
                     BoxShadow(
-                        color: Theme.of(context).colorScheme.onSurface.withAlpha((0.02 * 255).round()),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withAlpha((0.02 * 255).round()),
                         blurRadius: 10,
                         offset: const Offset(0, 4)),
                   ]),
@@ -247,8 +472,7 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
                       const Center(
                           child: Text("Zone de signature tactile",
                               style: TextStyle(
-                                  color: Color(0xFFCBD5E1),
-                                  fontSize: 14))),
+                                  color: Color(0xFFCBD5E1), fontSize: 14))),
 
                     // Drawing Area
                     GestureDetector(
@@ -301,44 +525,44 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
 
             const SizedBox(height: 32),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveSignature,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF475E84), // Greyish Blue
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_isSaving)
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.surface,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      else
-                        const Icon(Icons.check_circle, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        _isSaving ? "Enregistrement..." : "Confirmer et signer",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _saveSignature,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF475E84), // Greyish Blue
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isSaving)
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.surface,
+                          strokeWidth: 2,
                         ),
+                      )
+                    else
+                      const Icon(Icons.check_circle, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isSaving ? "Enregistrement..." : "Confirmer et signer",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -353,9 +577,7 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
         const SizedBox(width: 8),
         Expanded(
             child: Text(text,
-                style: const TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 13),
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
                 overflow: TextOverflow.ellipsis)),
       ],
     );

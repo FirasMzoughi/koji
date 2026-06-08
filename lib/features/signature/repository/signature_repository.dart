@@ -9,8 +9,9 @@ class SignatureRepository {
   Future<void> saveSignature(
     String quoteId,
     String clientName,
-    Uint8List signatureBytes,
-  ) async {
+    Uint8List signatureBytes, {
+    String? lieu,
+  }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
@@ -36,13 +37,28 @@ class SignatureRepository {
         'quote_id': quoteId,
         'client_name': clientName,
         'signature_url': fileUrl,
+        if (lieu != null && lieu.isNotEmpty) 'lieu': lieu,
       });
 
-      // 4. Update the quote status to 'signed'
-      await _client.from('quotes').update({
+      // 4. Update the quote status to 'signed'. Persist the lieu/date into the
+      // quote metadata so the signed devis PDF can render "Fait à …, le …".
+      final updates = <String, dynamic>{
         'status': 'signed',
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', quoteId);
+      };
+      if (lieu != null && lieu.isNotEmpty) {
+        final existing = await _client
+            .from('quotes')
+            .select('metadata')
+            .eq('id', quoteId)
+            .maybeSingle();
+        final metadata = (existing?['metadata'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
+        metadata['signatureLieu'] = lieu;
+        metadata['signatureDate'] = DateTime.now().toIso8601String();
+        updates['metadata'] = metadata;
+      }
+      await _client.from('quotes').update(updates).eq('id', quoteId);
 
       _logger.i('Successfully saved signature and updated quote $quoteId');
     } catch (e) {

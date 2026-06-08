@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:koji/core/supabase_config.dart';
@@ -13,6 +15,23 @@ class QuoteRepository {
 
   QuoteRepository(this._supabase);
 
+  // Characters used for the per-chantier access code / password. We exclude
+  // visually ambiguous glyphs (0/O, 1/I/L) so a client reading them off an SMS
+  // can type them without confusion.
+  static const _codeAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+  String _randomToken(int length) {
+    final rng = Random.secure();
+    return List.generate(
+        length, (_) => _codeAlphabet[rng.nextInt(_codeAlphabet.length)]).join();
+  }
+
+  /// Per-chantier login identifier, e.g. "KOJI-7F3A2B".
+  String _generateAccessCode() => 'KOJI-${_randomToken(6)}';
+
+  /// Per-chantier password, e.g. "K7M2P9Q4" (8 chars).
+  String _generateAccessPassword() => _randomToken(8);
+
   /// Generate the next sequential devis number for a company, scoped per year.
   /// Format: DEVIS-YYYY-NNNN (e.g. DEVIS-2026-0001).
   ///
@@ -21,8 +40,9 @@ class QuoteRepository {
   /// trailing number + 1. This avoids needing a separate counter table while
   /// still guaranteeing no in-year duplicates per user.
   Future<String> generateNextQuoteNumber(String userId) async {
+    // Format: "YYYY-NNNN" (e.g. 2026-0001). Per-year sequential, padded to 4.
     final year = DateTime.now().year;
-    final prefix = 'DEVIS-$year-';
+    final prefix = '$year-';
     try {
       final rows = await _supabase
           .from('quotes')
@@ -41,7 +61,7 @@ class QuoteRepository {
       return '$prefix$next';
     } catch (e) {
       _logger.e('Failed to generate quote number, falling back', error: e);
-      return '$prefix${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      return '${prefix}0001';
     }
   }
 
@@ -62,21 +82,28 @@ class QuoteRepository {
         'siteAddress': quoteData['siteAddress'],
         'travauxStart': quoteData['travauxStart'],
         'travauxDuration': quoteData['travauxDuration'],
+        'mentions': quoteData['mentions'],
         'company': company,
         'client': client, // We store the whole client snapshot too just in case
+        // Professional "LOT" devis: global provisions + TVA rate + per-lot labels.
+        'recap': quoteData['recap'],
+        'lots': quoteData['lots'],
       };
-      
+
+      // Explicit TVA rate chosen on the devis (10 % rénovation or 20 %).
+      final int tvaRate = (totals?['tvaRate'] as num?)?.toInt() ?? 20;
+
       // 1. Insert or Update QUOTE
       final quoteDbData = {
         'user_id': userId,
         'chantier_id': quoteData['chantier_id'], // Requires passing chantier_id in quoteData
         'status': quoteData['status'] ?? 'Draft',
         'reference': quoteData['quoteNumber'] ?? 'REF-${DateTime.now().millisecondsSinceEpoch}',
+        // total_ht is the TOTAL GÉNÉRAL HT (lots + provisions), so dashboards
+        // and the devis show the same figure.
         'total_ht': totals?['ht'] ?? 0,
         'total_ttc': totals?['ttc'] ?? 0,
-        'tva_rate': (totals?['tva'] != null && totals?['ht'] != null && totals?['ht'] > 0) 
-            ? ((totals!['tva'] / totals['ht']) * 100).round() 
-            : 20.0,
+        'tva_rate': tvaRate,
         'metadata': metadata,
         'updated_at': DateTime.now().toIso8601String(),
       };
@@ -119,10 +146,44 @@ class QuoteRepository {
       final signatureUrl =
           'https://koji-signature.vercel.app/?quoteId=$finalQuoteId'
           '&email=${Uri.encodeComponent(clientEmail)}';
-      
-      // We'll trigger an update for the metadata's signature link
+
+      // Per-chantier access credentials (Identifiant + Mot de passe) the client
+      // uses to log in and sign. Generated ONCE per quote: if this quote was
+      // already saved with credentials, reuse them so the client's login keeps
+      // working across edits/re-saves.
+      String accessCode = (quoteData['accessCode'] as String?)?.trim() ?? '';
+      String accessPassword =
+          (quoteData['accessPassword'] as String?)?.trim() ?? '';
+      if (accessCode.isEmpty || accessPassword.isEmpty) {
+        try {
+          final existing = await _supabase
+              .from('quotes')
+              .select('access_code, access_password')
+              .eq('id', finalQuoteId)
+              .maybeSingle();
+          accessCode = (existing?['access_code'] as String?)?.trim() ?? '';
+          accessPassword =
+              (existing?['access_password'] as String?)?.trim() ?? '';
+        } catch (e) {
+          _logger.w('Could not read existing access credentials: $e');
+        }
+      }
+      if (accessCode.isEmpty) accessCode = _generateAccessCode();
+      if (accessPassword.isEmpty) accessPassword = _generateAccessPassword();
+
+      // Surface the credentials back to the caller (the success screen reads
+      // these to build the "Envoyer le Lien" message).
+      quoteData['accessCode'] = accessCode;
+      quoteData['accessPassword'] = accessPassword;
+      metadata['accessCode'] = accessCode;
+
+      // We'll trigger an update for the metadata's signature link + credentials.
       metadata['signature_url'] = signatureUrl;
-      await _supabase.from('quotes').update({'metadata': metadata}).eq('id', finalQuoteId);
+      await _supabase.from('quotes').update({
+        'metadata': metadata,
+        'access_code': accessCode,
+        'access_password': accessPassword,
+      }).eq('id', finalQuoteId);
 
       // 2. Insert QUOTE ROOMS & Tasks
       // First, delete old rooms/tasks if updating
@@ -171,6 +232,8 @@ class QuoteRepository {
              if (detail['unite'] != null) 'unite': detail['unite'],
              if (detail['code'] != null) 'code': detail['code'],
              if (detail['famille'] != null) 'famille': detail['famille'],
+             if (detail['hideFournitures'] != null)
+               'hideFournitures': detail['hideFournitures'],
            };
 
            final taskDbData = {
@@ -391,10 +454,20 @@ class QuoteRepository {
               'siteAddress': metadata['siteAddress'] ?? '',
               'travauxStart': metadata['travauxStart'] ?? '',
               'travauxDuration': metadata['travauxDuration'] ?? '',
+              // Place/date captured at signing → rendered on the signed devis PDF.
+              'signatureLieu': metadata['signatureLieu'] ?? '',
+              'signatureDate': metadata['signatureDate'] ?? '',
+              // Editable custom notes/mentions (conditions, délais, réserves…).
+              'mentions': metadata['mentions'] ?? '',
               'company': metadata['company'] ?? {},
+              // Professional "LOT" devis config so the recap reopens identically
+              // and the client signature PDF can rebuild the same layout.
+              'recap': metadata['recap'] ?? {},
+              'lots': metadata['lots'] ?? {},
               'totals': {
-                'ht': quote['total_ht'] ?? 0, 
-                'tva': ((quote['total_ht'] ?? 0) * (quote['tva_rate'] ?? 20) / 100), 
+                'ht': quote['total_ht'] ?? 0,
+                'tvaRate': quote['tva_rate'] ?? 20,
+                'tva': ((quote['total_ht'] ?? 0) * (quote['tva_rate'] ?? 20) / 100),
                 'ttc': quote['total_ttc'] ?? 0
               },
               // Since rooms/tasks are fetched later, keep them empty here for the list view

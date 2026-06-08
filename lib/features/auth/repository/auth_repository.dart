@@ -102,6 +102,34 @@ class AuthRepository {
     }
   }
 
+  /// Per-chantier client login: verify an access code + password against the
+  /// `login_with_access_code` RPC. Returns the matching quote id, or null when
+  /// the pair is invalid. This does NOT create a Supabase auth session — the
+  /// client is taken straight to that quote's signature view.
+  Future<String?> loginWithAccessCode({
+    required String code,
+    required String password,
+  }) async {
+    _logger.i('🔑 [AuthRepository] Verifying chantier access code');
+    try {
+      final result = await _supabase.rpc('login_with_access_code', params: {
+        'p_code': code.trim(),
+        'p_password': password,
+      });
+      // The RPC returns the quote uuid (text) or null.
+      final quoteId = result?.toString();
+      if (quoteId == null || quoteId.isEmpty || quoteId == 'null') {
+        _logger.w('⚠️ [AuthRepository] Invalid chantier access credentials');
+        return null;
+      }
+      _logger.i('✅ [AuthRepository] Chantier access granted: $quoteId');
+      return quoteId;
+    } catch (e) {
+      _logger.e('❌ [AuthRepository] Chantier access login failed', error: e);
+      rethrow;
+    }
+  }
+
   Future<void> resetPassword({required String email}) async {
     _logger.i('🔑 [AuthRepository] Sending password reset email to $email');
     try {

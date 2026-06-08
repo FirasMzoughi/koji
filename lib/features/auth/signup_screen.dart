@@ -60,11 +60,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     // Set the flag BEFORE awaiting so ref.listen is blocked from the start
     setState(() => _awaitingEmailConfirmation = true);
 
-    final needsConfirmation = await ref.read(authProvider.notifier).signUpWithEmailAndPassword(
-          _emailController.text.trim(),
-          _passwordController.text,
-          isPro: isPro,
-        );
+    final needsConfirmation =
+        await ref.read(authProvider.notifier).signUpWithEmailAndPassword(
+              _emailController.text.trim(),
+              _passwordController.text,
+              isPro: isPro,
+            );
 
     if (needsConfirmation && mounted) {
       final email = _emailController.text.trim();
@@ -72,7 +73,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'Vérifiez votre e-mail',
             style: AppTheme.headingStyle(context).copyWith(fontSize: 20),
@@ -135,7 +137,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         error: (error, stack) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erreur: ${error.toString()}'),
+              content: Text(authErrorMessage(error)),
               backgroundColor: Colors.red,
             ),
           );
@@ -189,7 +191,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 if (widget.signupType != null)
                   Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
                         color: widget.signupType == 'entreprise'
                             ? AppTheme.darkNavy
@@ -479,7 +482,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
+                              color: Theme.of(context).colorScheme.surface,
+                              strokeWidth: 2))
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

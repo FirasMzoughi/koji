@@ -30,6 +30,9 @@ class HomeMenuGrid extends StatelessWidget {
         _buildItem(context, "Synchronisation", Icons.group_outlined,
             const Color(0xFF1D74FF),
             onTap: () => context.push('/synchronization')),
+        _buildItem(context, "Facturation", Icons.receipt_long_outlined,
+            const Color(0xFF1D74FF),
+            onTap: () => context.push('/facturation')),
       ],
     );
   }

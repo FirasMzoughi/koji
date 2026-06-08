@@ -4,6 +4,36 @@ import 'package:koji/features/auth/repository/auth_repository.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+String authErrorMessage(Object error) {
+  final rawMessage = error.toString();
+  final message = error is AuthException ? error.message : rawMessage;
+  final normalized = message.toLowerCase();
+  final rawNormalized = rawMessage.toLowerCase();
+
+  if (normalized.contains('invalid login credentials')) {
+    return 'E-mail ou mot de passe incorrect.';
+  }
+
+  if (normalized.contains('email not confirmed')) {
+    return 'Veuillez confirmer votre adresse e-mail avant de vous connecter.';
+  }
+
+  if (rawNormalized.contains('authretryablefetchexception') ||
+      rawNormalized.contains('clientexception') ||
+      rawNormalized.contains('socketexception') ||
+      rawNormalized.contains('failed host lookup') ||
+      rawNormalized.contains('connection timed out') ||
+      rawNormalized.contains('failed to fetch')) {
+    return 'Connexion impossible. Verifiez votre connexion Internet puis reessayez.';
+  }
+
+  if (message.trim().isNotEmpty && !rawNormalized.contains('exception:')) {
+    return message;
+  }
+
+  return 'Une erreur est survenue. Reessayez dans un instant.';
+}
+
 final authProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
   return AuthNotifier(
@@ -65,7 +95,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       // the user clicks the confirmation email.
 
       if (response.session == null) {
-        _logger.i('📧 Email confirmation required — trigger will create user row');
+        _logger
+            .i('📧 Email confirmation required — trigger will create user row');
         state = const AsyncValue.data(null);
         return true;
       }

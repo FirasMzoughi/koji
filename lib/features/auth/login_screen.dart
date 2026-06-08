@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/auth/provider/auth_provider.dart';
@@ -21,20 +22,78 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  // Particulier code-login (Identifiant + Mot de passe per chantier).
+  final _codeController = TextEditingController();
+  final _codePasswordController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _rememberMe = true;
+  bool _codeLoginLoading = false;
+
+  /// True for the "Espace Particulier" — that login is a per-chantier
+  /// Identifiant + Mot de passe (no email / Google / signup).
+  bool get _isParticulier => widget.loginType == 'particulier';
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _codeController.dispose();
+    _codePasswordController.dispose();
     super.dispose();
   }
 
   bool get _isFormValid {
     return _emailController.text.isNotEmpty &&
         _passwordController.text.isNotEmpty;
+  }
+
+  bool get _isCodeFormValid =>
+      _codeController.text.trim().isNotEmpty &&
+      _codePasswordController.text.isNotEmpty;
+
+  /// Verify the chantier Identifiant + Mot de passe, then open the web signer
+  /// for that devis (view + sign). No Supabase session is created.
+  Future<void> _handleParticulierLogin() async {
+    if (!_isCodeFormValid || _codeLoginLoading) return;
+    setState(() => _codeLoginLoading = true);
+    try {
+      final quoteId = await ref.read(authRepositoryProvider).loginWithAccessCode(
+            code: _codeController.text,
+            password: _codePasswordController.text,
+          );
+      if (!mounted) return;
+
+      if (quoteId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Identifiant ou mot de passe incorrect.'),
+            backgroundColor: Color(0xFFEF4444),
+          ),
+        );
+        return;
+      }
+
+      final url = Uri.parse(
+          'https://koji-signature.vercel.app/?quoteId=$quoteId');
+      final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Impossible d'ouvrir le devis."),
+            backgroundColor: Color(0xFFEF4444),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _codeLoginLoading = false);
+    }
   }
 
   void _handleLogin() async {
@@ -126,7 +185,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                                content: Text('Erreur : ${e.toString()}')),
+                              content: Text(authErrorMessage(e)),
+                            ),
                           );
                         }
                       }
@@ -141,10 +201,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          color: Theme.of(context).colorScheme.surface, strokeWidth: 2),
+                          color: Theme.of(context).colorScheme.surface,
+                          strokeWidth: 2),
                     )
                   : Text('Envoyer',
-                      style: TextStyle(color: Theme.of(context).colorScheme.surface)),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface)),
             ),
           ],
         ),
@@ -225,7 +287,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         },
         error: (error, stack) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: ${error.toString()}')),
+            SnackBar(content: Text(authErrorMessage(error))),
           );
         },
       );
@@ -286,7 +348,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       color: widget.loginType == 'entreprise'
                           ? AppTheme.darkNavy
                           : AppTheme.primaryBlue,
-                      borderRadius: BorderRadius.circular(responsive.borderRadius(20)),
+                      borderRadius:
+                          BorderRadius.circular(responsive.borderRadius(20)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -329,6 +392,77 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               SizedBox(height: responsive.height(4)), // ~32px
 
+              // ── Espace Particulier : Identifiant + Mot de passe (per chantier).
+              //    No email / Google / signup — the client receives these
+              //    credentials by message from the entreprise.
+              if (_isParticulier) ...[
+                _buildTextField(
+                  controller: _codeController,
+                  label: 'Identifiant',
+                  onChanged: (_) => setState(() {}),
+                ),
+                SizedBox(height: responsive.height(2)),
+                _buildTextField(
+                  controller: _codePasswordController,
+                  label: 'Mot de passe',
+                  obscureText: _obscurePassword,
+                  onChanged: (_) => setState(() {}),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: AppTheme.textLight,
+                      size: responsive.iconSize(20),
+                    ),
+                    onPressed: () => setState(
+                        () => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+                SizedBox(height: responsive.height(3)),
+                ElevatedButton(
+                  onPressed: _isCodeFormValid && !_codeLoginLoading
+                      ? _handleParticulierLogin
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isCodeFormValid
+                        ? AppTheme.darkNavy
+                        : const Color(0xFFE5E7EB),
+                    foregroundColor: Colors.white,
+                    padding:
+                        EdgeInsets.symmetric(vertical: responsive.height(2.25)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(responsive.borderRadius(12)),
+                    ),
+                    disabledBackgroundColor: const Color(0xFFE5E7EB),
+                    disabledForegroundColor: const Color(0xFFD1D5DB),
+                  ),
+                  child: _codeLoginLoading
+                      ? SizedBox(
+                          height: responsive.iconSize(20),
+                          width: responsive.iconSize(20),
+                          child: CircularProgressIndicator(
+                              color: Theme.of(context).colorScheme.surface,
+                              strokeWidth: 2))
+                      : Text(
+                          'Accéder à mon devis',
+                          style: TextStyle(
+                            fontSize: responsive.fontSize(16),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+                SizedBox(height: responsive.height(2)),
+                Text(
+                  'Saisissez l’identifiant et le mot de passe reçus par message de votre artisan.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: responsive.fontSize(12),
+                    color: AppTheme.textLight,
+                  ),
+                ),
+              ] else ...[
               // Email Field
               _buildTextField(
                 controller: _emailController,
@@ -376,8 +510,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       },
                       activeColor: AppTheme.primaryBlue,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            responsive.borderRadius(4)),
+                        borderRadius:
+                            BorderRadius.circular(responsive.borderRadius(4)),
                       ),
                     ),
                   ),
@@ -428,7 +562,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         height: responsive.iconSize(20),
                         width: responsive.iconSize(20),
                         child: CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
+                            color: Theme.of(context).colorScheme.surface,
+                            strokeWidth: 2))
                     : Text(
                         'Connexion',
                         style: TextStyle(
@@ -523,6 +658,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
+              ], // end else (entreprise email/Google login)
 
               SizedBox(height: responsive.height(5)), // ~40px
             ],
