@@ -1,10 +1,23 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:koji/features/synchronization/data/worker_model.dart';
 
 class WorkerRepository {
   final SupabaseClient _client = Supabase.instance.client;
+
+  // Unambiguous alphabet (no 0/O/1/I) for codes and passwords the entreprise
+  // reads aloud / types when sharing them with a worker.
+  static const _alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  String _randomToken(int length) {
+    final rng = Random.secure();
+    return List.generate(
+      length,
+      (_) => _alphabet[rng.nextInt(_alphabet.length)],
+    ).join();
+  }
 
   Future<List<Worker>> getWorkers({String? query}) async {
     try {
@@ -40,7 +53,31 @@ class WorkerRepository {
           .select()
           .single();
 
-      return Worker.fromJson(response);
+      final created = Worker.fromJson(response);
+
+      // Generate per-worker Espace Particulier credentials and persist them via
+      // the secure RPC (set_worker_access_credentials). The worker uses these to
+      // log in and follow their tasks. Returned on the worker so the detail
+      // screen can display/share them.
+      final accessCode = 'OUV-${_randomToken(6)}';
+      final accessPassword = _randomToken(8);
+      try {
+        await _client.rpc('set_worker_access_credentials', params: {
+          'p_worker_id': created.id,
+          'p_access_code': accessCode,
+          'p_access_password': accessPassword,
+        });
+        return Worker.fromJson({
+          ...response,
+          'access_code': accessCode,
+          'access_password': accessPassword,
+        });
+      } catch (e) {
+        // Credentials couldn't be set (e.g. SQL not applied yet) — the worker is
+        // still created; the detail screen will just show no code.
+        if (kDebugMode) debugPrint('Worker credential generation failed: $e');
+        return created;
+      }
     } catch (e) {
       throw Exception('Failed to create worker: $e');
     }

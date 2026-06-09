@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/features/quote/chantier_client_screen.dart';
+import 'package:koji/features/worker/worker_tasks_screen.dart';
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/auth/provider/auth_provider.dart';
 import 'package:koji/features/auth/provider/account_type_provider.dart';
@@ -52,32 +53,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _codeController.text.trim().isNotEmpty &&
       _codePasswordController.text.isNotEmpty;
 
-  /// Verify the chantier Identifiant + Mot de passe, then open the in-app
-  /// chantier space (Devis / Suivi / Messages) for that devis. No Supabase
-  /// session is created — the screen loads everything by the quote id.
+  /// Verify the Espace Particulier Identifiant + Mot de passe. The SAME login
+  /// serves two roles:
+  ///   • a CLIENT code → opens the in-app chantier space (Devis / Suivi /
+  ///     Messages) for that devis;
+  ///   • a WORKER code → opens the worker space (their assigned tasks, with a
+  ///     Terminé / À faire toggle).
+  /// We try the client code first, then the worker code. No Supabase session is
+  /// created in either case — everything loads by id via the access RPCs.
   Future<void> _handleParticulierLogin() async {
     if (!_isCodeFormValid || _codeLoginLoading) return;
     setState(() => _codeLoginLoading = true);
+    final repo = ref.read(authRepositoryProvider);
+    final code = _codeController.text;
+    final password = _codePasswordController.text;
     try {
-      final quoteId = await ref.read(authRepositoryProvider).loginWithAccessCode(
-            code: _codeController.text,
-            password: _codePasswordController.text,
-          );
+      // 1) Client (per-chantier) code.
+      final quoteId =
+          await repo.loginWithAccessCode(code: code, password: password);
       if (!mounted) return;
-
-      if (quoteId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Identifiant ou mot de passe incorrect.'),
-            backgroundColor: Color(0xFFEF4444),
+      if (quoteId != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ChantierClientScreen(quoteId: quoteId),
           ),
         );
         return;
       }
 
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ChantierClientScreen(quoteId: quoteId),
+      // 2) Worker code.
+      final workerId =
+          await repo.loginWorkerWithCode(code: code, password: password);
+      if (!mounted) return;
+      if (workerId != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => WorkerTasksScreen(workerId: workerId),
+          ),
+        );
+        return;
+      }
+
+      // Neither matched.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Identifiant ou mot de passe incorrect.'),
+          backgroundColor: Color(0xFFEF4444),
         ),
       );
     } catch (e) {

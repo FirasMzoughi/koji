@@ -13,6 +13,10 @@ class Worker {
   final String? email;
   final double? hourlyRate;
   final DateTime? hireDate;
+  // Per-worker app access (Espace Particulier): Identifiant + Mot de passe the
+  // worker uses to log in and see their assigned tasks. Generated on creation.
+  final String? accessCode;
+  final String? accessPassword;
 
   Worker({
     required this.id,
@@ -29,6 +33,8 @@ class Worker {
     this.email,
     this.hourlyRate,
     this.hireDate,
+    this.accessCode,
+    this.accessPassword,
   });
 
   factory Worker.fromJson(Map<String, dynamic> json) {
@@ -51,6 +57,8 @@ class Worker {
       hireDate: json['hire_date'] != null
           ? DateTime.parse(json['hire_date'] as String)
           : null,
+      accessCode: json['access_code'] as String?,
+      accessPassword: json['access_password'] as String?,
     );
   }
 

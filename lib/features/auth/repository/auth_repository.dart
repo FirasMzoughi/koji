@@ -130,6 +130,56 @@ class AuthRepository {
     }
   }
 
+  /// Per-worker login: verify a worker access code + password against the
+  /// `login_worker_with_code` RPC. Returns the matching worker id, or null. Like
+  /// the client login, no Supabase auth session is created.
+  Future<String?> loginWorkerWithCode({
+    required String code,
+    required String password,
+  }) async {
+    _logger.i('🔑 [AuthRepository] Verifying worker access code');
+    try {
+      final result = await _supabase.rpc('login_worker_with_code', params: {
+        'p_code': code.trim(),
+        'p_password': password,
+      });
+      final workerId = result?.toString();
+      if (workerId == null || workerId.isEmpty || workerId == 'null') {
+        _logger.w('⚠️ [AuthRepository] Invalid worker access credentials');
+        return null;
+      }
+      _logger.i('✅ [AuthRepository] Worker access granted: $workerId');
+      return workerId;
+    } catch (e) {
+      _logger.e('❌ [AuthRepository] Worker access login failed', error: e);
+      rethrow;
+    }
+  }
+
+  /// Tasks assigned to a worker (sessionless, via get_worker_tasks RPC).
+  Future<List<Map<String, dynamic>>> getWorkerTasks(String workerId) async {
+    final result =
+        await _supabase.rpc('get_worker_tasks', params: {'p_worker_id': workerId});
+    if (result is List) {
+      return result.cast<Map<String, dynamic>>();
+    }
+    return const [];
+  }
+
+  /// Worker flips a task's status (À faire / Terminé) via set_worker_task_status.
+  Future<bool> setWorkerTaskStatus({
+    required String workerId,
+    required String taskId,
+    required String status,
+  }) async {
+    final result = await _supabase.rpc('set_worker_task_status', params: {
+      'p_worker_id': workerId,
+      'p_task_id': taskId,
+      'p_status': status,
+    });
+    return result == true;
+  }
+
   Future<void> resetPassword({required String email}) async {
     _logger.i('🔑 [AuthRepository] Sending password reset email to $email');
     try {

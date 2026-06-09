@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:go_router/go_router.dart';
 import 'package:koji/features/synchronization/data/worker_model.dart';
 import 'package:intl/intl.dart';
@@ -267,6 +268,20 @@ class WorkerDetailScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 32),
+
+                  // ── Accès Espace Particulier (Identifiant + Mot de passe) ──
+                  if ((worker.accessCode ?? '').isNotEmpty) ...[
+                    _buildSectionTitle("Accès ouvrier"),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Communiquez ces identifiants à l'ouvrier pour qu'il "
+                      "consulte ses tâches dans l'Espace Particulier.",
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCredentialsCard(context),
+                    const SizedBox(height: 32),
+                  ],
 
                   _buildSectionTitle("Documents & Certifications"),
 
@@ -538,6 +553,108 @@ class WorkerDetailScreen extends StatelessWidget {
             ],
           ),
         )
+      ],
+    );
+  }
+
+  /// Card showing the worker's Espace Particulier Identifiant + Mot de passe,
+  /// each with a copy button, plus a "tout copier" share action.
+  Widget _buildCredentialsCard(BuildContext context) {
+    final code = worker.accessCode ?? '';
+    final password = worker.accessPassword ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withAlpha((0.04 * 255).round()),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _credRow(context, Icons.badge_outlined, "Identifiant", code),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(color: Colors.grey[100]),
+          ),
+          _credRow(context, Icons.lock_outline, "Mot de passe", password),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(
+                    text:
+                        "Identifiant : $code\nMot de passe : $password"));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Identifiants copiés")),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 18),
+              label: const Text("Copier les identifiants"),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF0F3995),
+                side: const BorderSide(color: Color(0xFFE0E7FF)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _credRow(
+      BuildContext context, IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F3995),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon,
+              color: Theme.of(context).colorScheme.surface, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+              SelectableText(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F3995),
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.copy, size: 18, color: Color(0xFF1D74FF)),
+          tooltip: "Copier",
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: value));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("$label copié")),
+            );
+          },
+        ),
       ],
     );
   }
