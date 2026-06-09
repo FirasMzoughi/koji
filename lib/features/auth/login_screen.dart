@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:koji/core/theme.dart';
+import 'package:koji/features/quote/chantier_client_screen.dart';
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/auth/provider/auth_provider.dart';
 import 'package:koji/features/auth/provider/account_type_provider.dart';
@@ -52,8 +52,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _codeController.text.trim().isNotEmpty &&
       _codePasswordController.text.isNotEmpty;
 
-  /// Verify the chantier Identifiant + Mot de passe, then open the web signer
-  /// for that devis (view + sign). No Supabase session is created.
+  /// Verify the chantier Identifiant + Mot de passe, then open the in-app
+  /// chantier space (Devis / Suivi / Messages) for that devis. No Supabase
+  /// session is created — the screen loads everything by the quote id.
   Future<void> _handleParticulierLogin() async {
     if (!_isCodeFormValid || _codeLoginLoading) return;
     setState(() => _codeLoginLoading = true);
@@ -74,17 +75,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
 
-      final url = Uri.parse(
-          'https://koji-signature.vercel.app/?quoteId=$quoteId');
-      final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
-      if (!ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Impossible d'ouvrir le devis."),
-            backgroundColor: Color(0xFFEF4444),
-          ),
-        );
-      }
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChantierClientScreen(quoteId: quoteId),
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
