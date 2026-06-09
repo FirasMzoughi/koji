@@ -845,10 +845,10 @@ class _QuoteSuccessScreenState extends State<QuoteSuccessScreen> {
       final accessPassword =
           (widget.quoteData['accessPassword'] as String?)?.trim() ?? '';
 
-      // Signature URL — no email param: the client logs in with the
-      // per-chantier Identifiant + Mot de passe included below.
-      final signatureUrl =
-          'https://koji-signature.vercel.app/?quoteId=$quoteId';
+      // Signature URL points to the login page: the client must enter the
+      // Identifiant + Mot de passe (included below) to open the devis. The bare
+      // link alone never grants access.
+      final signatureUrl = 'https://koji-signature.vercel.app/auth/login';
 
       // Credentials block — only included when we actually have them.
       final credentialsBlock = (accessCode.isNotEmpty && accessPassword.isNotEmpty)
