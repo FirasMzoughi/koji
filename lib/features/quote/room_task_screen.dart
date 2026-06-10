@@ -57,7 +57,38 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = ''; // updated by _searchController listener
-  
+
+  // Persistent text controllers for the numeric inputs (quantité, forfait,
+  // dynamic fields). Creating a fresh controller inside build() — as the old
+  // code did with TextEditingController.fromValue — resets the cursor and value
+  // on every keystroke, so the field looked "stuck" (e.g. could not clear 1.0).
+  // We keep one controller per logical key and only seed its text once.
+  final Map<String, TextEditingController> _fieldControllers = {};
+
+  /// Get-or-create a controller for [key], seeding it with [initial] only the
+  /// first time. Editing never recreates it, so the cursor stays put and the
+  /// user can freely clear the field and type a new number.
+  TextEditingController _controllerFor(String key, String initial) {
+    final existing = _fieldControllers[key];
+    if (existing != null) return existing;
+    final ctrl = TextEditingController(text: initial);
+    _fieldControllers[key] = ctrl;
+    return ctrl;
+  }
+
+  /// Force a field's text to [value] from outside the box (e.g. the "Adapter"
+  /// dialog seeding the quantity). Used after a programmatic change so the box
+  /// reflects it without recreating the controller.
+  void _setFieldText(String key, String value) {
+    final ctrl = _fieldControllers[key];
+    if (ctrl != null && ctrl.text != value) {
+      ctrl.value = TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      );
+    }
+  }
+
   // Logic State
   final Map<String, RoomTaskState> _taskStates = {};
   
@@ -86,6 +117,15 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
 
     _loadUserProfessions();
     _loadTauxHoraire();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    for (final c in _fieldControllers.values) {
+      c.dispose();
+    }
+    super.dispose();
   }
 
   void _restoreTaskStatesFromProvider() {
@@ -545,10 +585,14 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
         setState(() {
           state.hours = effectiveTemps;
           // Quantity entered in the "Adapter" dialog seeds the line; it stays
-          // editable afterwards in the recap.
+          // editable afterwards in the recap. Push it into the persistent
+          // quantity controller too so the box shows the new value.
           if (qtyOverride > 0) {
             state.inputs['quantity'] = qtyOverride;
             state.inputs['surface'] = qtyOverride;
+            // The visible "Quantité" field has id 'surface' (see quote_helpers).
+            _setFieldText('$currentRoom|${created.id}|surface',
+                _formatNum(qtyOverride));
           }
           // Record the price-adjustment reason as the line note so it surfaces
           // on the ouvrage (e.g. "Mur fissuré").
@@ -833,15 +877,11 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                       isDense: true,
                       hintText: '0.00'),
                   style: const TextStyle(fontWeight: FontWeight.bold),
-                  controller: TextEditingController.fromValue(
-                    TextEditingValue(
-                      text: txt,
-                      selection: TextSelection.collapsed(offset: txt.length),
-                    ),
-                  ),
+                  controller: _controllerFor(
+                      'forfait|${state.roomId}|${state.taskId}', txt),
                   onChanged: (val) {
                     state.forfaitPrice =
-                        double.tryParse(val.replaceAll(',', '.')) ?? 0.0;
+                        double.tryParse(val.trim().replaceAll(',', '.')) ?? 0.0;
                     setState(() {});
                   },
                 ),
@@ -2274,9 +2314,16 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                              decoration: const InputDecoration(border: InputBorder.none, isDense: true),
                              style: const TextStyle(fontWeight: FontWeight.bold,),
-                             controller: TextEditingController.fromValue(TextEditingValue(text: currentVal, selection: TextSelection.collapsed(offset: currentVal.length))),
+                             controller: _controllerFor(
+                                 '$roomId|$taskId|${field.id}', currentVal),
                              onChanged: (val) {
-                               _updateInput(roomId, taskId, field.id, double.tryParse(val) ?? 0.0);
+                               // Accept a comma decimal; allow the field to be
+                               // emptied (treated as 0) so the user can clear
+                               // and retype freely.
+                               final parsed = double.tryParse(
+                                       val.trim().replaceAll(',', '.')) ??
+                                   0.0;
+                               _updateInput(roomId, taskId, field.id, parsed);
                              },
                            ),
                          ),
