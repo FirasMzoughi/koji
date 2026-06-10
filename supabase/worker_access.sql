@@ -142,3 +142,38 @@ GRANT EXECUTE ON FUNCTION set_worker_access_credentials(uuid, text, text) TO ano
 GRANT EXECUTE ON FUNCTION login_worker_with_code(text, text)              TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION get_worker_tasks(uuid)                          TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION set_worker_task_status(uuid, uuid, text)        TO anon, authenticated;
+
+-- ============================================================================
+-- 7) Backfill credentials for EXISTING workers
+-- ----------------------------------------------------------------------------
+-- Workers created before this feature have no access_code/access_password, so
+-- they can't log in and their detail screen shows no "Accès ouvrier" card. This
+-- generates an OUV-XXXXXX code + an 8-char password for every worker still
+-- missing them. Uses an unambiguous alphabet (no 0/O/1/I) — same as the app.
+-- Safe to re-run: only rows where access_code IS NULL are touched.
+-- ============================================================================
+
+-- Helper: a random string of [len] chars from the unambiguous alphabet.
+CREATE OR REPLACE FUNCTION koji_random_token(len integer)
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  alphabet text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  result   text := '';
+  i        integer;
+BEGIN
+  FOR i IN 1..len LOOP
+    result := result || substr(alphabet, 1 + floor(random() * length(alphabet))::int, 1);
+  END LOOP;
+  RETURN result;
+END;
+$$;
+
+UPDATE workers
+SET access_code     = 'OUV-' || koji_random_token(6),
+    access_password = koji_random_token(8)
+WHERE access_code IS NULL;
+
+-- After running, see every worker's credentials here:
+--   SELECT first_name, last_name, access_code, access_password FROM workers;
