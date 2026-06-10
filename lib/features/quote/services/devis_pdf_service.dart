@@ -120,18 +120,30 @@ class DevisPdfService {
             _buildLegalFooter(context, company, colorAccent, kojiLogoBytes),
         build: (context) {
           return [
-            // ── Top line : "Le {date}" (gauche)  ·  {DEV-XXXX} (droite) ──
+            // ── Top line : "Le {date}" (gauche)  ·  {Devis n° + Version} (droite) ──
             pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 pw.Text("Le ${quoteData['date']?.toString() ?? ''}",
                     style: const pw.TextStyle(
                         fontSize: 9, color: PdfColors.grey600)),
-                pw.Text("Devis n° : $quoteNumber",
-                    style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 12,
-                        color: colorNavy)),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text("Devis n° : $quoteNumber",
+                        style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 12,
+                            color: colorNavy)),
+                    pw.SizedBox(height: 2),
+                    // Version du devis — pour gérer les modifications (01, 02…).
+                    pw.Text(
+                        "Version N° : ${_versionLabel(quoteData['version'])}",
+                        style: const pw.TextStyle(
+                            fontSize: 9, color: PdfColors.grey600)),
+                  ],
+                ),
               ],
             ),
 
@@ -321,6 +333,19 @@ class DevisPdfService {
           ];
         }));
     return pdf;
+  }
+
+  /// Version label for the devis header — "01", "02"… A missing/invalid value
+  /// defaults to 1. Accepts an int, a numeric string, or "01" already.
+  String _versionLabel(dynamic raw) {
+    int n = 1;
+    if (raw is num) {
+      n = raw.toInt();
+    } else if (raw is String) {
+      n = int.tryParse(raw.trim()) ?? 1;
+    }
+    if (n < 1) n = 1;
+    return n.toString().padLeft(2, '0');
   }
 
   /// "Fait à <lieu>, le <date>" — mirrors quote_success_screen._faitALe.
@@ -807,18 +832,27 @@ class DevisPdfService {
 
   pw.Widget _buildLegalFooter(pw.Context context, Map<dynamic, dynamic> company,
       PdfColor colorAccent, Uint8List? kojiLogoBytes) {
+    // Footer layout requested by the client:
+    //   ① Gauche  — « Edited by Koji » + logo Koji
+    //   ② Centre  — nom entreprise, forme juridique (SAS), capital social,
+    //               numéro de TVA, numéro SIRET
+    //   ③ Droite  — numéro de page
     final name = company['name']?.toString() ?? '';
-    final address = company['address']?.toString() ?? '';
-    final rcs = company['rcs']?.toString() ?? '';
+    final legalForm = company['formeJuridique']?.toString() ?? '';
+    final capital = company['capital']?.toString() ?? '';
     final tva = company['tva']?.toString() ?? '';
+    final siret = company['siret']?.toString() ?? '';
 
-    // Footer identité (gauche) — Nom entreprise · RCS · TVA · Siège.
-    // Rendu sur chaque page via le callback footer de MultiPage.
-    final colId = <String>[];
-    if (name.isNotEmpty) colId.add(name);
-    if (rcs.isNotEmpty) colId.add('RCS/SIREN : $rcs');
-    if (tva.isNotEmpty) colId.add('TVA : $tva');
-    if (address.isNotEmpty) colId.add('Siège : $address');
+    // Centre lines (only the ones that exist).
+    final centerLines = <String>[];
+    if (name.isNotEmpty) {
+      centerLines.add(legalForm.isNotEmpty ? '$name – $legalForm' : name);
+    } else if (legalForm.isNotEmpty) {
+      centerLines.add(legalForm);
+    }
+    if (capital.isNotEmpty) centerLines.add('Capital social : $capital');
+    if (tva.isNotEmpty) centerLines.add('TVA : $tva');
+    if (siret.isNotEmpty) centerLines.add('SIRET : $siret');
 
     return pw.Container(
       margin: const pw.EdgeInsets.only(top: 8),
@@ -828,51 +862,47 @@ class DevisPdfService {
             pw.Border(top: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
       ),
       child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          // ① Gauche — identité entreprise.
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              mainAxisSize: pw.MainAxisSize.min,
-              children: colId
-                  .map((l) => pw.Text(l,
-                      style: const pw.TextStyle(
-                          fontSize: 7, color: PdfColors.grey600)))
-                  .toList(),
-            ),
-          ),
-          // ② Centre — numéro de page.
-          pw.Expanded(
-            child: pw.Text(
-              'Page ${context.pageNumber} / ${context.pagesCount}',
-              textAlign: pw.TextAlign.center,
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
-            ),
-          ),
-          // ③ Droite — "Créé par Kôji" (inchangé).
+          // ① Gauche — « Edited by Koji » + logo.
           pw.Expanded(
             child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.end,
               crossAxisAlignment: pw.CrossAxisAlignment.center,
               children: [
-                pw.Text(
-                  'Créé par ',
-                  style: const pw.TextStyle(
-                      fontSize: 7, color: PdfColors.grey500),
-                ),
                 if (kojiLogoBytes != null) ...[
-                  pw.Image(pw.MemoryImage(kojiLogoBytes), width: 8, height: 8),
-                  pw.SizedBox(width: 2),
+                  pw.Image(pw.MemoryImage(kojiLogoBytes), width: 9, height: 9),
+                  pw.SizedBox(width: 3),
                 ],
                 pw.Text(
-                  'Kôji',
+                  'Edited by Koji',
                   style: pw.TextStyle(
                       fontSize: 7,
                       fontWeight: pw.FontWeight.bold,
                       color: colorAccent),
                 ),
               ],
+            ),
+          ),
+          // ② Centre — identité légale de l'entreprise.
+          pw.Expanded(
+            flex: 2,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              mainAxisSize: pw.MainAxisSize.min,
+              children: centerLines
+                  .map((l) => pw.Text(l,
+                      textAlign: pw.TextAlign.center,
+                      style: const pw.TextStyle(
+                          fontSize: 7, color: PdfColors.grey600)))
+                  .toList(),
+            ),
+          ),
+          // ③ Droite — numéro de page.
+          pw.Expanded(
+            child: pw.Text(
+              'Page ${context.pageNumber} / ${context.pagesCount}',
+              textAlign: pw.TextAlign.right,
+              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
           ),
         ],
