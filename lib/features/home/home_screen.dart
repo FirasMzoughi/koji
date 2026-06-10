@@ -28,6 +28,9 @@ import 'package:koji/features/home/widgets/home_today_tasks.dart';
 import 'package:koji/features/home/notifications/app_notification.dart';
 import 'package:koji/features/home/notifications/notifications_provider.dart';
 import 'package:koji/features/home/notifications/notifications_panel.dart';
+import 'package:koji/features/subscription/providers/subscription_provider.dart';
+import 'package:koji/features/subscription/data/subscription_repository.dart';
+import 'package:koji/features/subscription/paywall_screen.dart';
 
 /// Main home screen - STATEFUL for tab management
 class HomeScreen extends ConsumerStatefulWidget {
@@ -73,6 +76,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
       _loadCompanyEmail(user.id);
+      // Start the 7-day trial (first time) and resolve trial/subscription
+      // status so the banner + gate know whether access is active.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(subscriptionStatusProvider.notifier).load();
+      });
       ref.listenManual<AsyncValue<List<Map<String, dynamic>>>>(
         userQuotesProvider(user.id),
         (previous, next) {
@@ -316,7 +324,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onCreateProject() {
-    context.push('/chantier/create');
+    _guard(() => context.push('/chantier/create'));
+  }
+
+  /// Run [action] only if the entreprise still has access (trial active or
+  /// subscribed). Once the 7-day trial has expired, open the paywall instead.
+  /// While the status is still loading/unknown we allow the action (we never
+  /// block on a transient state — only the explicit `expired` state gates).
+  void _guard(VoidCallback action) {
+    final status = ref.read(subscriptionStatusProvider).valueOrNull;
+    if (status != null && status.state == AccessState.expired) {
+      _openPaywall();
+      return;
+    }
+    action();
+  }
+
+  void _openPaywall() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PaywallScreen()),
+    );
   }
 
   void _showToolsSheet() {
@@ -378,7 +405,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.photo_camera,
                       onTap: () {
                         Navigator.pop(context);
-                        context.push('/quote/room-selection', extra: <String>[]);
+                        _guard(() => context.push('/quote/room-selection',
+                            extra: <String>[]));
                       },
                     ),
                     _buildPlusActionItem(
@@ -386,7 +414,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       icon: Icons.fact_check,
                       onTap: () {
                         Navigator.pop(context);
-                        context.push('/chantier/add-task', extra: <String, dynamic>{});
+                        _guard(() => context.push('/chantier/add-task',
+                            extra: <String, dynamic>{}));
                       },
                     ),
                     _buildPlusActionItem(
@@ -549,6 +578,87 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// Trial countdown / subscribe banner. Hidden when subscribed or while the
+  /// status is still loading; an empty SizedBox keeps the layout clean.
+  Widget _buildSubscriptionBanner() {
+    final status = ref.watch(subscriptionStatusProvider).valueOrNull;
+    if (status == null) return const SizedBox.shrink();
+
+    if (status.state == AccessState.trial) {
+      final days = status.trialDaysLeft;
+      return _bannerCard(
+        bg: const Color(0xFFF1F5F9),
+        fg: const Color(0xFF0A1227),
+        icon: Icons.hourglass_bottom,
+        title: 'Essai gratuit',
+        subtitle: days <= 1
+            ? "Dernier jour d'essai"
+            : '$days jours restants',
+        cta: "S'abonner",
+      );
+    }
+
+    if (status.state == AccessState.expired) {
+      return _bannerCard(
+        bg: const Color(0xFFFEF2F2),
+        fg: const Color(0xFFB91C1C),
+        icon: Icons.lock_outline,
+        title: 'Essai terminé',
+        subtitle: 'Abonnez-vous pour continuer à utiliser Koji.',
+        cta: "S'abonner",
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _bannerCard({
+    required Color bg,
+    required Color fg,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String cta,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: fg, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, color: fg, fontSize: 14)),
+                Text(subtitle,
+                    style: TextStyle(
+                        color: fg.withValues(alpha: 0.8), fontSize: 12)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: _openPaywall,
+            style: TextButton.styleFrom(
+              backgroundColor: fg,
+              foregroundColor: bg,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(cta,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHomeContent(ResponsiveHelper responsive) {
     final user = ref.watch(authRepositoryProvider).currentUser;
     final chantiersAsync = user == null
@@ -573,6 +683,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Trial / subscription banner (only while trial or expired).
+                _buildSubscriptionBanner(),
+
                 // Create Project Button
                 CreateProjectButton(onTap: _onCreateProject),
 

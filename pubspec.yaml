@@ -1,7 +1,7 @@
 name: koji
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0+45
+version: 0.1.0+46
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -32,6 +32,7 @@ dependencies:
   file_picker: ^10.3.10
   flutter_local_notifications: ^17.2.3
   timezone: ^0.9.4
+  in_app_purchase: ^3.2.0
 
 dev_dependencies:
   flutter_test:

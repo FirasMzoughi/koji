@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Google Play Billing (in_app_purchase) — required for subscriptions. -->
+    <uses-permission android:name="com.android.vending.BILLING"/>
     <application
         android:label="koji"
         android:name="${applicationName}"
