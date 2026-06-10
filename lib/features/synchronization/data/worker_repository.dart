@@ -39,6 +39,23 @@ class WorkerRepository {
     }
   }
 
+  /// Re-fetch a single worker by id (fresh credentials included). Used by the
+  /// detail screen so it always shows the access_code/password from the DB,
+  /// regardless of how stale the passed-in Worker object might be.
+  Future<Worker?> getWorkerById(String workerId) async {
+    try {
+      final response = await _client
+          .from('workers')
+          .select()
+          .eq('id', workerId)
+          .maybeSingle();
+      if (response == null) return null;
+      return Worker.fromJson(response);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<Worker> createWorker(Worker worker) async {
     try {
       final userId = _client.auth.currentUser?.id;

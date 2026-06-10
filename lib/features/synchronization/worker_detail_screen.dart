@@ -2,13 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:go_router/go_router.dart';
 import 'package:koji/features/synchronization/data/worker_model.dart';
+import 'package:koji/features/synchronization/data/worker_repository.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class WorkerDetailScreen extends StatelessWidget {
+class WorkerDetailScreen extends StatefulWidget {
   final Worker worker;
 
   const WorkerDetailScreen({super.key, required this.worker});
+
+  @override
+  State<WorkerDetailScreen> createState() => _WorkerDetailScreenState();
+}
+
+class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
+  // Start with the passed-in worker, then re-fetch by id so the access_code /
+  // password (and any other field) are always the fresh DB values — this is why
+  // the "Accès ouvrier" card shows even if the navigated Worker object was stale.
+  late Worker _worker = widget.worker;
+
+  /// Exposed as `worker` so the rest of this screen (built before the stateful
+  /// conversion) keeps referring to `worker.` unchanged.
+  Worker get worker => _worker;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshWorker();
+  }
+
+  Future<void> _refreshWorker() async {
+    final fresh = await WorkerRepository().getWorkerById(widget.worker.id);
+    if (fresh != null && mounted) setState(() => _worker = fresh);
+  }
 
   // Improved launch helper
   Future<void> _makePhoneCall(String phoneNumber) async {
