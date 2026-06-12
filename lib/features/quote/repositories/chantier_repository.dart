@@ -114,6 +114,17 @@ class ChantierRepository {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  /// One-shot REST fetch — same rows as [streamChantiers]. Fallback for when
+  /// the realtime channel fails to join (RealtimeSubscribeException timedOut).
+  Future<List<Map<String, dynamic>>> getChantiersOnce(String userId) async {
+    final response = await _client
+        .from('chantiers')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
   /// Stream all chantiers for the current user (real-time)
   Stream<List<Map<String, dynamic>>> streamChantiers(String userId) {
     return _client

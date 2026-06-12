@@ -17,6 +17,10 @@ class _DevisLine {
   String famille;
   String unite;
 
+  // Parent ouvrage id when this line is a sous-ouvrage. The recap groups such
+  // lines under their parent and shows a summed "Total ouvrage".
+  String parentTaskId;
+
   double qty; // editable
   double tempsHU; // editable – temps h/u
   double tauxHoraire; // from profile
@@ -76,6 +80,7 @@ class _DevisLine {
     this.code = '',
     this.famille = '',
     this.unite = 'u',
+    this.parentTaskId = '',
     this.qty = 1.0,
     this.tempsHU = 0.0,
     this.tauxHoraire = 0.0,
@@ -312,6 +317,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           code: td['code']?.toString() ?? '',
           famille: td['famille']?.toString() ?? '',
           unite: td['unite']?.toString() ?? 'u',
+          parentTaskId: td['parentTaskId']?.toString() ?? '',
           qty: qty,
           tempsHU: (td['hours'] as num?)?.toDouble() ?? 0.0,
           tauxHoraire: (td['tauxHoraire'] as num?)?.toDouble() ?? _hourlyRate,
@@ -431,6 +437,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
             code: inputs['code']?.toString() ?? '',
             famille: inputs['famille']?.toString() ?? '',
             unite: inputs['unite']?.toString() ?? 'u',
+            parentTaskId: inputs['parentTaskId']?.toString() ?? '',
             qty: qty,
             tempsHU: tempsHU,
             tauxHoraire: tauxHoraire,
@@ -605,6 +612,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                 'unite': l.unite,
                 'code': l.code,
                 'famille': l.famille,
+                'parentTaskId': l.parentTaskId,
                 'forfaitEnabled': l.forfaitEnabled,
                 'forfaitPrice': l.forfaitPrice,
                 'fournituresQty': l.billedFournituresQty,
@@ -903,7 +911,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
-              'Les champs Qté, Temps h/u et Fournitures €/u sont modifiables. Les totaux se recalculent en temps réel.',
+              'Qté, Temps h/u et Prix HT sont modifiables. Saisir un Prix HT fixe le prix de la ligne (forfait) ; les totaux se recalculent en temps réel.',
               style: TextStyle(fontSize: 12, color: Color(0xFF15803D)),
             ),
           ),
@@ -1184,9 +1192,26 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     final lines = _linesByRoom[roomId] ?? [];
     final roomTotal = lines.fold(0.0, (s, l) => s + l.totalLigne);
 
-    // Group lines by famille
-    final byFamille = <String, List<_DevisLine>>{};
+    // Split sous-ouvrages from top-level lines: a line whose parentTaskId
+    // matches another line of this room is rendered indented under that parent
+    // with a summed "Total ouvrage" (client request — la somme des
+    // sous-ouvrages fait le prix de l'ouvrage).
+    final ids = lines.map((l) => l.taskId).toSet();
+    final childrenByParent = <String, List<_DevisLine>>{};
+    final topLines = <_DevisLine>[];
     for (final l in lines) {
+      if (l.parentTaskId.isNotEmpty &&
+          l.parentTaskId != l.taskId &&
+          ids.contains(l.parentTaskId)) {
+        childrenByParent.putIfAbsent(l.parentTaskId, () => []).add(l);
+      } else {
+        topLines.add(l);
+      }
+    }
+
+    // Group top-level lines by famille (sous-ouvrages follow their parent).
+    final byFamille = <String, List<_DevisLine>>{};
+    for (final l in topLines) {
       final fam = l.famille.isEmpty ? 'Général' : l.famille;
       byFamille.putIfAbsent(fam, () => []).add(l);
     }
@@ -1279,9 +1304,66 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                     ],
                   ),
                 ),
-                ...entry.value.asMap().entries.map((e) {
-                  final lineIndex = lines.indexOf(e.value);
-                  return _buildLineCard(roomId, lineIndex, e.value, famColor);
+                ...entry.value.map((line) {
+                  final children =
+                      childrenByParent[line.taskId] ?? const <_DevisLine>[];
+                  final childrenTotal = children.fold(
+                      0.0, (double s, c) => s + c.totalLigne);
+                  final ouvrageTotal = line.totalLigne + childrenTotal;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // The parent card displays the SOMME (its own price +
+                      // all its sous-ouvrages) — the ouvrage price the client
+                      // expects, not the parent's own 0 €.
+                      _buildLineCard(
+                          roomId, lines.indexOf(line), line, famColor,
+                          childrenTotal: childrenTotal),
+                      // Sous-ouvrages: indented under their parent ouvrage.
+                      ...children.map((c) => Padding(
+                            padding: const EdgeInsets.only(left: 20),
+                            child: _buildLineCard(
+                                roomId, lines.indexOf(c), c, famColor),
+                          )),
+                      // Somme : prix de l'ouvrage = ligne + sous-ouvrages.
+                      if (children.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(10),
+                            border:
+                                Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'TOTAL OUVRAGE — ${line.label}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.3,
+                                      color: Color(0xFF1E3A8A)),
+                                ),
+                              ),
+                              Text(
+                                '${ouvrageTotal.toStringAsFixed(2)} €',
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E3A8A)),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
                 }),
               ],
             );
@@ -1294,8 +1376,12 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   }
 
   // ── Task line card (mobile-friendly) ─────────────────────────────────────────
+  // [childrenTotal] > 0 marks a parent ouvrage: every displayed total includes
+  // the somme of its sous-ouvrages so the ouvrage price = sum of sub prices.
   Widget _buildLineCard(
-      String roomId, int lineIndex, _DevisLine line, Color famColor) {
+      String roomId, int lineIndex, _DevisLine line, Color famColor,
+      {double childrenTotal = 0.0}) {
+    final displayTotal = line.totalLigne + childrenTotal;
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       decoration: BoxDecoration(
@@ -1358,7 +1444,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                   ),
                   child: Text(
                     line.isBillable
-                        ? '${line.totalLigne.toStringAsFixed(2)} €'
+                        ? '${displayTotal.toStringAsFixed(2)} €'
                         : (line.isCharge ? 'À charge' : 'En attente'),
                     style: TextStyle(
                       fontSize: 12,
@@ -1421,66 +1507,66 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           if (line.isBillable)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: line.forfaitEnabled
-                  // Forfait line: one flat-price field, no qty/temps breakdown.
-                  ? Row(
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      // Qté
+                      _inputField(
+                        label: 'Qté',
+                        sublabel: line.unite,
+                        value: line.qty,
+                        onChanged: (v) => setState(
+                            () => _linesByRoom[roomId]![lineIndex].qty = v),
+                      ),
+                      // A standalone fourniture is material-only: no Temps/MO field.
+                      // Its total is simply Qté × prix unitaire de la fourniture.
+                      if (!line.isFourniture) ...[
+                        const SizedBox(width: 8),
+                        // Temps h/u
+                        _inputField(
+                          label: 'Temps h/${line.unite}',
+                          sublabel: 'h',
+                          value: line.tempsHU,
+                          onChanged: (v) => setState(() =>
+                              _linesByRoom[roomId]![lineIndex].tempsHU = v),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
+                      // Prix HT direct (client request) — saisir un prix ici
+                      // passe la ligne en forfait : ce montant remplace le
+                      // calcul Qté × Temps. Effacer (0) rétablit le calcul.
+                      _inputField(
+                        label: 'Prix HT',
+                        sublabel: '€',
+                        value: line.forfaitEnabled ? line.forfaitPrice : 0.0,
+                        onChanged: (v) => setState(() {
+                          final l = _linesByRoom[roomId]![lineIndex];
+                          l.forfaitPrice = v;
+                          l.forfaitEnabled = v > 0;
+                        }),
+                      ),
+                    ],
+                  ),
+                  if (!line.isFourniture &&
+                      !line.forfaitEnabled &&
+                      line.fournituresUnitPrice > 0) ...[
+                    const SizedBox(height: 10),
+                    Row(
                       children: [
                         _inputField(
-                          label: 'Forfait (HT)',
-                          sublabel: '€',
-                          value: line.forfaitPrice,
+                          label: 'Fnt Qte',
+                          sublabel: 'u',
+                          value: line.fournituresQty,
                           onChanged: (v) => setState(() =>
-                              _linesByRoom[roomId]![lineIndex].forfaitPrice =
+                              _linesByRoom[roomId]![lineIndex].fournituresQty =
                                   v),
                         ),
                       ],
-                    )
-                  : Column(
-                      children: [
-                        Row(
-                          children: [
-                            // Qté
-                            _inputField(
-                              label: 'Qté',
-                              sublabel: line.unite,
-                              value: line.qty,
-                              onChanged: (v) => setState(() =>
-                                  _linesByRoom[roomId]![lineIndex].qty = v),
-                            ),
-                            // A standalone fourniture is material-only: no Temps/MO field.
-                            // Its total is simply Qté × prix unitaire de la fourniture.
-                            if (!line.isFourniture) ...[
-                              const SizedBox(width: 8),
-                              // Temps h/u
-                              _inputField(
-                                label: 'Temps h/${line.unite}',
-                                sublabel: 'h',
-                                value: line.tempsHU,
-                                onChanged: (v) => setState(() =>
-                                    _linesByRoom[roomId]![lineIndex].tempsHU =
-                                        v),
-                              ),
-                            ],
-                          ],
-                        ),
-                        if (!line.isFourniture &&
-                            line.fournituresUnitPrice > 0) ...[
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              _inputField(
-                                label: 'Fnt Qte',
-                                sublabel: 'u',
-                                value: line.fournituresQty,
-                                onChanged: (v) => setState(() =>
-                                    _linesByRoom[roomId]![lineIndex]
-                                        .fournituresQty = v),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
                     ),
+                  ],
+                ],
+              ),
             ),
 
           // ── Computed results row ────────────────────────────────────
@@ -1508,7 +1594,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                       ),
                       const Spacer(),
                       Text(
-                        '${line.totalLigne.toStringAsFixed(2)} €',
+                        '${displayTotal.toStringAsFixed(2)} €',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -1518,7 +1604,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _buildLineBreakdown(line),
+                  _buildLineBreakdown(line, childrenTotal: childrenTotal),
                 ],
               ),
             ),
@@ -1530,7 +1616,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   // ── Line breakdown: shows HOW the total is computed ──────────────────────────
   // Labor part:  Qté × Temps × tarif effectif (taux × coefficient) = MO
   // Fournitures: shown only when there is a material cost on the line.
-  Widget _buildLineBreakdown(_DevisLine line) {
+  Widget _buildLineBreakdown(_DevisLine line, {double childrenTotal = 0.0}) {
     final effectiveRate = line.tauxHoraire * line.conditionCoeff;
 
     String fmt(double v) {
@@ -1539,6 +1625,11 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     }
 
     final parts = <String>[];
+    // Parent ouvrage: its displayed total includes the somme of its
+    // sous-ouvrages — make that explicit in the breakdown.
+    if (childrenTotal > 0) {
+      parts.add('Sous-ouvrages : ${fmt(childrenTotal)} €');
+    }
     if (line.forfaitEnabled) {
       // Flat-price line: no MO/fournitures math, just the forfait amount.
       parts.add('Forfait : ${fmt(line.forfaitPrice)} €');

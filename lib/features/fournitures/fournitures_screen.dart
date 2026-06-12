@@ -22,11 +22,10 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: widget.selectionMode ? 1 : 3,
-      vsync: this,
-      initialIndex: 0,
-    );
+    // Same 4 tabs in both modes (client request): Récents / Divers /
+    // Fournitures / Fournisseurs — selection mode included, so the user can
+    // pick a fourniture from any list, not only via a fournisseur.
+    _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
   }
 
   @override
@@ -108,22 +107,20 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
                 unselectedLabelColor: AppTheme.textLight,
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w700,
-                  fontSize: 14,
+                  fontSize: 12,
                 ),
                 unselectedLabelStyle: const TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: 14,
+                  fontSize: 12,
                 ),
+                labelPadding: const EdgeInsets.symmetric(horizontal: 2),
                 padding: const EdgeInsets.all(4),
-                tabs: widget.selectionMode
-                    ? const [
-                        Tab(text: 'Fournisseurs'),
-                      ]
-                    : const [
-                        Tab(text: 'Récents'),
-                        Tab(text: 'Divers'),
-                        Tab(text: 'Fournisseurs'),
-                      ],
+                tabs: const [
+                  Tab(text: 'Récents'),
+                  Tab(text: 'Divers'),
+                  Tab(text: 'Fournitures'),
+                  Tab(text: 'Fournisseurs'),
+                ],
               ),
             ),
 
@@ -133,15 +130,12 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: widget.selectionMode
-                    ? const [
-                        _FournisseursTab(selectionMode: true),
-                      ]
-                    : [
-                        _RecentsTab(selectionMode: widget.selectionMode),
-                        _DiversTab(selectionMode: widget.selectionMode),
-                        _FournisseursTab(selectionMode: widget.selectionMode),
-                      ],
+                children: [
+                  _RecentsTab(selectionMode: widget.selectionMode),
+                  _DiversTab(selectionMode: widget.selectionMode),
+                  _AllFournituresTab(selectionMode: widget.selectionMode),
+                  _FournisseursTab(selectionMode: widget.selectionMode),
+                ],
               ),
             ),
           ],
@@ -259,6 +253,7 @@ class _FournituresScreenState extends ConsumerState<FournituresScreen>
   void _refreshAll() {
     ref.invalidate(recentFournituresProvider);
     ref.invalidate(diversFournituresProvider);
+    ref.invalidate(allFournituresProvider);
     ref.invalidate(fournisseursProvider);
   }
 }
@@ -292,6 +287,7 @@ class _RecentsTab extends ConsumerWidget {
             onDeleted: () {
               ref.invalidate(recentFournituresProvider);
               ref.invalidate(diversFournituresProvider);
+              ref.invalidate(allFournituresProvider);
               ref.invalidate(fournisseursProvider);
             },
           ),
@@ -330,6 +326,46 @@ class _DiversTab extends ConsumerWidget {
             onDeleted: () {
               ref.invalidate(recentFournituresProvider);
               ref.invalidate(diversFournituresProvider);
+              ref.invalidate(allFournituresProvider);
+              ref.invalidate(fournisseursProvider);
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── FOURNITURES TAB (toutes) ───────────────
+
+class _AllFournituresTab extends ConsumerWidget {
+  final bool selectionMode;
+  const _AllFournituresTab({this.selectionMode = false});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncData = ref.watch(allFournituresProvider);
+    return asyncData.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Erreur: $e')),
+      data: (items) {
+        if (items.isEmpty) {
+          return _EmptyState(
+            icon: Icons.inventory_2_outlined,
+            title: 'Aucune fourniture',
+            subtitle: 'Ajoutez vos fournitures via le bouton +.',
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: items.length,
+          itemBuilder: (context, index) => _DeletableFournitureCard(
+            item: items[index],
+            selectionMode: selectionMode,
+            onDeleted: () {
+              ref.invalidate(recentFournituresProvider);
+              ref.invalidate(diversFournituresProvider);
+              ref.invalidate(allFournituresProvider);
               ref.invalidate(fournisseursProvider);
             },
           ),

@@ -26,7 +26,6 @@ import 'package:koji/features/quote/create_task_screen.dart';
 import 'package:koji/features/quote/ouvrage_library_screen.dart';
 import 'package:koji/features/quote/model/library_ouvrage.dart';
 import 'package:koji/features/pricing/models/pricing_models.dart';
-import 'package:koji/features/pricing/repository/pricing_repository.dart';
 
 class RoomTaskScreen extends ConsumerStatefulWidget {
   final List<String> selectedRoomIds;
@@ -65,17 +64,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   // We keep one controller per logical key and only seed its text once.
   final Map<String, TextEditingController> _fieldControllers = {};
 
-  /// Get-or-create a controller for [key], seeding it with [initial] only the
-  /// first time. Editing never recreates it, so the cursor stays put and the
-  /// user can freely clear the field and type a new number.
-  TextEditingController _controllerFor(String key, String initial) {
-    final existing = _fieldControllers[key];
-    if (existing != null) return existing;
-    final ctrl = TextEditingController(text: initial);
-    _fieldControllers[key] = ctrl;
-    return ctrl;
-  }
-
   /// Force a field's text to [value] from outside the box (e.g. the "Adapter"
   /// dialog seeding the quantity). Used after a programmatic change so the box
   /// reflects it without recreating the controller.
@@ -95,9 +83,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
   // Pricing State
   final Map<String, RealityFactors> _roomContexts = {};
 
-  // Taux horaire loaded from user profile (default 56,25 €/h = 450/8)
-  double _tauxHoraire = 56.25;
-
   @override
   void initState() {
     super.initState();
@@ -116,7 +101,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     _restoreTaskStatesFromProvider();
 
     _loadUserProfessions();
-    _loadTauxHoraire();
   }
 
   @override
@@ -194,35 +178,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     });
   }
 
-  /// Load taux horaire: per-métier pricing profile first, fallback to business_info
-  Future<void> _loadTauxHoraire({String? trade}) async {
-    try {
-      final profession = trade ?? _selectedTrade;
-
-      // 1. Try per-métier pricing profile
-      if (profession.isNotEmpty) {
-        final profile = await ref
-            .read(pricingRepositoryProvider)
-            .getProfileForProfession(profession);
-        if (profile != null && profile.hoursPerDay > 0) {
-          if (mounted) setState(() => _tauxHoraire = profile.hourlyRate);
-          return;
-        }
-      }
-
-      // 2. Fallback: global business_info from user profile
-      final user = ref.read(authRepositoryProvider).currentUser;
-      if (user == null) return;
-      final userData = await ref.read(userRepositoryProvider).getUser(user.id);
-      final biz = userData?['business_info'] as Map<String, dynamic>?;
-      if (biz != null) {
-        final daily = (biz['dailyRate'] as num?)?.toDouble() ?? 450.0;
-        final hours = (biz['hoursPerDay'] as num?)?.toDouble() ?? 8.0;
-        if (mounted) setState(() => _tauxHoraire = hours > 0 ? daily / hours : 56.25);
-      }
-    } catch (_) {}
-  }
-  
   Future<void> _loadUserProfessions() async {
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
@@ -260,12 +215,10 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
             _isLoadingProfessions = false;
           });
           _fetchCustomTasksForTrade(_selectedTrade);
-          _loadTauxHoraire(trade: _selectedTrade);
         }
       } else {
          // Not logged in?
          if (mounted) setState(() { _trades = ['Peintre']; _selectedTrade = 'Peintre'; _isLoadingProfessions = false; });
-         _loadTauxHoraire(trade: 'Peintre');
       }
     } catch (e) {
       debugPrint('Error loading professions: $e');
@@ -690,117 +643,53 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     });
   }
   
-  double _calculateQuantity(Product product, Map<String, dynamic> inputs) {
-    double qty = 0;
-    final rule = product.consumptionRule;
-    if (rule.type == ConsumptionRuleType.fixed) return 1.0;
-    
-    if (rule.type == ConsumptionRuleType.perM2) {
-      final surface = inputs['surface'] as double? ?? 0.0;
-      // factor e.g. 0.1L/m2. Qty = surface * factor.
-      // Or if factor is coverage area per unit input (e.g. 10m2 per Liter), then surface / coverage.
-      // Let's stick to factor = units required per 1 input unit.
-      // Example: Painting needs 0.15L per m2. 15m2 * 0.15 = 2.25L.
-      // Then ceiling to nearest packaging if needed, but here we just return raw qty or unit count.
-      qty = surface * rule.factor;
+  /// Select/deselect a single task without toggling expansion — used by the
+  /// per-famille "Tout sélectionner" action so the list doesn't explode open.
+  void _setTaskSelected(String roomId, TaskItem item, bool selected) {
+    final key = _getKey(roomId, item.id);
+    if (!selected) {
+      _taskStates.remove(key);
+      return;
     }
-    if (rule.type == ConsumptionRuleType.perLinearMeter) {
-      final length = inputs['length'] as double? ?? 0.0;
-      qty = length * rule.factor;
-    }
-    if (rule.type == ConsumptionRuleType.perPiece) {
-      final count = inputs['count'] as double? ?? 0.0;
-      qty = count * rule.factor;
-    }
-    
-    // Always round up to 2 decimals or ceil?
-    // User asked: "ceil(surface / coverage)" logic.
-    // Let's assume factor is "units per m2".
-    return (qty * 100).ceil() / 100.0; // Round to 2 decimals
-  }
-  
-  void _updateInput(String roomId, String taskId, String inputId, dynamic value) {
-    final key = _getKey(roomId, taskId);
-    if (_taskStates.containsKey(key)) {
-      setState(() {
-        _taskStates[key]!.inputs[inputId] = value;
-        // Recalculate quantities for all products
-        final products = _taskStates[key]!.selectedProducts.keys.toList();
-        for (var prodId in products) {
-           // Find product object (simulated lookup)
-           // Find product object from ALL products, not just defaults
-           final allProds = getAllProducts();
-           try {
-             final prod = allProds.firstWhere((p) => p.id == prodId, orElse: () => const Product(id: 'err', name: '', imageUrl: '', priceHT: 0, unit: '')); 
-             if (prod.id != 'err') {
-               _taskStates[key]!.selectedProducts[prodId] = _calculateQuantity(prod, _taskStates[key]!.inputs);
-             }
-           } catch(e) { }
-        }
-      });
-    }
-  }
+    if (_taskStates.containsKey(key)) return;
 
-  double _calculateTotal(RoomTaskState state) {
-    if (state.forfaitEnabled) return state.forfaitPrice;
-
-    // Fournitures HT
-    double fournitures = 0;
-    state.selectedFournitures.forEach((_, data) {
-      final qty = (data['quantity'] as num?)?.toDouble() ?? 1;
-      final unitPrice = (data['unitPrice'] as num?)?.toDouble() ?? 0;
-      fournitures += unitPrice * qty;
-    });
-
-    // Main d'œuvre HT = quantité × temps(h/u) × coefficient × taux horaire.
-    // This MUST match the "TOTAL LIGNE HT" breakdown (see _buildHoursInput),
-    // otherwise the bottom "Total Calculé" bar showed only fournitures and
-    // displayed 0 € whenever the line was labour-only.
-    final coeff =
-        (_roomContexts[state.roomId] ?? const RealityFactors()).totalCoefficient;
-    final qty = (state.inputs['quantity'] as num?)?.toDouble() ?? 0.0;
-    final mo = qty * state.hours * coeff * _tauxHoraire;
-
-    return mo + fournitures;
-  }
-
-  /// Toggle row that switches an ouvrage between detailed and flat-price modes.
-  Widget _buildForfaitToggle(RoomTaskState state) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: state.forfaitEnabled
-            ? const Color(0xFFEFF6FF)
-            : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: state.forfaitEnabled
-              ? const Color(0xFF1D74FF)
-              : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.request_quote_outlined,
-              size: 18, color: Color(0xFF1D74FF)),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Forfait (prix fixe, sans détail)',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF334155)),
-            ),
-          ),
-          Switch(
-            value: state.forfaitEnabled,
-            activeColor: const Color(0xFF1D74FF),
-            onChanged: (v) => setState(() => state.forfaitEnabled = v),
-          ),
-        ],
-      ),
+    final newState = RoomTaskState(
+      taskId: item.id,
+      roomId: roomId,
+      label: item.label,
+      isExpanded: false,
     );
+    for (var field in getFieldsForTask(item.id)) {
+      if (field.defaultValue != null) {
+        newState.inputs[field.id] = field.defaultValue;
+      }
+    }
+    // Seed labour temps from the KOJI banque de temps so the line prices
+    // immediately instead of starting at 0 h/u.
+    if (item.tempsHU != null) newState.hours = item.tempsHU!;
+    _taskStates[key] = newState;
+  }
+
+  /// "Tout sélectionner" for a famille section: (de)selects every ouvrage of
+  /// the section AND their sous-ouvrages for the current room.
+  void _toggleCategorySelection(
+      TaskCategory category, String roomId, bool selected) {
+    setState(() {
+      for (final t in category.tasks) {
+        _setTaskSelected(roomId, t, selected);
+        for (final sub in t.subTasks) {
+          _setTaskSelected(roomId, sub, selected);
+        }
+      }
+    });
+  }
+
+  bool _isCategoryFullySelected(TaskCategory category, String roomId) {
+    final all = <TaskItem>[
+      for (final t in category.tasks) ...[t, ...t.subTasks],
+    ];
+    return all.isNotEmpty &&
+        all.every((t) => _taskStates.containsKey(_getKey(roomId, t.id)));
   }
 
   /// Toggle controlling whether this ouvrage's fournitures are itemised in the
@@ -844,58 +733,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
         ],
       ),
     );
-  }
-
-  /// Single flat-price input shown when forfait mode is on.
-  Widget _buildForfaitPriceField(RoomTaskState state) {
-    final txt = state.forfaitPrice == 0 ? '' : _formatNum(state.forfaitPrice);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Prix forfaitaire (HT)',
-            style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF64748B),
-                fontWeight: FontWeight.w500)),
-        const SizedBox(height: 6),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      isDense: true,
-                      hintText: '0.00'),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  controller: _controllerFor(
-                      'forfait|${state.roomId}|${state.taskId}', txt),
-                  onChanged: (val) {
-                    state.forfaitPrice =
-                        double.tryParse(val.trim().replaceAll(',', '.')) ?? 0.0;
-                    setState(() {});
-                  },
-                ),
-              ),
-              const Text('€', style: TextStyle(color: Color(0xFF94A3B8))),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<Product> getAllProducts() {
-    return ref.read(productsProvider).valueOrNull ?? [];
   }
 
   // --- UI Parts ---
@@ -1118,7 +955,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                         if (val) {
                           setState(() => _selectedTrade = trade);
                           _fetchCustomTasksForTrade(trade);
-                          _loadTauxHoraire(trade: trade);
                         }
                       },
                       selectedColor: const Color(0xFFE0E7FF),
@@ -1321,26 +1157,44 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     ),
       bottomSheet: Container(
         color: Theme.of(context).colorScheme.surface,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         child: SafeArea(
-
-          child: ElevatedButton(
-            onPressed: _onContinue,
+          // Single action (client request): "Enregistrer" saves everything
+          // and opens the Récapitulatif du devis.
+          child: ElevatedButton.icon(
+            onPressed: _onSave,
+            icon: const Icon(Icons.save_outlined, size: 20),
+            label: const Text('Enregistrer',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1D3557),
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 56),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
-
-            child: const Text('Continuer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ),
       ),
     );
   }
 
-  void _onContinue() async {
+  /// "Enregistrer" — persists everything, then opens the Récapitulatif du
+  /// devis (client request: one button, save and go to the next screen).
+  void _onSave() async {
+    await _persistToProvider();
+
+    // Navigate straight to the Récapitulatif. The recap recomputes all
+    // totals from `roomTasks` (already saved via updateRoomTasks), so the
+    // intermediate summary step was redundant.
+    if (!mounted) return;
+    context.push(
+      '/quote/detail',
+      extra: QuoteDetailArgs(data: ref.read(quoteCreationProvider).toMap()),
+    );
+  }
+
+  Future<void> _persistToProvider() async {
     // 1. Group tasks by room
     final tasksByRoom = <String, List<RoomTaskState>>{};
     
@@ -1442,15 +1296,27 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
           }
           
           // Serialize Task State for persistence
-          // Lookup custom task metadata (code, famille, unite)
+          // Lookup custom task metadata (code, famille, unite). Sous-ouvrages
+          // are nested inside their parent's subTasks, so search there too —
+          // otherwise they lose their code/famille AND their parent link, and
+          // the récap shows them as orphan lines instead of grouped under
+          // l'ouvrage with a somme.
           CustomTask? customTask;
-          try {
-            customTask = _customTasks.firstWhere(
-              (t) => t.id == taskState.taskId,
-              orElse: () => CustomTask(id: '', title: '', profession: ''),
-            );
-            if (customTask.id.isEmpty) customTask = null;
-          } catch (_) {}
+          CustomTask? parentTask;
+          for (final t in _customTasks) {
+            if (t.id == taskState.taskId) {
+              customTask = t;
+              break;
+            }
+            for (final s in t.subTasks) {
+              if (s.id == taskState.taskId) {
+                customTask = s;
+                parentTask = t;
+                break;
+              }
+            }
+            if (customTask != null) break;
+          }
 
            taskDetails[taskState.taskId] = {
              'taskId': taskState.taskId,
@@ -1467,7 +1333,14 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
              'conditionCoeff': conditionCoeff,
              'unite': customTask?.unite ?? 'u',
              'code': customTask?.code ?? '',
-             'famille': customTask?.famille ?? '',
+             // A sous-ouvrage inherits its parent's famille so the récap files
+             // it under the same section instead of "Général".
+             'famille': (customTask?.famille?.trim().isNotEmpty == true)
+                 ? customTask!.famille!
+                 : (parentTask?.famille ?? ''),
+             // Parent link — lets the récap group sous-ouvrages under their
+             // ouvrage and show the somme (Total ouvrage).
+             'parentTaskId': customTask?.parentId ?? parentTask?.id ?? '',
              'forfaitEnabled': taskState.forfaitEnabled,
              'forfaitPrice': taskState.forfaitPrice,
              'hideFournitures': taskState.hideFournitures,
@@ -1483,31 +1356,65 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     if (_selectedTrade.isNotEmpty) {
        ref.read(quoteCreationProvider.notifier).setProfession(_selectedTrade);
     }
-    
-    // 4. Navigate straight to the Récapitulatif. The recap recomputes all
-    // totals from `roomTasks` (already saved above via updateRoomTasks), so the
-    // intermediate summary step was redundant.
-    if (!mounted) return;
-    context.push(
-      '/quote/detail',
-      extra: QuoteDetailArgs(data: ref.read(quoteCreationProvider).toMap()),
-    );
   }
 
   Widget _buildCategorySection(TaskCategory category, String roomId) {
+    final allSelected = _isCategoryFullySelected(category, roomId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            category.title.toUpperCase(),
-            style: const TextStyle(
-              color: Color(0xFF9CA3AF),
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-              letterSpacing: 1.0, 
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  category.title.toUpperCase(),
+                  style: const TextStyle(
+                    color: Color(0xFF9CA3AF),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              // "Tout sélectionner" (client request) — checks every ouvrage
+              // and sous-ouvrage of this famille for the current pièce.
+              InkWell(
+                onTap: () =>
+                    _toggleCategorySelection(category, roomId, !allSelected),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        allSelected
+                            ? Icons.check_box
+                            : Icons.check_box_outline_blank,
+                        size: 18,
+                        color: allSelected
+                            ? const Color(0xFF1D74FF)
+                            : const Color(0xFF94A3B8),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        allSelected ? 'Tout désélectionner' : 'Tout sélectionner',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: allSelected
+                              ? const Color(0xFF1D74FF)
+                              : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         ...category.tasks.map((taskItem) => _buildTaskCard(taskItem, roomId)),
@@ -1868,28 +1775,21 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                    
                    const SizedBox(height: 20),
 
-                   // ── Forfait toggle ──────────────────────────
-                   // When ON, the ouvrage is billed as a flat price and the
-                   // detailed quantité / fourniture / temps inputs are hidden.
-                   _buildForfaitToggle(state),
+                   // AUCUN chiffrage ici (client request) : prix, forfait,
+                   // quantités et totaux se saisissent uniquement dans le
+                   // Récapitulatif du devis. On ne garde que la sélection des
+                   // fournitures rattachées à l'ouvrage.
+                   Align(
+                     alignment: Alignment.centerRight,
+                     child: _buildAddProductButton(roomId, taskItem.id),
+                   ),
 
-                   if (state.forfaitEnabled) ...[
-                     const SizedBox(height: 16),
-                     _buildForfaitPriceField(state),
-                   ] else ...[
-                     const SizedBox(height: 20),
-
-                     // Dynamic Inputs + Add Product Button Row
-                     _buildDynamicInputs(roomId, taskItem.id, state),
-
-                     const SizedBox(height: 20),
-
+                   if (state.selectedFournitures.isNotEmpty) ...[
+                     const SizedBox(height: 12),
                      // Hide/show fournitures toggle — only relevant when this
                      // ouvrage actually has fournitures attached.
-                     if (state.selectedFournitures.isNotEmpty) ...[
-                       _buildHideFournituresToggle(state),
-                       const SizedBox(height: 12),
-                     ],
+                     _buildHideFournituresToggle(state),
+                     const SizedBox(height: 12),
 
                      // Fournitures List
                      ...state.selectedFournitures.entries.map((entry) {
@@ -1907,31 +1807,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                           },
                         );
                      }),
-
-                     // NOTE: The "Main d'œuvre" (quantité + temps h/u) block used
-                     // to live here, but the recap screen (quote_detail_screen)
-                     // asks for those exact inputs again. We dropped it here to
-                     // avoid the duplicate — labor is captured on the recap.
-                     // When forfait is ON, the flat price flows straight through
-                     // to the recap/devis instead.
                    ],
-
-                   // Total Calculated Bar
-                   Container(
-                     margin: const EdgeInsets.only(top: 12),
-                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                     decoration: BoxDecoration(
-                       color: const Color(0xFFEFF6FF), // Light blue bg
-                       borderRadius: BorderRadius.circular(8),
-                     ),
-                     child: Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                       children: [
-                         Text(state.forfaitEnabled ? 'Forfait' : 'Total Calculé', style: const TextStyle( fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
-                         Text('${_calculateTotal(state).toStringAsFixed(2)} €', style: const TextStyle( fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A))),
-                       ],
-                     ),
-                   ),
                  ],
               ),
             ),
@@ -2275,76 +2151,6 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
     }
   }
 
-  Widget _buildDynamicInputs(String roomId, String taskId, RoomTaskState state) {
-    final fields = getFieldsForTask(taskId);
-    if (fields.isEmpty) {
-        // Even if no fields, show Add Product button
-        return Align(
-          alignment: Alignment.centerRight,
-          child: _buildAddProductButton(roomId, taskId),
-        );
-    }
-
-    return Column(
-      children: fields.map((field) {
-         final currentVal = state.inputs[field.id]?.toString() ?? '';
-         
-         return Row(
-           crossAxisAlignment: CrossAxisAlignment.end,
-           children: [
-             // Input Field
-             Expanded(
-               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   Text(field.label, style: const TextStyle( fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
-                   const SizedBox(height: 6),
-                   Container(
-                     height: 48,
-                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                     decoration: BoxDecoration(
-                       color: Theme.of(context).colorScheme.surface,
-                       border: Border.all(color: const Color(0xFFCBD5E1)),
-                       borderRadius: BorderRadius.circular(8),
-                     ),
-                     child: Row(
-                       children: [
-                         Expanded(
-                           child: TextField(
-                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                             decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                             style: const TextStyle(fontWeight: FontWeight.bold,),
-                             controller: _controllerFor(
-                                 '$roomId|$taskId|${field.id}', currentVal),
-                             onChanged: (val) {
-                               // Accept a comma decimal; allow the field to be
-                               // emptied (treated as 0) so the user can clear
-                               // and retype freely.
-                               final parsed = double.tryParse(
-                                       val.trim().replaceAll(',', '.')) ??
-                                   0.0;
-                               _updateInput(roomId, taskId, field.id, parsed);
-                             },
-                           ),
-                         ),
-                         Text(field.suffix, style: const TextStyle( color: Color(0xFF94A3B8))),
-                       ],
-                     ),
-                   ),
-                 ],
-               ),
-             ),
-             
-             const SizedBox(width: 16),
-             
-             // Add Supply Button (Dashed style)
-             _buildAddProductButton(roomId, taskId),
-           ],
-         );
-      }).toList(),
-    );
-  }
-  
   Widget _buildAddProductButton(String roomId, String taskId) {
     return GestureDetector(
        onTap: () => _showAddProductModal(roomId, taskId),

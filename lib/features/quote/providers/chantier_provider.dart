@@ -7,8 +7,18 @@ final chantierRepositoryProvider = Provider<ChantierRepository>((ref) {
   return ChantierRepository();
 });
 
-final userChantiersProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) {
-  return ref.watch(chantierRepositoryProvider).streamChantiers(userId);
+final userChantiersProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) async* {
+  final repo = ref.watch(chantierRepositoryProvider);
+  try {
+    await for (final chantiers in repo.streamChantiers(userId)) {
+      yield chantiers;
+    }
+  } catch (_) {
+    // Realtime channel failed to join (RealtimeSubscribeException timedOut on
+    // flaky networks). Fall back to a one-shot REST fetch so the home screen
+    // still shows the chantiers instead of "Erreur de chargement".
+    yield await repo.getChantiersOnce(userId);
+  }
 });
 
 // FutureProvider (not Stream) because Supabase Realtime is not enabled on

@@ -426,6 +426,17 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
 }
 
 final userQuotesProvider =
-    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) {
-  return ref.read(quoteRepositoryProvider).getUserQuotes(userId);
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) async* {
+  final repo = ref.read(quoteRepositoryProvider);
+  try {
+    await for (final quotes in repo.getUserQuotes(userId)) {
+      yield quotes;
+    }
+  } catch (_) {
+    // Realtime channel failed to join (RealtimeSubscribeException timedOut on
+    // flaky networks). Fall back to a one-shot REST fetch so the home/devis
+    // lists still show data instead of "Erreur de chargement". Live updates
+    // resume on the next provider refresh/invalidate.
+    yield await repo.getUserQuotesOnce(userId);
+  }
 });

@@ -417,64 +417,79 @@ class QuoteRepository {
     }
   }
 
+  // Transform a flat `quotes` row back to the UI expected format. Shared by
+  // the realtime stream and the one-shot REST fallback so both emit the same
+  // shape.
+  Map<String, dynamic> _mapQuoteListRow(Map<String, dynamic> quote) {
+    // Helper function to safely convert JSONB fields
+    Map<String, dynamic> safeMapConvert(dynamic field) {
+      if (field == null) return {};
+      if (field is Map<String, dynamic>) return field;
+      if (field is Map) return Map<String, dynamic>.from(field);
+      return {};
+    }
+
+    final metadata = safeMapConvert(quote['metadata']);
+    final client = safeMapConvert(metadata['client']);
+
+    return {
+      'id': quote['id'],
+      'status': quote['status'] ?? 'Draft',
+      // Signature fields written by the client signature web app.
+      // Exposing them here lets the UI show signed quotes and lets the
+      // home screen detect a newly-signed devis to raise a notification.
+      'signed_at': quote['signed_at'],
+      'signature_data': quote['signature_data'],
+      'client': client,
+      'quoteNumber': metadata['quoteNumber'] ?? quote['reference'] ?? 'N/A',
+      'date': metadata['date'] ?? '',
+      'validity': metadata['validity'] ?? '',
+      'siteAddress': metadata['siteAddress'] ?? '',
+      'travauxStart': metadata['travauxStart'] ?? '',
+      'travauxDuration': metadata['travauxDuration'] ?? '',
+      // Place/date captured at signing → rendered on the signed devis PDF.
+      'signatureLieu': metadata['signatureLieu'] ?? '',
+      'signatureDate': metadata['signatureDate'] ?? '',
+      // Editable custom notes/mentions (conditions, délais, réserves…).
+      'mentions': metadata['mentions'] ?? '',
+      'company': metadata['company'] ?? {},
+      // Professional "LOT" devis config so the recap reopens identically
+      // and the client signature PDF can rebuild the same layout.
+      'recap': metadata['recap'] ?? {},
+      'lots': metadata['lots'] ?? {},
+      'totals': {
+        'ht': quote['total_ht'] ?? 0,
+        'tvaRate': quote['tva_rate'] ?? 20,
+        'tva': ((quote['total_ht'] ?? 0) * (quote['tva_rate'] ?? 20) / 100),
+        'ttc': quote['total_ttc'] ?? 0
+      },
+      // Since rooms/tasks are fetched later, keep them empty here for the list view
+      'expenses': {},
+      'tasks': {},
+    };
+  }
+
   Stream<List<Map<String, dynamic>>> getUserQuotes(String userId) {
     return _supabase
         .from('quotes')
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
         .order('created_at', ascending: false)
-        .map((data) {
-          // Transform new flat structure back to UI expected format
-          return data.map((quote) {
-            
-            // Helper function to safely convert JSONB fields
-            Map<String, dynamic> _safeMapConvert(dynamic field) {
-              if (field == null) return {};
-              if (field is Map<String, dynamic>) return field;
-              if (field is Map) return Map<String, dynamic>.from(field);
-              return {};
-            }
+        .map((data) => data.map(_mapQuoteListRow).toList());
+  }
 
-            final metadata = _safeMapConvert(quote['metadata']);
-            final client = _safeMapConvert(metadata['client']);
-
-            return {
-              'id': quote['id'],
-              'status': quote['status'] ?? 'Draft',
-              // Signature fields written by the client signature web app.
-              // Exposing them here lets the UI show signed quotes and lets the
-              // home screen detect a newly-signed devis to raise a notification.
-              'signed_at': quote['signed_at'],
-              'signature_data': quote['signature_data'],
-              'client': client,
-              'quoteNumber': metadata['quoteNumber'] ?? quote['reference'] ?? 'N/A',
-              'date': metadata['date'] ?? '',
-              'validity': metadata['validity'] ?? '',
-              'siteAddress': metadata['siteAddress'] ?? '',
-              'travauxStart': metadata['travauxStart'] ?? '',
-              'travauxDuration': metadata['travauxDuration'] ?? '',
-              // Place/date captured at signing → rendered on the signed devis PDF.
-              'signatureLieu': metadata['signatureLieu'] ?? '',
-              'signatureDate': metadata['signatureDate'] ?? '',
-              // Editable custom notes/mentions (conditions, délais, réserves…).
-              'mentions': metadata['mentions'] ?? '',
-              'company': metadata['company'] ?? {},
-              // Professional "LOT" devis config so the recap reopens identically
-              // and the client signature PDF can rebuild the same layout.
-              'recap': metadata['recap'] ?? {},
-              'lots': metadata['lots'] ?? {},
-              'totals': {
-                'ht': quote['total_ht'] ?? 0,
-                'tvaRate': quote['tva_rate'] ?? 20,
-                'tva': ((quote['total_ht'] ?? 0) * (quote['tva_rate'] ?? 20) / 100),
-                'ttc': quote['total_ttc'] ?? 0
-              },
-              // Since rooms/tasks are fetched later, keep them empty here for the list view
-              'expenses': {},
-              'tasks': {},
-            };
-          }).toList();
-        });
+  /// One-shot REST fetch of the user's quotes — same shape as [getUserQuotes].
+  /// Used as a fallback when the realtime channel fails to join (e.g.
+  /// RealtimeSubscribeException timedOut on flaky networks).
+  Future<List<Map<String, dynamic>>> getUserQuotesOnce(String userId) async {
+    final data = await _supabase
+        .from('quotes')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(data)
+        .map(_mapQuoteListRow)
+        .toList();
   }
 
   /// Update Quote Status
