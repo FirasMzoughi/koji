@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:go_router/go_router.dart';
 import 'package:koji/features/synchronization/data/worker_model.dart';
 import 'package:koji/features/synchronization/data/worker_repository.dart';
@@ -47,6 +48,127 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
         _selectedWorkerIds.add(workerId);
       }
     });
+  }
+
+  /// Bottom sheet showing the worker's Identifiant + Mot de passe with copy.
+  void _showCredentials(Worker w) {
+    final code = w.accessCode ?? '';
+    final password = w.accessPassword ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+            Text("Accès de ${w.firstName} ${w.lastName}",
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0A1227))),
+            const SizedBox(height: 4),
+            Text(
+              "Communiquez ces identifiants à l'ouvrier pour qu'il consulte ses tâches dans l'Espace Particulier.",
+              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+            ),
+            const SizedBox(height: 20),
+            if (code.isEmpty && password.isEmpty)
+              Text(
+                "Identifiants indisponibles. Vérifiez que le script worker_access.sql a été exécuté dans Supabase.",
+                style: TextStyle(fontSize: 13, color: Colors.red[400]),
+              )
+            else ...[
+              _credField("Identifiant", code),
+              const SizedBox(height: 12),
+              _credField("Mot de passe", password),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(
+                        text: "Identifiant : $code\nMot de passe : $password"));
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Identifiants copiés")),
+                    );
+                  },
+                  icon: const Icon(Icons.copy, size: 18),
+                  label: const Text("Copier les identifiants"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A1227),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _credField(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F8FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE0E7FF)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                const SizedBox(height: 2),
+                SelectableText(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F3995),
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy, size: 18, color: Color(0xFF1D74FF)),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("$label copié")),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   List<Worker> get _filteredWorkers {
@@ -433,6 +555,24 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                 ],
               ),
             ),
+
+            // ── Key icon: reveal Identifiant + Mot de passe ──
+            if (worker.contactType == 'Ouvrier')
+              GestureDetector(
+                onTap: () => _showCredentials(worker),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFEFF1F5),
+                  ),
+                  child: const Icon(Icons.vpn_key_outlined,
+                      size: 18, color: Color(0xFF1B2E58)),
+                ),
+              ),
 
             // ── Circular Checkbox ──
             AnimatedContainer(

@@ -132,6 +132,8 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
               hide && qty > 0 ? materialTotal / qty : 0.0;
           final taskId = (t['task_id'] as String?) ?? '';
           final lineType = inputs['lineType']?.toString() ?? 'normal';
+          final isComment =
+              taskId.startsWith('comment_') || inputs['isComment'] == true;
           items.add({
             'title': (t['label'] as String?) ?? 'Prestation',
             'quantity': qty,
@@ -139,9 +141,13 @@ class _SignatureScreenState extends ConsumerState<SignatureScreen> {
             'laborCost': hide ? labor + hiddenMaterialUnit : labor,
             'materialCost': hide ? 0.0 : material,
             'isFourniture': taskId.startsWith('fourniture_'),
+            'isComment': isComment,
+            'commentaire':
+                inputs['commentaire']?.toString() ?? (t['label'] as String?) ?? '',
             'lineType': lineType,
           });
-          if (lineType == 'normal') {
+          // Une note ne contribue pas au total HT du lot.
+          if (lineType == 'normal' && !isComment) {
             lotHT += qty * labor + materialQty * material;
           }
         }

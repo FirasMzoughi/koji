@@ -15,6 +15,24 @@ class QuoteRepository {
 
   QuoteRepository(this._supabase);
 
+  /// True when a devis line is a commentaire/note or a standalone fourniture
+  /// rather than an executable ouvrage. Such lines exist for pricing/PDF only
+  /// and must NOT be turned into project_tasks (otherwise a note shows up "as a
+  /// task" in the devis/chantier). [rawId] is the line's task id (map key,
+  /// `taskId` or `id`); [data] is the line map, which may carry explicit flags.
+  bool _isNonTaskLine(dynamic rawId, Map data) {
+    final id =
+        (rawId ?? data['taskId'] ?? data['id'] ?? '').toString().toLowerCase();
+    if (id.startsWith('comment_') || id.startsWith('fourniture_')) return true;
+    if (data['isComment'] == true || data['isFourniture'] == true) return true;
+    final inputs = data['inputs'];
+    if (inputs is Map &&
+        (inputs['isComment'] == true || inputs['isFourniture'] == true)) {
+      return true;
+    }
+    return false;
+  }
+
   // Characters used for the per-chantier access code / password. We exclude
   // visually ambiguous glyphs (0/O, 1/I/L) so a client reading them off an SMS
   // can type them without confusion.
@@ -259,8 +277,18 @@ class QuoteRepository {
             '🏗️ [QuoteRepository] Starting auto-creation of project & tasks...');
 
         // 1. Create/Update Project
+        // `projects.title` is NOT NULL — without it the insert failed with
+        // 23502 and the whole auto-creation was silently skipped. Build a
+        // sensible title from the client name (falling back to the reference).
+        final clientName = (client?['name'] as String?)?.trim();
+        final projectTitle = (clientName != null && clientName.isNotEmpty)
+            ? 'Chantier $clientName'
+            : (quoteData['reference']?.toString().trim().isNotEmpty == true
+                ? 'Chantier ${quoteData['reference']}'
+                : 'Chantier');
         final projectData = {
           'user_id': userId, // Explicitly set owner
+          'title': projectTitle,
           'client_name': client?['name'] ?? 'Client Inconnu',
           'address': quoteData['siteAddress'] ?? client?['address'],
           'status': 'En Cours',
@@ -311,6 +339,14 @@ class QuoteRepository {
               }
 
               final tData = taskData as Map<String, dynamic>;
+              // Skip commentaire / standalone fourniture lines: they are devis
+              // billing/PDF lines, not executable work, and must NOT become
+              // project tasks (otherwise notes show up "as tasks").
+              if (_isNonTaskLine(taskId, tData)) {
+                _logger.i('      ⤷ Skipped non-task line: $taskId');
+                return;
+              }
+
               final taskName = tData['label'] ?? tData['taskId'] ?? 'Tâche';
 
               projectTasksToInsert.add({
@@ -349,6 +385,7 @@ class QuoteRepository {
               for (var item in items) {
                 if (item is! Map) continue;
                 final itemData = item as Map<String, dynamic>;
+                if (_isNonTaskLine(itemData['id'], itemData)) continue;
                 final taskName =
                     itemData['title'] ?? itemData['label'] ?? 'Tâche';
 
@@ -369,6 +406,7 @@ class QuoteRepository {
               items.forEach((taskId, taskData) {
                 if (taskData is! Map) return;
                 final tData = taskData as Map<String, dynamic>;
+                if (_isNonTaskLine(taskId, tData)) return;
                 final taskName = tData['label'] ?? tData['title'] ?? 'Tâche';
 
                 projectTasksToInsert.add({

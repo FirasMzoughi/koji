@@ -11,6 +11,7 @@ import 'package:koji/features/auth/repository/user_repository.dart';
 import 'package:koji/features/quote/quote_list_screen.dart';
 import 'package:koji/features/quote/chantier_list_screen.dart';
 import 'package:koji/features/quote/providers/chantier_provider.dart';
+import 'package:koji/features/quote/repositories/chantier_repository.dart';
 import 'package:koji/features/quote/repository/quote_repository.dart';
 import 'package:koji/features/quote/providers/quote_creation_provider.dart';
 import 'package:koji/features/quote/providers/quote_message_provider.dart';
@@ -67,6 +68,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // check at the same time (which could double-notify or race on prefs).
   bool _handlingMessages = false;
 
+  // Worker reports (réclamation/retard/blocage/dépassement) sent from the worker
+  // space. We poll them on a timer and raise an idempotent bell notification per
+  // report. The persisted timestamp is the high-water mark of what we've seen,
+  // so reopening the app doesn't re-notify older reports.
+  static const _notifiedWorkerReportsKey = 'notified_worker_report_at';
+  Timer? _workerReportsPollTimer;
+  bool _handlingWorkerReports = false;
+  final _chantierRepo = ChantierRepository();
+
   @override
   void initState() {
     super.initState();
@@ -76,7 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
       _loadCompanyEmail(user.id);
-      // Start the 7-day trial (first time) and resolve trial/subscription
+      // Start the 14-day trial (first time) and resolve trial/subscription
       // status so the banner + gate know whether access is active.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(subscriptionStatusProvider.notifier).load();
@@ -99,14 +109,107 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _messagePollTimer = Timer.periodic(const Duration(seconds: 45), (_) {
         if (_latestQuotes.isNotEmpty) _handleNewMessages(_latestQuotes);
       });
+
+      // Poll for new worker reports (réclamation / retard / blocage /
+      // dépassement) so a signalement raises a bell notification while the app
+      // is open. Fires once now to catch anything sent while closed.
+      _handleWorkerReports();
+      _workerReportsPollTimer =
+          Timer.periodic(const Duration(seconds: 60), (_) {
+        _handleWorkerReports();
+      });
     }
   }
 
   @override
   void dispose() {
     _messagePollTimer?.cancel();
+    _workerReportsPollTimer?.cancel();
     super.dispose();
   }
+
+  /// Fetch worker reports newer than the last seen timestamp and raise an
+  /// idempotent bell notification for each. The first run after install (no
+  /// stored timestamp) seeds the high-water mark silently so we don't flood the
+  /// bell with the entire history.
+  Future<void> _handleWorkerReports() async {
+    if (_handlingWorkerReports) return;
+    _handlingWorkerReports = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedIso = prefs.getString(_notifiedWorkerReportsKey);
+      final since = storedIso != null ? DateTime.tryParse(storedIso) : null;
+      final isBaseline = since == null;
+
+      final reports =
+          await _chantierRepo.getCompanyWorkerReports(since: since);
+      if (reports.isEmpty) return;
+
+      DateTime newest = since ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+      for (final r in reports) {
+        final createdAt =
+            DateTime.tryParse(r['created_at'] as String? ?? '') ??
+                DateTime.now();
+        if (createdAt.isAfter(newest)) newest = createdAt;
+
+        // On the first run we only establish the baseline — no bell spam.
+        if (isBaseline) continue;
+
+        final id = r['id']?.toString() ?? '';
+        if (id.isEmpty) continue;
+        final kind = r['kind'] as String? ?? '';
+        final worker = (r['worker_name'] as String?)?.trim();
+        final ouvrage = (r['ouvrage_title'] as String?)?.trim();
+        final chantier = (r['chantier_reference'] as String?)?.trim();
+        final msg = (r['message'] as String?)?.trim() ?? '';
+
+        final who = (worker != null && worker.isNotEmpty) ? worker : 'Un ouvrier';
+        final where = [
+          if (ouvrage != null && ouvrage.isNotEmpty) ouvrage,
+          if (chantier != null && chantier.isNotEmpty) chantier,
+        ].join(' · ');
+
+        await ref.read(notificationsProvider.notifier).add(
+              AppNotification(
+                id: 'wreport_$id',
+                title: '${_reportEmoji(kind)} ${_reportTitle(kind)}',
+                body: [
+                  '$who${where.isNotEmpty ? ' — $where' : ''}',
+                  if (msg.isNotEmpty) msg,
+                ].join('\n'),
+                createdAt: createdAt,
+                type: 'worker_report',
+              ),
+            );
+      }
+
+      await prefs.setString(
+          _notifiedWorkerReportsKey, newest.toUtc().toIso8601String());
+    } catch (_) {
+      // Worker tables unavailable / not migrated yet — fail quietly.
+    } finally {
+      _handlingWorkerReports = false;
+    }
+  }
+
+  String _reportTitle(String kind) => switch (kind) {
+        'reclamation' => 'Réclamation reçue',
+        'retard' => 'Retard signalé',
+        'blocage' => 'Blocage signalé',
+        'depassement' => 'Dépassement de temps',
+        'commentaire' => 'Nouveau commentaire',
+        _ => 'Signalement ouvrier',
+      };
+
+  String _reportEmoji(String kind) => switch (kind) {
+        'reclamation' => '⚠️',
+        'retard' => '⏰',
+        'blocage' => '🚧',
+        'depassement' => '⏱️',
+        'commentaire' => '💬',
+        _ => '🔔',
+      };
 
   Future<void> _loadCompanyEmail(String userId) async {
     // Fall back to the auth email until the business profile resolves.
@@ -328,7 +431,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   /// Run [action] only if the entreprise still has access (trial active or
-  /// subscribed). Once the 7-day trial has expired, open the paywall instead.
+  /// subscribed). Once the 14-day trial has expired, open the paywall instead.
   /// While the status is still loading/unknown we allow the action (we never
   /// block on a transient state — only the explicit `expired` state gates).
   void _guard(VoidCallback action) {
@@ -1006,12 +1109,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   onTap: quoteId == null
                                       ? null
                                       : () async {
-                                          // Seed the create-quote flow from
-                                          // this saved devis, then drop the
-                                          // user into the room/task editor so
-                                          // tasks, fournitures and inputs are
-                                          // all editable — not just recap
-                                          // numbers.
+                                          // Tout-en-un (demande client) :
+                                          // éditer un devis ouvre DIRECTEMENT le
+                                          // Récapitulatif, plus l'écran « Créer
+                                          // vos ouvrages ». Le récap réhydrate
+                                          // tâches / fournitures / inputs depuis
+                                          // le devis sauvegardé (il porte un id).
                                           final messenger =
                                               ScaffoldMessenger.of(context);
                                           final router = GoRouter.of(context);
@@ -1024,25 +1127,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                 .read(quoteCreationProvider
                                                     .notifier)
                                                 .seedFromSavedQuote(q);
-                                            final state = ref.read(
-                                                quoteCreationProvider);
-                                            if (state.selectedRoomIds
-                                                .isEmpty) {
-                                              // No rooms persisted — fall
-                                              // back to the recap so the user
-                                              // can at least adjust numbers.
-                                              router.push('/quote/detail',
-                                                  extra: q);
-                                              return;
-                                            }
-                                            router.push(
-                                              '/quote/room-details',
-                                              extra: {
-                                                'roomIds':
-                                                    state.selectedRoomIds,
-                                                'images': const <String>[],
-                                              },
-                                            );
+                                            router.push('/quote/detail',
+                                                extra: q);
                                           } catch (e) {
                                             messenger.showSnackBar(
                                               SnackBar(

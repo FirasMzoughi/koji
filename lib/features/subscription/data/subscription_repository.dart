@@ -6,7 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Store product ids for the entreprise subscription. These must be created
-/// (with the 7-day free trial) in App Store Connect and Google Play Console
+/// (with the 14-day free trial) in App Store Connect and Google Play Console
 /// using EXACTLY these ids.
 class SubscriptionProducts {
   static const monthly = 'koji_entreprise_monthly';

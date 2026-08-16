@@ -425,18 +425,13 @@ class _QuoteListScreenState extends ConsumerState<QuoteListScreen> {
   }
 }
 
+// One-shot REST fetch instead of a realtime `.stream()`. The `quotes` table has
+// `json` columns (client/totals/metadata) and Postgres cannot diff `json` for
+// realtime replication → "could not identify an equality operator for type json
+// (42883)". `.select()` has no such limitation, so we fetch once and refresh via
+// `ref.invalidate(userQuotesProvider(userId))` after every mutation (create /
+// update / status change / delete) — same liveness, no broken realtime path.
 final userQuotesProvider =
-    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) async* {
-  final repo = ref.read(quoteRepositoryProvider);
-  try {
-    await for (final quotes in repo.getUserQuotes(userId)) {
-      yield quotes;
-    }
-  } catch (_) {
-    // Realtime channel failed to join (RealtimeSubscribeException timedOut on
-    // flaky networks). Fall back to a one-shot REST fetch so the home/devis
-    // lists still show data instead of "Erreur de chargement". Live updates
-    // resume on the next provider refresh/invalidate.
-    yield await repo.getUserQuotesOnce(userId);
-  }
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, userId) {
+  return ref.read(quoteRepositoryProvider).getUserQuotesOnce(userId);
 });

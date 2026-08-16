@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/features/fournitures/models/fourniture_model.dart';
 import 'package:koji/features/fournitures/repository/fourniture_repository.dart';
@@ -31,6 +34,13 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
   Fournisseur? _selectedFournisseur;
   bool _isUrlMode = false;
   bool _isSaving = false;
+  // Image choisie dans la galerie (mode Manuel) — uploadée à l'enregistrement.
+  File? _imageFile;
+
+  Future<void> _pickImageFromGallery() async {
+    final img = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (img != null) setState(() => _imageFile = File(img.path));
+  }
 
   final List<String> _unites = [
     'Unité',
@@ -373,13 +383,55 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
         ),
         const SizedBox(height: 14),
 
-        _buildFormField(
-          controller: _imageUrlController,
-          label: 'URL de l\'image',
-          hint: 'https://...',
-          icon: Icons.image_outlined,
-        ),
+        // Image du produit — depuis la galerie (plus d'URL à saisir).
+        _buildImagePicker(),
       ],
+    );
+  }
+
+  Widget _buildImagePicker() {
+    return GestureDetector(
+      onTap: _pickImageFromGallery,
+      child: Container(
+        height: 110,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          image: _imageFile != null
+              ? DecorationImage(
+                  image: FileImage(_imageFile!), fit: BoxFit.cover)
+              : null,
+        ),
+        child: _imageFile != null
+            ? Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: CircleAvatar(
+                    radius: 14,
+                    backgroundColor: Colors.black54,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.close,
+                          size: 16, color: Colors.white),
+                      onPressed: () => setState(() => _imageFile = null),
+                    ),
+                  ),
+                ),
+              )
+            : const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_photo_alternate_outlined,
+                      size: 28, color: Color(0xFF64748B)),
+                  SizedBox(height: 6),
+                  Text('Ajouter une photo (galerie)',
+                      style:
+                          TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                ],
+              ),
+      ),
     );
   }
 
@@ -656,6 +708,20 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
       final quantite = double.tryParse(
           _quantiteController.text.replaceAll(',', '.'));
 
+      final repo = ref.read(fournitureRepositoryProvider);
+
+      // Upload de l'image galerie (si choisie) → URL publique. En mode URL on
+      // garde le champ URL existant.
+      String? imageUrl =
+          _imageUrlController.text.isNotEmpty
+              ? _imageUrlController.text.trim()
+              : null;
+      if (_imageFile != null) {
+        try {
+          imageUrl = await repo.uploadFournitureImage(_imageFile!.path);
+        } catch (_) {/* image facultative */}
+      }
+
       final data = {
         'name': _nameController.text.trim(),
         'category': _selectedCategory,
@@ -671,19 +737,19 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
         'unite': _selectedUnite,
         if (_barcodeController.text.isNotEmpty)
           'barcode': _barcodeController.text.trim(),
-        if (_imageUrlController.text.isNotEmpty)
-          'image_url': _imageUrlController.text.trim(),
+        if (imageUrl != null) 'image_url': imageUrl,
         if (_sourceUrlController.text.isNotEmpty)
           'source_url': _sourceUrlController.text.trim(),
         if (_selectedFournisseur != null)
           'fournisseur_id': _selectedFournisseur!.id,
       };
 
-      await ref.read(fournitureRepositoryProvider).addFourniture(data);
+      final created = await repo.addFourniture(data);
 
       // Invalidate all relevant providers
       ref.invalidate(recentFournituresProvider);
       ref.invalidate(diversFournituresProvider);
+      ref.invalidate(allFournituresProvider);
       if (_selectedFournisseur != null) {
         ref.invalidate(
             fournisseurFournituresProvider(_selectedFournisseur!.id));
@@ -696,7 +762,8 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
             backgroundColor: Color(0xFF22C55E),
           ),
         );
-        Navigator.pop(context);
+        // Renvoie la fourniture créée pour que l'appelant (devis) l'insère.
+        Navigator.pop(context, created);
       }
     } catch (e) {
       if (mounted) {

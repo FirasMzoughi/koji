@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/core/responsive_helper.dart';
+import 'package:koji/core/route_args.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koji/features/quote/providers/quote_creation_provider.dart';
@@ -292,10 +293,16 @@ class _RoomSelectionScreenState extends ConsumerState<RoomSelectionScreen> {
                         ref
                             .read(quoteCreationProvider.notifier)
                             .setSelectedRooms(_selectedRoomIds);
-                        context.push('/quote/room-details', extra: {
-                          'roomIds': _selectedRoomIds,
-                          'images': widget.initialImages
-                        });
+                        // Tout-en-un (demande client) : aller DIRECTEMENT au
+                        // Récapitulatif du devis. Les pièces choisies y
+                        // apparaissent comme lots vides ; on y ajoute ouvrages,
+                        // fournitures et notes sans l'écran « Créer vos ouvrages ».
+                        context.push(
+                          '/quote/detail',
+                          extra: QuoteDetailArgs(
+                            data: ref.read(quoteCreationProvider).toMap(),
+                          ),
+                        );
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.darkNavy,

@@ -121,6 +121,12 @@ class _ChantierClientScreenState extends ConsumerState<ChantierClientScreen>
         final lineType = inputs['lineType']?.toString() ?? 'normal';
         final title = (t['label'] as String?) ?? 'Prestation';
 
+        // Une note/commentaire n'est pas une prestation : elle est transmise au
+        // PDF (rendue en italique) mais exclue de la liste des travaux à suivre
+        // et du total HT.
+        final isComment =
+            taskId.startsWith('comment_') || inputs['isComment'] == true;
+
         items.add({
           'title': title,
           'quantity': qty,
@@ -128,10 +134,12 @@ class _ChantierClientScreenState extends ConsumerState<ChantierClientScreen>
           'laborCost': hide ? labor + hiddenMaterialUnit : labor,
           'materialCost': hide ? 0.0 : material,
           'isFourniture': taskId.startsWith('fourniture_'),
+          'isComment': isComment,
+          'commentaire': inputs['commentaire']?.toString() ?? title,
           'lineType': lineType,
         });
-        titles.add(title);
-        if (lineType == 'normal') {
+        if (!isComment) titles.add(title);
+        if (lineType == 'normal' && !isComment) {
           lotHT += qty * labor + materialQty * material;
         }
       }

@@ -7,18 +7,15 @@ final chantierRepositoryProvider = Provider<ChantierRepository>((ref) {
   return ChantierRepository();
 });
 
-final userChantiersProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) async* {
-  final repo = ref.watch(chantierRepositoryProvider);
-  try {
-    await for (final chantiers in repo.streamChantiers(userId)) {
-      yield chantiers;
-    }
-  } catch (_) {
-    // Realtime channel failed to join (RealtimeSubscribeException timedOut on
-    // flaky networks). Fall back to a one-shot REST fetch so the home screen
-    // still shows the chantiers instead of "Erreur de chargement".
-    yield await repo.getChantiersOnce(userId);
-  }
+// One-shot REST fetch instead of a realtime `.stream()`. Realtime replication
+// can't diff `json` columns (Postgres error 42883: "could not identify an
+// equality operator for type json"), which surfaced as a hard error on the
+// Archives screen. `.select()` is unaffected; we refresh via
+// `ref.invalidate(userChantiersProvider(userId))` after each mutation (restore /
+// delete / status change), keeping the list live without the broken realtime path.
+final userChantiersProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, userId) {
+  return ref.watch(chantierRepositoryProvider).getChantiersOnce(userId);
 });
 
 // FutureProvider (not Stream) because Supabase Realtime is not enabled on

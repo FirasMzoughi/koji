@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
@@ -179,6 +181,122 @@ class AuthRepository {
     });
     return result == true;
   }
+
+  // ─── Worker activity (chantiers, pointage, photos, documents, reports) ─────
+  // All sessionless, via the worker_activity.sql RPCs. Each is guarded server
+  // side so a worker can only touch ouvrages they are assigned to.
+
+  /// The worker's chantiers "en cours" (not archived/terminated), each with its
+  /// address, the owning company's name, and the list of assigned ouvrages.
+  Future<List<Map<String, dynamic>>> getWorkerChantiers(String workerId) async {
+    final result = await _supabase
+        .rpc('get_worker_chantiers', params: {'p_worker_id': workerId});
+    if (result is List) return result.cast<Map<String, dynamic>>();
+    return const [];
+  }
+
+  /// The worker's archived/terminated chantiers, each ouvrage carrying its full
+  /// history (pointages, photos, documents, reports).
+  Future<List<Map<String, dynamic>>> getWorkerArchives(String workerId) async {
+    final result = await _supabase
+        .rpc('get_worker_archives', params: {'p_worker_id': workerId});
+    if (result is List) return result.cast<Map<String, dynamic>>();
+    return const [];
+  }
+
+  /// Full detail for one ouvrage (scheduled_task) for this worker.
+  Future<Map<String, dynamic>?> getWorkerOuvrageDetail({
+    required String workerId,
+    required String taskId,
+  }) async {
+    final result = await _supabase.rpc('get_worker_ouvrage_detail',
+        params: {'p_worker_id': workerId, 'p_task_id': taskId});
+    if (result is Map) return Map<String, dynamic>.from(result);
+    return null;
+  }
+
+  /// Record a pointage event. [kind] ∈ start | pause | resume | end.
+  Future<void> addWorkerPointage({
+    required String workerId,
+    required String taskId,
+    required String kind,
+  }) async {
+    await _supabase.rpc('add_worker_pointage', params: {
+      'p_worker_id': workerId,
+      'p_task_id': taskId,
+      'p_kind': kind,
+    });
+  }
+
+  /// Record a report. [kind] ∈ reclamation | retard | blocage | commentaire |
+  /// depassement.
+  Future<void> addWorkerReport({
+    required String workerId,
+    required String taskId,
+    required String kind,
+    String message = '',
+  }) async {
+    await _supabase.rpc('add_worker_report', params: {
+      'p_worker_id': workerId,
+      'p_task_id': taskId,
+      'p_kind': kind,
+      'p_message': message,
+    });
+  }
+
+  /// Upload photo bytes to the worker-uploads bucket and register the metadata.
+  Future<void> addWorkerPhoto({
+    required String workerId,
+    required String taskId,
+    required String chantierId,
+    required List<int> bytes,
+    required String fileExtension,
+    String caption = '',
+  }) async {
+    final path =
+        '$chantierId/$taskId/photo_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
+    await _supabase.storage.from('worker-uploads').uploadBinary(
+          path,
+          Uint8List.fromList(bytes),
+          fileOptions: const FileOptions(upsert: true),
+        );
+    await _supabase.rpc('add_worker_photo', params: {
+      'p_worker_id': workerId,
+      'p_task_id': taskId,
+      'p_storage_path': path,
+      'p_caption': caption,
+    });
+  }
+
+  /// Upload a document and register its metadata.
+  Future<void> addWorkerDocument({
+    required String workerId,
+    required String taskId,
+    required String chantierId,
+    required List<int> bytes,
+    required String fileName,
+    String? mimeType,
+  }) async {
+    final safeName = fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    final path =
+        '$chantierId/$taskId/doc_${DateTime.now().millisecondsSinceEpoch}_$safeName';
+    await _supabase.storage.from('worker-uploads').uploadBinary(
+          path,
+          Uint8List.fromList(bytes),
+          fileOptions: FileOptions(upsert: true, contentType: mimeType),
+        );
+    await _supabase.rpc('add_worker_document', params: {
+      'p_worker_id': workerId,
+      'p_task_id': taskId,
+      'p_storage_path': path,
+      'p_file_name': fileName,
+      'p_mime': mimeType ?? '',
+    });
+  }
+
+  /// Public URL for a stored object in the worker-uploads bucket.
+  String workerUploadUrl(String storagePath) =>
+      _supabase.storage.from('worker-uploads').getPublicUrl(storagePath);
 
   Future<void> resetPassword({required String email}) async {
     _logger.i('🔑 [AuthRepository] Sending password reset email to $email');

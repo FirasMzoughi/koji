@@ -193,24 +193,28 @@ class DevisPdfService {
                 colorAccent,
                 colorNavy),
 
-            pw.SizedBox(height: 12),
-
-            // ── Date de début / Durée — two light-bordered boxes ──
-            pw.Row(
-              children: [
-                pw.Expanded(
-                  child: _outlinedField("Date prévisionnelle de début",
-                      travauxStart.isNotEmpty ? travauxStart : 'À définir',
-                      colorAccent, colorNavy, colorLine),
-                ),
-                pw.SizedBox(width: 16),
-                pw.Expanded(
-                  child: _outlinedField("Durée estimée des travaux",
-                      travauxDuration.isNotEmpty ? travauxDuration : 'À définir',
-                      colorAccent, colorNavy, colorLine),
-                ),
-              ],
-            ),
+            // ── Date de début / Durée — compactes, et UNIQUEMENT si renseignées.
+            //     Plus de placeholder "À définir" : un champ vide n'est pas
+            //     affiché, ce qui économise de la place sur le devis. ──
+            if (travauxStart.isNotEmpty || travauxDuration.isNotEmpty) ...[
+              pw.SizedBox(height: 8),
+              pw.Row(
+                children: [
+                  if (travauxStart.isNotEmpty)
+                    pw.Expanded(
+                      child: _outlinedField("Date prévisionnelle de début",
+                          travauxStart, colorAccent, colorNavy, colorLine),
+                    ),
+                  if (travauxStart.isNotEmpty && travauxDuration.isNotEmpty)
+                    pw.SizedBox(width: 12),
+                  if (travauxDuration.isNotEmpty)
+                    pw.Expanded(
+                      child: _outlinedField("Durée estimée des travaux",
+                          travauxDuration, colorAccent, colorNavy, colorLine),
+                    ),
+                ],
+              ),
+            ],
 
             // ── Texte de description (optionnel) ──
             if (((quoteData['description'] as String?)?.trim() ?? '')
@@ -442,19 +446,19 @@ class DevisPdfService {
   pw.Widget _outlinedField(String label, String value, PdfColor colorAccent,
       PdfColor colorNavy, PdfColor colorLine) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: colorLine),
-        borderRadius: pw.BorderRadius.circular(6),
+        borderRadius: pw.BorderRadius.circular(5),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(label,
-              style: pw.TextStyle(fontSize: 8, color: colorAccent)),
-          pw.SizedBox(height: 3),
+              style: pw.TextStyle(fontSize: 7, color: colorAccent)),
+          pw.SizedBox(height: 2),
           pw.Text(value,
-              style: pw.TextStyle(fontSize: 10, color: colorNavy)),
+              style: pw.TextStyle(fontSize: 9, color: colorNavy)),
         ],
       ),
     );
@@ -552,6 +556,9 @@ class DevisPdfService {
     final attenteLines = <Map<String, dynamic>>[];
 
     for (final item in items) {
+      // Commentaire / note libre : annotation interne, JAMAIS rendue sur le
+      // devis (ni contractant ni client). Reste éditable dans le récapitulatif.
+      if (item['isComment'] == true) continue;
       final type = item['lineType']?.toString() ?? 'normal';
       if (type == 'charge') {
         chargeLines.add(item);
@@ -632,6 +639,15 @@ class DevisPdfService {
                       style: pw.TextStyle(fontSize: 8, color: fg)))),
             ]),
       );
+    }
+
+    // Lot sans aucune ligne visible (ex. uniquement une note, désormais
+    // masquée) : ne pas afficher un titre de lot vide.
+    if (moLines.isEmpty &&
+        fntLines.isEmpty &&
+        chargeLines.isEmpty &&
+        attenteLines.isEmpty) {
+      return <pw.Widget>[];
     }
 
     return [

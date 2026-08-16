@@ -1,3 +1,40 @@
+/// Catégories de produits / fournitures — liste de SECOURS (style Odoo).
+/// La source réelle est la table Supabase `product_categories`
+/// (cf. supabase/create_product_categories.sql) ; cette liste sert de repli
+/// hors-ligne ou si la table est vide. Utilisée par le sélecteur de fournitures
+/// du devis ET le formulaire de création, pour rester cohérent partout.
+const List<String> kFournitureCategories = [
+  'Carrelage',
+  'Chauffage',
+  'Couverture',
+  'Cuisine',
+  'Démolition',
+  'Démolition / préparation',
+  'Électricité',
+  'Enduit',
+  'Façade',
+  'Isolation',
+  'Maçonnerie',
+  'Main-d\'œuvre',
+  'Matériaux',
+  'Menuiserie',
+  'Menuiserie extérieure',
+  'Murs',
+  'Nettoyage',
+  'Outillage',
+  'Peinture',
+  'Placoplâtre',
+  'Plâtrerie',
+  'Plomberie',
+  'Revêtement de sol',
+  'Sanitaire',
+  'Serrurerie / Métallerie',
+  'Terrassement',
+  'Toiture',
+  'VRD / Extérieur',
+  'Autre',
+];
+
 class Fournisseur {
   final String id;
   final String name;

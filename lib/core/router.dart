@@ -62,6 +62,7 @@ import 'package:koji/features/quote/facturation_chantier_picker_screen.dart';
 import 'package:koji/features/quote/chantier_rdv_screen.dart';
 import 'package:koji/features/quote/chantier_add_task_screen.dart';
 import 'package:koji/features/quote/chantier_documents_screen.dart';
+import 'package:koji/features/quote/chantier_worker_activity_screen.dart';
 import 'package:koji/features/quote/budget_category_detail_screen.dart';
 import 'package:koji/features/quote/budget_history_screen.dart';
 import 'package:koji/features/client/client_home_screen.dart';
@@ -354,6 +355,17 @@ final router = GoRouter(
           context,
           state,
           ChantierDocumentsScreen(data: data),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/chantier/worker-activity',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _buildPageWithTransition(
+          context,
+          state,
+          ChantierWorkerActivityScreen(data: data),
         );
       },
     ),

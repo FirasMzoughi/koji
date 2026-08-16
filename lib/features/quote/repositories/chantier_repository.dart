@@ -1,8 +1,41 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChantierRepository {
   final SupabaseClient _client = Supabase.instance.client;
+
+  /// Normalizes a json/jsonb RPC result into a `List<Map<String, dynamic>>`.
+  ///
+  /// RPCs that `RETURNS json` can come back as: a real List, a JSON-encoded
+  /// String, or a List whose elements are `Map<dynamic, dynamic>` (or even
+  /// JSON strings). A blunt `result.cast<Map<String, dynamic>>()` then throws
+  /// "type 'String' is not a subtype of type 'Map<String, dynamic>'". This
+  /// decodes/deep-converts defensively so callers always get clean maps.
+  static List<Map<String, dynamic>> _asMapList(dynamic result) {
+    var value = result;
+    if (value is String) {
+      if (value.trim().isEmpty) return const [];
+      try {
+        value = jsonDecode(value);
+      } catch (_) {
+        return const [];
+      }
+    }
+    if (value is! List) return const [];
+    final out = <Map<String, dynamic>>[];
+    for (var item in value) {
+      if (item is String) {
+        try {
+          item = jsonDecode(item);
+        } catch (_) {
+          continue; // skip non-decodable string elements
+        }
+      }
+      if (item is Map) out.add(Map<String, dynamic>.from(item));
+    }
+    return out;
+  }
 
   // ────────────────────────────────────────────────────────
   // Expenses (Main d'œuvre / Fourniture / Divers)
@@ -427,6 +460,60 @@ class ChantierRepository {
             }).toList());
   }
 
+  /// Link "orphan" quotes (chantier_id = null) to [chantierId] when they clearly
+  /// belong to it. A devis created standalone — or before the chantier link was
+  /// set — never shows in the chantier's Devis/À faire because those read
+  /// `chantier_id = chantierId`. We match on hard signals only: the chantier's
+  /// reference equals the quote's stored client name, OR the chantier address
+  /// equals the quote's siteAddress. Returns the number of quotes linked.
+  ///
+  /// Mirrors the matching used by QuoteTaskRepository.getDevisTasksForChantier
+  /// so the dashboard count, the À faire list and the planner all agree.
+  Future<int> linkOrphanQuotesToChantier(String chantierId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return 0;
+
+    final chantier = await _client
+        .from('chantiers')
+        .select('reference, street, city')
+        .eq('id', chantierId)
+        .maybeSingle();
+    if (chantier == null) return 0;
+
+    final wantRef = (chantier['reference'] as String? ?? '').trim().toLowerCase();
+    final street = (chantier['street'] as String? ?? '').trim();
+    final city = (chantier['city'] as String? ?? '').trim();
+    final wantAddr =
+        [street, city].where((s) => s.isNotEmpty).join(', ').toLowerCase();
+    if (wantRef.isEmpty && wantAddr.isEmpty) return 0;
+
+    final orphans = await _client
+        .from('quotes')
+        .select('id, metadata, chantier_id')
+        .eq('user_id', userId);
+
+    var linked = 0;
+    for (final q in (orphans as List)) {
+      if (q['chantier_id'] != null) continue; // never steal a linked devis
+      final meta = (q['metadata'] as Map?)?.cast<String, dynamic>() ?? {};
+      final client = (meta['client'] as Map?)?.cast<String, dynamic>() ?? {};
+      final clientName =
+          (client['name'] as String? ?? '').toLowerCase().trim();
+      final siteAddr =
+          (meta['siteAddress'] as String? ?? '').toLowerCase().trim();
+      final refHit = wantRef.isNotEmpty && clientName == wantRef;
+      final addrHit = wantAddr.isNotEmpty && siteAddr == wantAddr;
+      if (!refHit && !addrHit) continue;
+      try {
+        await _client
+            .from('quotes')
+            .update({'chantier_id': chantierId}).eq('id', q['id']);
+        linked++;
+      } catch (_) {/* best-effort */}
+    }
+    return linked;
+  }
+
   /// Get all open tasks across all chantiers for the current user
   Future<List<Map<String, dynamic>>> getOpenTasksForUser(String userId) async {
     // 1. Get user's chantiers
@@ -449,4 +536,32 @@ class ChantierRepository {
         
     return List<Map<String, dynamic>>.from(tasksResponse);
   }
+
+  // ────────────────────────────────────────────────────────
+  // Worker activity (entreprise side) — see supabase/worker_activity.sql
+  // ────────────────────────────────────────────────────────
+
+  /// Worker activity for one chantier: every ouvrage with its assigned
+  /// worker(s), pointages, photos, documents and reports. Returns [] when the
+  /// caller doesn't own the chantier.
+  Future<List<Map<String, dynamic>>> getChantierWorkerActivity(
+      String chantierId) async {
+    final result = await _client.rpc('get_chantier_worker_activity',
+        params: {'p_chantier_id': chantierId});
+    return _asMapList(result);
+  }
+
+  /// Worker reports (réclamation/retard/blocage/dépassement/commentaire) across
+  /// all the current user's chantiers, newest first. [since] filters to reports
+  /// after a timestamp (drives the notifications poll).
+  Future<List<Map<String, dynamic>>> getCompanyWorkerReports(
+      {DateTime? since}) async {
+    final result = await _client.rpc('get_company_worker_reports',
+        params: {'p_since': since?.toUtc().toIso8601String()});
+    return _asMapList(result);
+  }
+
+  /// Public URL for an object stored in the worker-uploads bucket.
+  String workerUploadUrl(String storagePath) =>
+      _client.storage.from('worker-uploads').getPublicUrl(storagePath);
 }

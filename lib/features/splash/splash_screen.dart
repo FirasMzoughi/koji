@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/auth/provider/auth_provider.dart';
 import 'package:koji/features/auth/repository/user_repository.dart';
@@ -17,9 +18,21 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
+  // Brand palette: cream wordmark on the deep navy used across the app.
+  static const _navy = Color(0xFF0F172A);
+  static const _cream = Color(0xFFEDE6D8);
+
+  // One controller drives the whole intro; each element reads its own slice of
+  // the 0→1 timeline via Interval so the logo lands first, then "Kôji" rises in,
+  // then the accent underline draws across.
   late final AnimationController _controller;
-  late final Animation<double> _fadeAnimation;
-  late final Animation<double> _scaleAnimation;
+
+  late final Animation<double> _logoFade;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _wordFade;
+  late final Animation<double> _wordSlide; // px upward
+  late final Animation<double> _wordSpacing; // letter-spacing settle
+  late final Animation<double> _underline; // 0→1 width factor
 
   bool _isAnimationDone = false;
   bool _hasNavigated = false;
@@ -29,23 +42,51 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.initState();
 
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 800), // Reduced from 1200ms
+      duration: const Duration(milliseconds: 1700),
       vsync: this,
     );
 
-    _fadeAnimation = CurvedAnimation(
+    // ── Logo: fade + gentle scale-up, first third of the timeline ──
+    _logoFade = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeOut,
+      curve: const Interval(0.0, 0.40, curve: Curves.easeOut),
+    );
+    _logoScale = Tween<double>(begin: 0.80, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.45, curve: Curves.easeOutBack),
+      ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    // ── "Kôji" wordmark: rises up + fades in, with letter-spacing settling
+    //    from wide to tight for a polished reveal ──
+    _wordFade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.40, 0.75, curve: Curves.easeOut),
+    );
+    _wordSlide = Tween<double>(begin: 18.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.40, 0.80, curve: Curves.easeOutCubic),
+      ),
+    );
+    _wordSpacing = Tween<double>(begin: 10.0, end: 2.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.40, 0.85, curve: Curves.easeOut),
+      ),
+    );
+
+    // ── Accent underline draws across last, tying it together ──
+    _underline = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.70, 1.0, curve: Curves.easeInOut),
     );
 
     _controller.forward();
 
-    // Reduced minimum duration from 2 seconds to 1 second
-    Future.delayed(const Duration(milliseconds: 1000), () {
+    // Hold the finished intro briefly before navigating away.
+    Future.delayed(const Duration(milliseconds: 1900), () {
       if (mounted) {
         setState(() {
           _isAnimationDone = true;
@@ -137,21 +178,68 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     });
 
     final responsive = context.responsive;
+    final logoSize = responsive.width(34.0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: _navy,
       body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: SvgPicture.asset(
-              'assets/icons/LOGO.svg',
-              width: responsive.width(42.7),
-              height: responsive.width(42.7),
-              fit: BoxFit.contain,
-            ),
-          ),
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Logo ──
+                Opacity(
+                  opacity: _logoFade.value,
+                  child: Transform.scale(
+                    scale: _logoScale.value,
+                    child: SvgPicture.asset(
+                      'assets/icons/LOGO.svg',
+                      width: logoSize,
+                      height: logoSize,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: responsive.width(5)),
+
+                // ── "Kôji" wordmark: fade + rise + letter-spacing settle ──
+                Opacity(
+                  opacity: _wordFade.value,
+                  child: Transform.translate(
+                    offset: Offset(0, _wordSlide.value),
+                    child: Text(
+                      'Kôji',
+                      style: GoogleFonts.poppins(
+                        color: _cream,
+                        fontSize: responsive.width(11),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: _wordSpacing.value,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: responsive.width(3.5)),
+
+                // ── Accent underline that draws across under the wordmark ──
+                Opacity(
+                  opacity: _underline.value.clamp(0.0, 1.0),
+                  child: Container(
+                    width: responsive.width(22) * _underline.value,
+                    height: 2.5,
+                    decoration: BoxDecoration(
+                      color: _cream,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

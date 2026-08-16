@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/features/quote/chantier_client_screen.dart';
-import 'package:koji/features/worker/worker_tasks_screen.dart';
+import 'package:koji/features/worker/worker_shell.dart';
 import 'package:koji/core/responsive_helper.dart';
 import 'package:koji/features/auth/provider/auth_provider.dart';
 import 'package:koji/features/auth/provider/account_type_provider.dart';
@@ -88,7 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (workerId != null) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => WorkerTasksScreen(workerId: workerId),
+            builder: (_) => WorkerShell(workerId: workerId),
           ),
         );
         return;

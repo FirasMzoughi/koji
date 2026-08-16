@@ -216,16 +216,10 @@ class ChantierDevisScreen extends ConsumerWidget {
           await ref
               .read(quoteCreationProvider.notifier)
               .seedFromSavedQuote(devis);
-          final state = ref.read(quoteCreationProvider);
-          if (state.selectedRoomIds.isEmpty) {
-            router.push('/quote/detail',
-                extra: QuoteDetailArgs(data: devis));
-            return;
-          }
-          router.push('/quote/room-details', extra: {
-            'roomIds': state.selectedRoomIds,
-            'images': const <String>[],
-          });
+          // Tout-en-un (demande client) : l'édition ouvre directement le
+          // Récapitulatif, où ouvrages / sous-ouvrages / fournitures / notes /
+          // lots sont tous modifiables. Plus d'écran « Créer vos ouvrages ».
+          router.push('/quote/detail', extra: QuoteDetailArgs(data: devis));
         } catch (e) {
           messenger.showSnackBar(
             SnackBar(content: Text('Erreur de chargement du devis: $e')),

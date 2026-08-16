@@ -27,6 +27,23 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
   void initState() {
     super.initState();
     _loadNextRdv();
+    _linkOrphanQuotes();
+  }
+
+  /// Self-heal: a devis created standalone may have chantier_id = null, so the
+  /// chantier shows "0 devis / aucune tâche". Stamp the link, then refresh the
+  /// devis + À faire providers so the dashboard reflects it without a manual
+  /// re-save of the devis.
+  Future<void> _linkOrphanQuotes() async {
+    final chantierId = widget.data['id'] as String?;
+    if (chantierId == null) return;
+    try {
+      final linked = await _repository.linkOrphanQuotesToChantier(chantierId);
+      if (linked > 0 && mounted) {
+        ref.invalidate(chantierQuotesProvider(chantierId));
+        ref.invalidate(chantierAFaireTasksProvider(chantierId));
+      }
+    } catch (_) {/* best-effort; strict match still works without it */}
   }
 
   Future<void> _loadNextRdv() async {
@@ -156,6 +173,8 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                               const SizedBox(height: 14),
                               // Facturation moved to the app sidebar (drawer).
                               _buildDocumentsCard(documents),
+                              const SizedBox(height: 14),
+                              _buildWorkerActivityCard(),
                             ]),
                           ),
                         ),
@@ -675,6 +694,54 @@ class _ChantierDashboardScreenState extends ConsumerState<ChantierDashboardScree
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────
+  // Suivi ouvriers: opens the read-only view of worker pointage / photos /
+  // documents / réclamations on this chantier.
+  Widget _buildWorkerActivityCard() {
+    return GestureDetector(
+      onTap: () =>
+          context.push('/chantier/worker-activity', extra: widget.data),
+      child: _SectionCard(
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDCFCE7),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.engineering_outlined,
+                  size: 20, color: Color(0xFF16A34A)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Suivi ouvriers',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Pointage, photos, documents et signalements',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1)),
           ],
         ),
       ),

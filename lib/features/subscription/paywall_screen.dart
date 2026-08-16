@@ -8,7 +8,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:koji/features/subscription/data/subscription_repository.dart';
 import 'package:koji/features/subscription/providers/subscription_provider.dart';
 
-/// Paywall shown when the 7-day trial has expired (or when the entreprise taps
+/// Paywall shown when the 14-day trial has expired (or when the entreprise taps
 /// "S'abonner"). Buying goes through Apple IAP (iOS) / Google Play Billing
 /// (Android) via the in_app_purchase package.
 class PaywallScreen extends ConsumerStatefulWidget {
@@ -151,7 +151,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Votre essai gratuit de 7 jours est terminé. Abonnez-vous pour continuer à créer vos devis, chantiers et gérer vos ouvriers.',
+                'Votre essai gratuit de 14 jours est terminé. Abonnez-vous pour continuer à créer vos devis, chantiers et gérer vos ouvriers.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
               ),

@@ -229,10 +229,16 @@ class QuoteTaskRepository {
       for (final room in (rooms as List)) {
         final tasks = await _client
             .from('quote_tasks')
-            .select('id, label')
+            .select('id, label, task_id, inputs')
             .eq('room_id', room['id'])
             .order('created_at', ascending: true);
         for (final t in (tasks as List)) {
+          // Skip lines that are NOT actual work for the worker: commentaires /
+          // notes (comment_…) and standalone fournitures (fourniture_…) added
+          // from the devis recap. They live in quote_tasks for pricing/PDF but
+          // are not tasks to execute, so they must not leak into the À faire /
+          // worker task lists.
+          if (_isNonTaskLine(t)) continue;
           result.add({
             'id': t['id'],
             'label': t['label'] ?? 'Tâche',
@@ -244,6 +250,21 @@ class QuoteTaskRepository {
       if (result.isNotEmpty) return result;
     }
     return [];
+  }
+
+  /// True when a quote_tasks row is a commentaire/note or a standalone
+  /// fourniture rather than an executable ouvrage — these are billing/PDF lines
+  /// from the devis recap and must be excluded from the worker / À faire lists.
+  bool _isNonTaskLine(Map<dynamic, dynamic> t) {
+    final taskId = (t['task_id'] as String? ?? '').toLowerCase();
+    if (taskId.startsWith('comment_') || taskId.startsWith('fourniture_')) {
+      return true;
+    }
+    final inputs = (t['inputs'] as Map?)?.cast<String, dynamic>() ?? const {};
+    if (inputs['isComment'] == true || inputs['isFourniture'] == true) {
+      return true;
+    }
+    return false;
   }
 
   Future<List<String>> _quoteIdsForChantier(String chantierId) async {

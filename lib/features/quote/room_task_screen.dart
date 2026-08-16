@@ -1963,9 +1963,14 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
           border: const OutlineInputBorder(),
         );
 
+    // La description des travaux est obligatoire : on suit l'erreur de
+    // validation dans l'état local du dialogue pour l'afficher sous le champ.
+    String? descError;
+
     final saved = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Modifier la tâche',
             style: TextStyle(
@@ -1993,8 +1998,15 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                   controller: descCtrl,
                   minLines: 2,
                   maxLines: 5,
-                  decoration: deco('Commentaire',
-                      hint: 'Détails affichés sous la tâche'),
+                  onChanged: (_) {
+                    // Effacer l'erreur dès que l'utilisateur saisit du texte.
+                    if (descError != null) {
+                      setDialogState(() => descError = null);
+                    }
+                  },
+                  decoration: deco('Description des travaux *',
+                      hint: 'Détails affichés sous la tâche')
+                      .copyWith(errorText: descError),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -2060,6 +2072,13 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
             onPressed: () async {
               if (titleCtrl.text.trim().isEmpty) return;
               final descText = descCtrl.text.trim();
+              // Description des travaux obligatoire : on bloque l'enregistrement
+              // et on affiche l'erreur sous le champ tant qu'elle est vide.
+              if (descText.isEmpty) {
+                setDialogState(() =>
+                    descError = 'La description des travaux est obligatoire');
+                return;
+              }
               final tempsText =
                   tempsCtrl.text.trim().replaceAll(',', '.');
               try {
@@ -2069,8 +2088,8 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                       code: codeCtrl.text.trim().isEmpty
                           ? null
                           : codeCtrl.text.trim(),
-                      description: descText.isEmpty ? null : descText,
-                      clearDescription: descText.isEmpty,
+                      description: descText,
+                      clearDescription: false,
                       unite: uniteCtrl.text.trim().isEmpty
                           ? null
                           : uniteCtrl.text.trim(),
@@ -2093,6 +2112,7 @@ class _RoomTaskScreenState extends ConsumerState<RoomTaskScreen> {
                 style: TextStyle(color: Colors.white)),
           ),
         ],
+      ),
       ),
     );
 
