@@ -215,6 +215,20 @@ class AuthRepository {
     return null;
   }
 
+  /// Company/entreprise notes addressed to this worker (audience = workers |
+  /// both) for one assigned ouvrage — see get_worker_task_notes in
+  /// supabase/migrations/0003_task_notes.sql. Read-only; workers reply
+  /// through the existing report/pointage RPCs, not this thread.
+  Future<List<Map<String, dynamic>>> getWorkerTaskNotes({
+    required String workerId,
+    required String taskId,
+  }) async {
+    final result = await _supabase.rpc('get_worker_task_notes',
+        params: {'p_worker_id': workerId, 'p_task_id': taskId});
+    if (result is List) return result.cast<Map<String, dynamic>>();
+    return const [];
+  }
+
   /// Record a pointage event. [kind] ∈ start | pause | resume | end.
   Future<void> addWorkerPointage({
     required String workerId,
@@ -240,6 +254,23 @@ class AuthRepository {
       'p_worker_id': workerId,
       'p_task_id': taskId,
       'p_kind': kind,
+      'p_message': message,
+    });
+  }
+
+  /// Raise a safety urgent alert (degat/fuite/urgence/incendie/autre) —
+  /// distinct from [addWorkerReport]'s task-progress reports. Fans out to a
+  /// company notification server-side (see add_worker_urgent_alert RPC).
+  Future<void> addWorkerUrgentAlert({
+    required String workerId,
+    required String taskId,
+    required String type,
+    required String message,
+  }) async {
+    await _supabase.rpc('add_worker_urgent_alert', params: {
+      'p_worker_id': workerId,
+      'p_task_id': taskId,
+      'p_type': type,
       'p_message': message,
     });
   }

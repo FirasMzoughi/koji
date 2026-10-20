@@ -33,6 +33,7 @@ dependencies:
   flutter_local_notifications: ^17.2.3
   timezone: ^0.9.4
   in_app_purchase: ^3.2.0
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
@@ -46,7 +47,29 @@ flutter:
     - assets/images/
     - assets/icons/
 
-  # Removed local fonts - using google_fonts package instead
+  # Plus Jakarta Sans — the typeface of the koji design. Bundled (rather than
+  # fetched by google_fonts) so every weight resolves to its own file, offline
+  # too. google_fonts is still used by a few older screens (Inter).
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Italic.ttf
+          style: italic
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/PlusJakartaSans-ExtraBoldItalic.ttf
+          weight: 800
+          style: italic
 
 flutter_launcher_icons:
   android: true

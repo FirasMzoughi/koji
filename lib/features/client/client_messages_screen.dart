@@ -156,17 +156,25 @@ class ClientMessagesScreen extends ConsumerWidget {
 /// (their profile name + login email) so [QuoteMessageRepository.isFromCompany]
 /// attributes the entreprise's replies to the other side of the thread.
 class ClientChatScreen extends ConsumerStatefulWidget {
-  const ClientChatScreen({super.key, required this.quoteId, this.artisanName});
+  const ClientChatScreen({
+    super.key,
+    required this.quoteId,
+    this.artisanName,
+    this.embedded = false,
+  });
 
   final String quoteId;
   final String? artisanName;
+
+  /// Shown inside the two-pane messages page (no back arrow).
+  final bool embedded;
 
   @override
   ConsumerState<ClientChatScreen> createState() => _ClientChatScreenState();
 }
 
 class _ClientChatScreenState extends ConsumerState<ClientChatScreen> {
-  static const _navy = Color(0xFF0F172A);
+  static const _navy = Color(0xFF16233F);
 
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
@@ -254,7 +262,7 @@ class _ClientChatScreenState extends ConsumerState<ClientChatScreen> {
         : 'Votre artisan';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0EB),
+      backgroundColor: const Color(0xFFF6F4F0),
       body: SafeArea(
         child: Column(
           children: [
@@ -283,21 +291,25 @@ class _ClientChatScreenState extends ConsumerState<ClientChatScreen> {
 
   Widget _buildAppBar(String title) {
     return Container(
-      color: const Color(0xFFF5F0EB),
+      color: const Color(0xFFF6F4F0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () {
-              if (Navigator.canPop(context)) {
-                context.pop();
-              } else {
-                context.go('/client-home');
-              }
-            },
-            child: const Icon(Icons.chevron_left_rounded, color: _navy, size: 30),
-          ),
-          const SizedBox(width: 4),
+          if (!widget.embedded) ...[
+            GestureDetector(
+              onTap: () {
+                if (Navigator.canPop(context)) {
+                  context.pop();
+                } else {
+                  context.go('/client-home');
+                }
+              },
+              child:
+                  const Icon(Icons.chevron_left_rounded, color: _navy, size: 30),
+            ),
+            const SizedBox(width: 4),
+          ] else
+            const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

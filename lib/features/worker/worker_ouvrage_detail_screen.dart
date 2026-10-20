@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:koji/features/auth/repository/auth_repository.dart';
+import 'package:koji/features/worker/models/urgent_alert_type.dart';
 
 /// Detail of one ouvrage (a scheduled_task) for the worker. Lets the worker:
 ///   • point (pointage): début / pause / reprise / fin
@@ -39,6 +40,7 @@ class _WorkerOuvrageDetailScreenState
   static const _red = Color(0xFFDC2626);
 
   Map<String, dynamic>? _detail;
+  List<Map<String, dynamic>> _taskNotes = [];
   bool _loading = true;
   String? _error;
   bool _busy = false;
@@ -64,6 +66,15 @@ class _WorkerOuvrageDetailScreenState
           workerId: widget.workerId, taskId: widget.taskId);
       if (mounted) setState(() => _detail = d);
       _maybePromptOverrun();
+      // Notes from the entreprise addressed to workers/both — best-effort:
+      // an RPC error here shouldn't block the rest of the ouvrage detail.
+      try {
+        final notes = await _repo.getWorkerTaskNotes(
+            workerId: widget.workerId, taskId: widget.taskId);
+        if (mounted) setState(() => _taskNotes = notes);
+      } catch (_) {
+        // Non-fatal — leave _taskNotes as-is.
+      }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
@@ -227,6 +238,35 @@ class _WorkerOuvrageDetailScreenState
     }
   }
 
+  /// Raise a safety urgent alert — distinct from [_addReport]'s task-progress
+  /// reports (réclamation/retard/blocage/commentaire). Shown in its own
+  /// higher-priority section of the UI, matching web's treatment of urgent
+  /// alerts as more severe than regular claims.
+  Future<void> _sendUrgentAlert(UrgentAlertType type) async {
+    final msg = await _promptText(
+      title: 'Alerte : ${type.label}',
+      message: 'Cette alerte sera envoyée immédiatement à l\'entreprise.',
+      hint: 'Décrivez la situation…',
+      multiline: true,
+      confirmLabel: 'Envoyer l\'alerte',
+    );
+    if (msg == null || msg.trim().isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      await _repo.addWorkerUrgentAlert(
+        workerId: widget.workerId,
+        taskId: widget.taskId,
+        type: type.value,
+        message: msg.trim(),
+      );
+      _snack('Alerte urgente envoyée à l\'entreprise');
+    } catch (e) {
+      _snack('Erreur : $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _promptOverrun() async {
     final motif = await _promptText(
       title: 'Temps prévu dépassé',
@@ -291,11 +331,15 @@ class _WorkerOuvrageDetailScreenState
                         children: [
                           _pointageCard(),
                           const SizedBox(height: 14),
+                          _urgentAlertCard(),
+                          const SizedBox(height: 14),
                           _actionsCard(),
                           const SizedBox(height: 14),
                           _photosCard(),
                           const SizedBox(height: 14),
                           _documentsCard(),
+                          const SizedBox(height: 14),
+                          _taskNotesCard(),
                           const SizedBox(height: 14),
                           _reportsCard(),
                         ],
@@ -547,6 +591,45 @@ class _WorkerOuvrageDetailScreenState
     );
   }
 
+  Widget _urgentAlertCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFECACA)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: _red, size: 20),
+              const SizedBox(width: 8),
+              const Text('Alerte urgente',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 15, color: _red)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Dégât, fuite, incendie… signalez immédiatement une urgence à l\'entreprise.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF7F1D1D)),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: UrgentAlertType.values
+                .map((t) => _actionChip(
+                    t.icon, t.label, _red, () => _sendUrgentAlert(t)))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _actionChip(
       IconData icon, String label, Color color, VoidCallback onTap) {
     return InkWell(
@@ -652,6 +735,56 @@ class _WorkerOuvrageDetailScreenState
                 );
               }).toList(),
             ),
+    );
+  }
+
+  Widget _taskNotesCard() {
+    if (_taskNotes.isEmpty) {
+      return _card(
+        title: 'Notes de l\'entreprise',
+        child: _emptyHint('Aucune note pour cet ouvrage.'),
+      );
+    }
+    return _card(
+      title: 'Notes de l\'entreprise',
+      child: Column(
+        children: _taskNotes.map((n) {
+          final sender = (n['sender_name'] as String?)?.trim();
+          final msg = n['message'] as String? ?? '';
+          final at = _parseDate(n['created_at']);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.sticky_note_2_outlined,
+                    size: 18, color: Color(0xFF2563EB)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text((sender != null && sender.isNotEmpty) ? sender : 'Entreprise',
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2563EB))),
+                      if (msg.isNotEmpty)
+                        Text(msg,
+                            style: const TextStyle(
+                                fontSize: 13, color: Color(0xFF475569))),
+                      if (at != null)
+                        Text(_fmtDateTime(at),
+                            style: const TextStyle(
+                                fontSize: 11, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 

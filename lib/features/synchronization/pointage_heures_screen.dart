@@ -348,6 +348,13 @@ class _PointageHeuresScreenState extends State<PointageHeuresScreen> {
                 ],
               ),
             ),
+            IconButton(
+              icon: const Icon(Icons.access_time, color: darkNavy, size: 20),
+              tooltip: 'Pointage / heures',
+              onPressed: () => context.push(
+                  '/synchronization/pointage/attendance',
+                  extra: worker),
+            ),
           ],
         ),
       ),

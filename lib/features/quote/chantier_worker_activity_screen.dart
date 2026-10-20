@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:koji/features/quote/repositories/chantier_repository.dart';
+import 'package:koji/features/quote/widgets/task_notes_thread.dart';
 
 /// "Suivi ouvriers" — the entreprise's read-only view of what the workers logged
 /// on a chantier: per ouvrage, the assigned worker(s), their pointages, the
@@ -272,6 +273,12 @@ class _ChantierWorkerActivityScreenState
                 child: Text('Aucune activité enregistrée pour cet ouvrage.',
                     style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8))),
               ),
+            if ((o['id'] as String?) != null) ...[
+              const Divider(height: 24),
+              _sectionLabel('Notes'),
+              const SizedBox(height: 6),
+              TaskNotesThread(taskId: o['id'] as String, projectId: _chantierId),
+            ],
           ],
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:koji/core/theme.dart';
 import 'package:koji/features/fournitures/models/fourniture_model.dart';
 import 'package:koji/features/fournitures/repository/fourniture_repository.dart';
+import 'package:koji/features/fournitures/services/supply_import_service.dart';
 
 class AddFournitureScreen extends ConsumerStatefulWidget {
   final Fournisseur? preselectedFournisseur;
@@ -34,12 +35,70 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
   Fournisseur? _selectedFournisseur;
   bool _isUrlMode = false;
   bool _isSaving = false;
+  bool _isImporting = false;
+  String? _importedImageUrl;
   // Image choisie dans la galerie (mode Manuel) — uploadée à l'enregistrement.
   File? _imageFile;
+
+  final _supplyImportService = SupplyImportService();
 
   Future<void> _pickImageFromGallery() async {
     final img = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (img != null) setState(() => _imageFile = File(img.path));
+  }
+
+  /// Scrape le lien produit collé et préremplit le formulaire (nom, prix,
+  /// catégorie, image, conditionnement) — miroir de l'import web-app-Koji.
+  Future<void> _importFromUrl() async {
+    final url = _sourceUrlController.text.trim();
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Collez un lien produit d\'abord')),
+      );
+      return;
+    }
+
+    setState(() => _isImporting = true);
+    try {
+      final result = await _supplyImportService.importFromUrl(url);
+
+      if (result.name.isNotEmpty) _nameController.text = result.name;
+      if (result.priceHt > 0) {
+        final priceStr = result.priceHt.toStringAsFixed(2);
+        _prixAchatController.text = priceStr;
+        _prixVenteController.text = priceStr;
+      }
+      if (result.conditionnement != null) {
+        _conditionnementController.text = result.conditionnement!;
+      }
+      if (result.quantite != null) {
+        _quantiteController.text = result.quantite!.toStringAsFixed(0);
+      }
+      if (result.unite != null && _unites.contains(result.unite)) {
+        setState(() => _selectedUnite = result.unite!);
+      }
+      if (_categories.contains(result.category)) {
+        setState(() => _selectedCategory = result.category);
+      }
+      setState(() => _importedImageUrl = result.imageUrl);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Informations importées, vérifiez avant d\'enregistrer'),
+            backgroundColor: Color(0xFF22C55E),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Import impossible: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
   }
 
   final List<String> _unites = [
@@ -472,20 +531,65 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
         ),
         const SizedBox(height: 20),
 
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildFormField(
+                controller: _sourceUrlController,
+                label: 'Lien du produit',
+                hint: 'https://www.fournisseur.fr/produit/...',
+                icon: Icons.link,
+                required: true,
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isImporting ? null : _importFromUrl,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B82F6),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isImporting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text('Importer'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        if (_importedImageUrl != null) ...[
+          Container(
+            height: 110,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              image: DecorationImage(
+                image: NetworkImage(_importedImageUrl!),
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
         _buildFormField(
           controller: _nameController,
           label: 'Nom du produit',
           hint: 'Ex: Peinture acrylique blanche',
           icon: Icons.inventory_2_outlined,
-          required: true,
-        ),
-        const SizedBox(height: 14),
-
-        _buildFormField(
-          controller: _sourceUrlController,
-          label: 'Lien du produit',
-          hint: 'https://www.fournisseur.fr/produit/...',
-          icon: Icons.link,
           required: true,
         ),
         const SizedBox(height: 14),
@@ -712,10 +816,9 @@ class _AddFournitureScreenState extends ConsumerState<AddFournitureScreen> {
 
       // Upload de l'image galerie (si choisie) → URL publique. En mode URL on
       // garde le champ URL existant.
-      String? imageUrl =
-          _imageUrlController.text.isNotEmpty
-              ? _imageUrlController.text.trim()
-              : null;
+      String? imageUrl = _imageUrlController.text.isNotEmpty
+          ? _imageUrlController.text.trim()
+          : _importedImageUrl;
       if (_imageFile != null) {
         try {
           imageUrl = await repo.uploadFournitureImage(_imageFile!.path);

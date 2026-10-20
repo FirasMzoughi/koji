@@ -45,6 +45,24 @@ android {
         multiDexEnabled = true
     }
 
+    // Two store apps from the same code:
+    //   flutter run --flavor entreprise -t lib/main_entreprise.dart   (Koji Pro)
+    //   flutter run --flavor client     -t lib/main_client.dart       (Koji)
+    flavorDimensions += "app"
+    productFlavors {
+        create("entreprise") {
+            dimension = "app"
+            // Keeps the existing Play Store app (and its subscriptions).
+            applicationId = "com.koji.pro"
+            resValue("string", "app_name", "Koji Pro")
+        }
+        create("client") {
+            dimension = "app"
+            applicationId = "com.koji.client"
+            resValue("string", "app_name", "Koji")
+        }
+    }
+
     signingConfigs {
         create("release") {
             keyAlias = keystoreProperties["keyAlias"] as String?

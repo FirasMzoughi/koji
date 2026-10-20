@@ -12,6 +12,7 @@ class Worker {
   final String? phoneNumber;
   final String? email;
   final double? hourlyRate;
+  final double weeklyContractHours;
   final DateTime? hireDate;
   // Per-worker app access (Espace Particulier): Identifiant + Mot de passe the
   // worker uses to log in and see their assigned tasks. Generated on creation.
@@ -32,6 +33,7 @@ class Worker {
     this.phoneNumber,
     this.email,
     this.hourlyRate,
+    this.weeklyContractHours = 35,
     this.hireDate,
     this.accessCode,
     this.accessPassword,
@@ -54,6 +56,8 @@ class Worker {
       hourlyRate: json['hourly_rate'] != null
           ? (json['hourly_rate'] as num).toDouble()
           : null,
+      weeklyContractHours:
+          (json['weekly_contract_hours'] as num?)?.toDouble() ?? 35,
       hireDate: json['hire_date'] != null
           ? DateTime.parse(json['hire_date'] as String)
           : null,
@@ -76,6 +80,7 @@ class Worker {
       'phone_number': phoneNumber,
       'email': email,
       'hourly_rate': hourlyRate,
+      'weekly_contract_hours': weeklyContractHours,
       'hire_date': hireDate?.toIso8601String(),
     };
   }

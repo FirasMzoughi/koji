@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koji/core/theme.dart';
-import 'package:koji/features/home/notifications/notifications_provider.dart';
+import 'package:koji/features/home/notifications/providers/notification_provider.dart';
 
 class HomeHeader extends ConsumerWidget {
   final VoidCallback? onMenuTap;

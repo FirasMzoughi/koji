@@ -157,9 +157,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               ),
               const SizedBox(height: 24),
 
-              ..._benefits(),
-
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
 
               if (_loading)
                 const Padding(
@@ -167,7 +165,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else ...[
-                for (final p in _products) _productCard(p),
+                for (final plan in PlanInfo.values) _planSection(plan),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(
@@ -201,59 +199,77 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     );
   }
 
-  List<Widget> _benefits() {
-    const items = [
-      'Devis illimités',
-      'Gestion des chantiers',
-      'Suivi des ouvriers',
-      'Signature en ligne',
-    ];
-    return items
-        .map((t) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+  /// One card per named plan (GO/Premium/Business), listing its features and
+  /// the store products (monthly/yearly) that belong to it — mirrors web's
+  /// 3-plan pricing display (lib/plan.js labels/limits).
+  Widget _planSection(PlanInfo plan) {
+    final products =
+        _products.where((p) => SubscriptionProducts.planOf(p.id) == plan.id).toList();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(plan.label,
+              style: const TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w800, color: _navy)),
+          const SizedBox(height: 8),
+          for (final f in plan.features)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: _accent, size: 20),
-                  const SizedBox(width: 10),
-                  Text(t,
-                      style:
-                          const TextStyle(fontSize: 15, color: _navy)),
+                  const Icon(Icons.check_circle, color: _accent, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: Text(f, style: const TextStyle(fontSize: 13, color: _navy))),
                 ],
               ),
-            ))
-        .toList();
+            ),
+          const SizedBox(height: 12),
+          if (products.isEmpty)
+            Text('Formule non disponible pour le moment.',
+                style: TextStyle(fontSize: 12, color: Colors.grey[400]))
+          else
+            Row(
+              children: [
+                for (final p in products) ...[
+                  Expanded(child: _productButton(p)),
+                  if (p != products.last) const SizedBox(width: 8),
+                ],
+              ],
+            ),
+        ],
+      ),
+    );
   }
 
-  Widget _productCard(ProductDetails p) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: ElevatedButton(
-        onPressed: _purchasing ? null : () => _buy(p),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _navy,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        child: _purchasing
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white))
-            : Column(
-                children: [
-                  Text(p.title.isNotEmpty ? p.title : 'Abonnement',
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 2),
-                  Text(p.price,
-                      style: const TextStyle(
-                          fontSize: 14, color: Color(0xFFCBD5E1))),
-                ],
-              ),
+  Widget _productButton(ProductDetails p) {
+    return OutlinedButton(
+      onPressed: _purchasing ? null : () => _buy(p),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        side: const BorderSide(color: _navy),
       ),
+      child: _purchasing
+          ? const SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          : Column(
+              children: [
+                Text(p.title.isNotEmpty ? p.title : 'Abonnement',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _navy)),
+                Text(p.price, style: const TextStyle(fontSize: 12, color: _navy)),
+              ],
+            ),
     );
   }
 }

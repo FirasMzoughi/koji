@@ -74,6 +74,46 @@ class ClientRepository {
     );
   }
 
+  /// Client/both-audience notes (with replies) for one of the client's own
+  /// chantier tasks, allowed by task_notes_select_client's RLS policy.
+  Future<List<Map<String, dynamic>>> getTaskNotes(String taskId) async {
+    final rows = await _client
+        .from('task_notes')
+        .select('*, task_replies(*)')
+        .eq('task_id', taskId)
+        .inFilter('audience', ['client', 'both'])
+        .order('created_at', ascending: true);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  /// Reply to a company note on one of the client's tasks.
+  Future<void> replyToTaskNote({
+    required String taskId,
+    required String replyToId,
+    required String message,
+  }) async {
+    await _client.rpc('add_client_task_reply', params: {
+      'p_task_id': taskId,
+      'p_reply_to_id': replyToId,
+      'p_message': message,
+    });
+  }
+
+  /// Raise a safety urgent alert (degat/fuite/urgence/incendie/autre) for one
+  /// of the client's chantiers, fanning out to a company notification
+  /// server-side (see add_client_urgent_alert RPC).
+  Future<void> sendUrgentAlert({
+    required String chantierId,
+    required String type,
+    required String message,
+  }) async {
+    await _client.rpc('add_client_urgent_alert', params: {
+      'p_chantier_id': chantierId,
+      'p_type': type,
+      'p_message': message,
+    });
+  }
+
   /// True when a devis status represents a pending/awaiting-signature state.
   static bool isPending(dynamic status) {
     final s = (status ?? '').toString().toLowerCase();

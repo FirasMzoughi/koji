@@ -206,19 +206,23 @@ class _ChantierClientScreenState extends ConsumerState<ChantierClientScreen>
             'Mon chantier';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFF6F4F0),
       appBar: AppBar(
         title: Text(clientName),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
+        foregroundColor: const Color(0xFF16233F),
         elevation: 0.5,
         bottom: _loading || _error != null
             ? null
             : TabBar(
                 controller: _tabController,
-                labelColor: const Color(0xFF1D5FE1),
-                unselectedLabelColor: const Color(0xFF64748B),
-                indicatorColor: const Color(0xFF1D5FE1),
+                labelColor: const Color(0xFF16233F),
+                unselectedLabelColor: const Color(0xFF6B7280),
+                // The app theme uses pill tabs; this one keeps an underline.
+                indicator: const UnderlineTabIndicator(
+                  borderSide: BorderSide(color: Color(0xFF16233F), width: 3),
+                ),
+                indicatorSize: TabBarIndicatorSize.label,
                 tabs: const [
                   Tab(text: 'Devis'),
                   Tab(text: 'Suivi'),
@@ -313,7 +317,7 @@ class _DevisTabState extends State<_DevisTab> {
                   : ElevatedButton(
                       onPressed: () => _openSignSheet(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0F172A),
+                        backgroundColor: const Color(0xFF16233F),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -454,7 +458,7 @@ class _SignSheetState extends State<_SignSheet> {
               ElevatedButton(
                 onPressed: _saving ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
+                  backgroundColor: const Color(0xFF16233F),
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
@@ -487,7 +491,7 @@ class _SigPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF0F172A)
+      ..color = const Color(0xFF16233F)
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 3;
     for (var i = 0; i < points.length - 1; i++) {
@@ -536,7 +540,7 @@ class _SuiviTab extends StatelessWidget {
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
-                      color: Color(0xFF0F172A))),
+                      color: Color(0xFF16233F))),
               const SizedBox(height: 8),
               ...e.value.map((t) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 5),
@@ -544,7 +548,7 @@ class _SuiviTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Icon(Icons.circle,
-                            size: 8, color: Color(0xFF1D5FE1)),
+                            size: 8, color: Color(0xFF16233F)),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(t,
@@ -664,7 +668,7 @@ class _MessagesTabState extends State<_MessagesTab> {
                                     MediaQuery.of(context).size.width * 0.72),
                             decoration: BoxDecoration(
                               color: mine
-                                  ? const Color(0xFF1D5FE1)
+                                  ? const Color(0xFF16233F)
                                   : Colors.white,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: const Color(0xFFEFF1F4)),
@@ -716,7 +720,7 @@ class _MessagesTabState extends State<_MessagesTab> {
                 const SizedBox(width: 8),
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: const Color(0xFF0F172A),
+                  backgroundColor: const Color(0xFF16233F),
                   child: _sending
                       ? const SizedBox(
                           height: 18,

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:koji/core/theme.dart';
-import 'package:koji/features/home/notifications/app_notification.dart';
-import 'package:koji/features/home/notifications/notifications_provider.dart';
+import 'package:koji/features/home/notification_detail_screen.dart';
+import 'package:koji/features/home/notifications/models/notification_model.dart';
+import 'package:koji/features/home/notifications/providers/notification_provider.dart';
+import 'package:koji/features/home/notifications/repositories/notification_repository.dart';
 
 /// Bottom sheet listing in-app notifications (e.g. client signatures).
 ///
@@ -24,13 +26,9 @@ class NotificationsPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifications = ref.watch(notificationsProvider);
-
-    // Mark read once the panel is built (after this frame to avoid mutating
-    // provider state during build).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationsProvider.notifier).markAllRead();
-    });
+    final notificationsAsync = ref.watch(notificationsProvider);
+    final hasNotifications =
+        notificationsAsync.asData?.value.isNotEmpty ?? false;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -67,10 +65,13 @@ class NotificationsPanel extends ConsumerWidget {
                       ),
                     ),
                     const Spacer(),
-                    if (notifications.isNotEmpty)
+                    if (hasNotifications)
                       TextButton(
-                        onPressed: () {
-                          ref.read(notificationsProvider.notifier).clear();
+                        onPressed: () async {
+                          await ref
+                              .read(notificationRepositoryProvider)
+                              .deleteAll();
+                          ref.invalidate(notificationsProvider);
                         },
                         child: const Text('Tout effacer'),
                       ),
@@ -78,16 +79,34 @@ class NotificationsPanel extends ConsumerWidget {
                 ),
               ),
               Expanded(
-                child: notifications.isEmpty
-                    ? _empty(context)
-                    : ListView.separated(
-                        controller: scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                        itemCount: notifications.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, i) =>
-                            _tile(context, notifications[i]),
-                      ),
+                child: notificationsAsync.when(
+                  data: (notifications) {
+                    // Mark read once the panel is built (after this frame to
+                    // avoid mutating provider state during build).
+                    if (notifications.any((n) => !n.read)) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) async {
+                        await ref
+                            .read(notificationRepositoryProvider)
+                            .markAllRead();
+                        ref.invalidate(notificationsProvider);
+                      });
+                    }
+                    return notifications.isEmpty
+                        ? _empty(context)
+                        : ListView.separated(
+                            controller: scrollController,
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                            itemCount: notifications.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, i) =>
+                                _tile(context, notifications[i]),
+                          );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (_, __) => _empty(context),
+                ),
               ),
             ],
           ),
@@ -119,7 +138,22 @@ class NotificationsPanel extends ConsumerWidget {
   Widget _tile(BuildContext context, AppNotification n) {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: () => Navigator.pop(context, true),
+      onTap: () {
+        // Quote-related notifications (signature/message) still drive the
+        // home screen's "jump to Devis tab" behaviour; anything else opens
+        // the full detail view instead.
+        if (n.quoteId != null) {
+          Navigator.pop(context, true);
+        } else {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NotificationDetailScreen(notification: n),
+            ),
+          );
+        }
+      },
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -154,7 +188,7 @@ class NotificationsPanel extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    n.body,
+                    n.message,
                     style: TextStyle(
                       fontSize: 13,
                       color: AppTheme.textSecondary(context),

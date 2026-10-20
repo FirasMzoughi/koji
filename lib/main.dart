@@ -1,51 +1,7 @@
-import 'dart:async';
+import 'package:koji/app/koji_app.dart';
+import 'package:koji/app/koji_app_config.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:koji/core/notification_service.dart';
-import 'package:koji/core/router.dart';
-import 'package:koji/core/theme.dart';
-import 'package:koji/core/theme_provider.dart';
-
-import 'package:koji/core/supabase_config.dart';
-import 'package:intl/date_symbol_data_local.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Supabasew
-  await SupabaseConfig.initialize();
-
-  // Initialize Date Formatting
-  await initializeDateFormatting();
-
-  // Local notifications for the contractor's planning reminders.
-  await NotificationService.instance.init();
-  unawaited(NotificationService.instance.refreshDailySummary());
-  // Alert on any invoice that has passed its échéance without full payment.
-  unawaited(NotificationService.instance.notifyOverdueInvoices());
-
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
-}
-
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-
-    return MaterialApp.router(
-      title: 'Kôji',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightThemeData(context),
-      darkTheme: AppTheme.darkThemeData(context),
-      themeMode: themeMode,
-      routerConfig: router,
-    );
-  }
-}
+/// Default entrypoint = the entreprise app (Koji Pro), so existing
+/// `flutter run` / CI commands keep building the same store app.
+/// Use `lib/main_client.dart` for the client app.
+void main() => runKojiApp(KojiAppKind.entreprise);

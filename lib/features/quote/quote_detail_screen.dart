@@ -18,6 +18,8 @@ import 'package:koji/features/quote/ouvrage_library_screen.dart';
 import 'package:koji/features/fournitures/repository/fourniture_repository.dart';
 import 'package:koji/features/fournitures/models/fourniture_model.dart';
 import 'package:koji/features/fournitures/add_fourniture_screen.dart';
+import 'package:koji/features/subscription/providers/subscription_provider.dart';
+import 'package:koji/features/subscription/paywall_screen.dart';
 import 'package:intl/intl.dart';
 
 // ─── Data model for one editable line ─────────────────────────────────────────
@@ -598,9 +600,48 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     }
 
     final quoteData = _buildQuoteData();
+    final existingId = widget.data['id'] as String?;
+
+    // Server-side plan-limit gate (see supabase/migrations/0006_subscription_plans.sql):
+    // creating a brand-new devis is checked against the plan's monthly quote
+    // count; a manual save on an already-created devis is checked against the
+    // trial's one-quote/10-edits cap. Both are no-ops (allowed: true) for
+    // paid/unlimited plans and for users past the trial.
+    final limits = ref.read(planLimitsProvider);
+    final limitResult = existingId == null
+        ? await limits.canCreateQuote()
+        : await limits.canSaveQuote(existingId);
+    if (!limitResult.allowed) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Limite atteinte'),
+            content: Text(limitResult.reason ??
+                'Passez à une formule supérieure pour continuer.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Fermer'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                  );
+                },
+                child: const Text('Voir les formules'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
 
     try {
-      final existingId = widget.data['id'] as String?;
       final quoteId = await ref
           .read(quoteRepositoryProvider)
           .saveQuote(user.id, quoteData, quoteId: existingId);

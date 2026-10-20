@@ -52,3 +52,48 @@ final hasAccessProvider = Provider<bool>((ref) {
     orElse: () => true,
   );
 });
+
+/// Plan-limit checks (quote-count per plan, trial send/generate/edit caps).
+/// Call before quote creation/send/generate/manual-save; on `allowed: false`
+/// show `reason` in a blocking dialog (mirrors how hasAccessProvider/paywall
+/// gating already blocks screens).
+///
+/// Wired in: quote_detail_screen.dart's _generateQuote() calls
+/// canCreateQuote()/canSaveQuote() before every save (new devis vs. manual
+/// save on an existing one). NOT yet wired: canSendQuote()/canGenerateQuote()
+/// — those belong in the PDF/share/send flow (quote_success_screen.dart),
+/// which wasn't touched in this pass.
+final planLimitsProvider = Provider<_PlanLimits>((ref) {
+  return _PlanLimits(ref.watch(subscriptionRepositoryProvider));
+});
+
+class _PlanLimits {
+  _PlanLimits(this._repo);
+  final SubscriptionRepository _repo;
+
+  String? get _userId => SupabaseConfig.client.auth.currentUser?.id;
+
+  Future<PlanLimitResult> canCreateQuote() async {
+    final uid = _userId;
+    if (uid == null) return const PlanLimitResult(allowed: true);
+    return _repo.checkQuoteCreationLimit(uid);
+  }
+
+  Future<PlanLimitResult> canSendQuote(String quoteId) async {
+    final uid = _userId;
+    if (uid == null) return const PlanLimitResult(allowed: true);
+    return _repo.checkTrialSendLimit(uid, quoteId);
+  }
+
+  Future<PlanLimitResult> canGenerateQuote(String quoteId) async {
+    final uid = _userId;
+    if (uid == null) return const PlanLimitResult(allowed: true);
+    return _repo.checkTrialGenerateLimit(uid, quoteId);
+  }
+
+  Future<PlanLimitResult> canSaveQuote(String quoteId) async {
+    final uid = _userId;
+    if (uid == null) return const PlanLimitResult(allowed: true);
+    return _repo.checkAndRecordTrialEdit(uid, quoteId);
+  }
+}

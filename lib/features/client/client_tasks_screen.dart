@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:koji/features/client/providers/client_providers.dart';
+import 'package:koji/features/client/repository/client_repository.dart';
+import 'package:koji/features/worker/models/urgent_alert_type.dart';
 
 /// "Suivi des travaux" — a read-only view of the works (chantier_tasks) for the
 /// client's chantiers, grouped by chantier with a completion bar so they can
@@ -64,7 +66,8 @@ class ClientTasksScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(20),
               itemCount: refs.length,
               separatorBuilder: (_, __) => const SizedBox(height: 16),
-              itemBuilder: (context, i) => _chantierGroup(refs[i], groups[refs[i]]!),
+              itemBuilder: (context, i) => _chantierGroup(
+                  context, ref, refs[i], groups[refs[i]]!),
             ),
           );
         },
@@ -72,10 +75,14 @@ class ClientTasksScreen extends ConsumerWidget {
     );
   }
 
-  Widget _chantierGroup(String reference, List<Map<String, dynamic>> tasks) {
+  Widget _chantierGroup(BuildContext context, WidgetRef ref, String reference,
+      List<Map<String, dynamic>> tasks) {
     final done = tasks.where((t) => t['is_done'] == true).length;
     final total = tasks.length;
     final progress = total == 0 ? 0.0 : done / total;
+    final chantierId = tasks.isNotEmpty
+        ? tasks.first['chantier_id'] as String?
+        : null;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -115,6 +122,15 @@ class ClientTasksScreen extends ConsumerWidget {
               Text('$done/$total',
                   style: const TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w700, color: _slate)),
+              if (chantierId != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.warning_amber_rounded,
+                      color: Color(0xFFDC2626), size: 22),
+                  tooltip: 'Signaler une urgence',
+                  onPressed: () => _showUrgentAlertSheet(context, ref, chantierId),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 14),
@@ -170,6 +186,79 @@ class ClientTasksScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showUrgentAlertSheet(
+      BuildContext context, WidgetRef ref, String chantierId) async {
+    final type = await showModalBottomSheet<UrgentAlertType>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text('Signaler une urgence',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            ),
+            for (final t in UrgentAlertType.values)
+              ListTile(
+                leading: Icon(t.icon, color: const Color(0xFFDC2626)),
+                title: Text(t.label),
+                onTap: () => Navigator.pop(ctx, t),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (type == null || !context.mounted) return;
+
+    final controller = TextEditingController();
+    final message = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(type.label),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Décrivez la situation…',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, controller.text),
+              child: const Text('Envoyer l\'alerte')),
+        ],
+      ),
+    );
+    if (message == null || message.trim().isEmpty || !context.mounted) return;
+
+    try {
+      await ref.read(clientRepositoryProvider).sendUrgentAlert(
+            chantierId: chantierId,
+            type: type.value,
+            message: message.trim(),
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Alerte envoyée à l\'entreprise')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e')),
+        );
+      }
+    }
   }
 
   Widget _empty() {

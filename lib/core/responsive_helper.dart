@@ -9,9 +9,24 @@ class ResponsiveHelper {
   final double _widthScaleFactor;
   final double _avgScaleFactor;
 
+  // Scaling is designed around phone widths. Past a large phone the factors
+  // stop growing, otherwise tablets / the web layout render text and icons
+  // several times too big.
+  static const double _maxScaledWidth = 430;
+  static const double _maxScaledHeight = 932;
+
   ResponsiveHelper._(this._screenWidth, this._screenHeight)
-      : _widthScaleFactor = _screenWidth / 375,
-        _avgScaleFactor = ((_screenWidth + _screenHeight) / 2) / 375;
+      : _widthScaleFactor =
+            (_screenWidth > _maxScaledWidth ? _maxScaledWidth : _screenWidth) /
+                375,
+        _avgScaleFactor = (((_screenWidth > _maxScaledWidth
+                        ? _maxScaledWidth
+                        : _screenWidth) +
+                    (_screenHeight > _maxScaledHeight
+                        ? _maxScaledHeight
+                        : _screenHeight)) /
+                2) /
+            375;
 
   factory ResponsiveHelper(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
