@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:koji/design/koji_icons.dart';
 import 'package:koji/design/koji_page.dart';
-import 'package:koji/design/koji_tokens.dart';
 import 'package:koji/design/koji_widgets.dart';
 
 /// Entreprise dashboard with KPIs and quick actions.
@@ -14,7 +12,7 @@ class EntrepriseAccueilScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return KojiPage(
-      title: 'Accueil',
+      title: 'Accueil Koji Pro',
       appBarOnPhone: true,
       main: [
         // KPIs grid
@@ -26,39 +24,15 @@ class EntrepriseAccueilScreen extends ConsumerWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _KpiCard(
-              label: 'Devis en attente',
-              value: '5',
-              color: const Color(0xffff9800),
-              icon: KojiIcons.file,
-            ),
-            _KpiCard(
-              label: 'Chantiers actifs',
-              value: '12',
-              color: const Color(0xff0052cc),
-              icon: KojiIcons.briefcase,
-            ),
-            _KpiCard(
-              label: 'Factures (mois)',
-              value: '€45,200',
-              color: const Color(0xff28a745),
-              icon: KojiIcons.receipt,
-            ),
-            _KpiCard(
-              label: 'Messages',
-              value: '23',
-              color: const Color(0xff9c27b0),
-              icon: KojiIcons.message,
-            ),
+            _KpiCard('Devis', '5', Colors.orange),
+            _KpiCard('Chantiers', '12', Colors.blue),
+            _KpiCard('Factures', '€45K', Colors.green),
+            _KpiCard('Messages', '23', Colors.purple),
           ],
         ),
         const SizedBox(height: 24),
-
-        // Quick actions
-        Text(
-          'Actions rapides',
-          style: context.koji.typography.labelLarge,
-        ),
+        const Text('Actions rapides',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -79,12 +53,8 @@ class EntrepriseAccueilScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 24),
-
-        // Recent activity
-        Text(
-          'Activité récente',
-          style: context.koji.typography.labelLarge,
-        ),
+        const Text('Activité récente',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         const SizedBox(height: 12),
         KojiCard(
           child: ListView.separated(
@@ -96,19 +66,12 @@ class EntrepriseAccueilScreen extends ConsumerWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Devis #${1000 + i} créé',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
+                  Text('Devis #${1000 + i} créé',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
-                  Text(
-                    'Client: SARL Dupont',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.koji.muted,
-                    ),
-                  ),
-                ];
+                  const Text('Client: SARL Dupont',
+                      style: TextStyle(fontSize: 13, color: Colors.grey)),
+                ],
               );
             },
           ),
@@ -122,14 +85,8 @@ class _KpiCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  final IconData icon;
 
-  const _KpiCard({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.icon,
-  });
+  const _KpiCard(this.label, this.value, this.color);
 
   @override
   Widget build(BuildContext context) {
@@ -144,25 +101,23 @@ class _KpiCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.koji.muted,
-                ),
-              ),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+              Text(label,
+                  style:
+                      const TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           ),
         ],

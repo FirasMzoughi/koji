@@ -33,13 +33,13 @@ class _EntrepriseShellState extends State<EntrepriseShell> {
   Widget build(BuildContext context) {
     final isMobile = _screenWidth < 768;
     final navItems = [
-      ('Accueil', KojiIcons.home, '/entreprise'),
-      ('Devis', KojiIcons.file, '/entreprise/devis'),
-      ('Clients', KojiIcons.users, '/entreprise/clients'),
-      ('Équipe', KojiIcons.people, '/entreprise/equipe'),
-      ('Facturation', KojiIcons.receipt, '/entreprise/facturation'),
-      ('Profil', KojiIcons.user, '/entreprise/profil'),
-      ('Paramètres', KojiIcons.settings, '/entreprise/parametres'),
+      ('Accueil', '/entreprise'),
+      ('Devis', '/entreprise/devis'),
+      ('Clients', '/entreprise/clients'),
+      ('Équipe', '/entreprise/equipe'),
+      ('Facturation', '/entreprise/facturation'),
+      ('Profil', '/entreprise/profil'),
+      ('Paramètres', '/entreprise/parametres'),
     ];
 
     if (isMobile) {
@@ -48,11 +48,11 @@ class _EntrepriseShellState extends State<EntrepriseShell> {
         bottomNavigationBar: BottomNavigationBar(
           items: navItems.sublist(0, 5).map((item) {
             return BottomNavigationBarItem(
-              icon: Icon(item.$2),
+              icon: const Icon(Icons.home),
               label: item.$1,
             );
           }).toList(),
-          onTap: (idx) => context.go(navItems[idx].$3),
+          onTap: (idx) => context.go(navItems[idx].$2),
         ),
       );
     }
@@ -61,31 +61,29 @@ class _EntrepriseShellState extends State<EntrepriseShell> {
       body: Row(
         children: [
           // Sidebar
-          NavigationDrawer(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Koji Pro',
-                  style: context.koji.typography.headlineSmall,
+          Drawer(
+            child: ListView(
+              children: [
+                DrawerHeader(
+                  child: Text(
+                    'Koji Pro',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                 ),
-              ),
-              const Divider(),
-              for (final (label, icon, route) in navItems)
-                NavigationDrawerDestination(
-                  icon: Icon(icon),
-                  label: Text(label),
-                  onTap: () => context.go(route),
+                for (final (label, route) in navItems)
+                  ListTile(
+                    title: Text(label),
+                    onTap: () => context.go(route),
+                  ),
+                const Divider(),
+                ListTile(
+                  title: const Text('Déconnexion'),
+                  onTap: () {
+                    // TODO: logout
+                  },
                 ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(KojiIcons.logout),
-                title: const Text('Déconnexion'),
-                onTap: () {
-                  // TODO: logout
-                },
-              ),
-            ],
+              ],
+            ),
           ),
           // Content
           Expanded(child: widget.child),

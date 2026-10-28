@@ -212,7 +212,7 @@ class EntrepriseParametresScreen extends ConsumerWidget {
               ),
               ListTile(
                 title: const Text('Déconnexion'),
-                trailing: const Icon(KojiIcons.logout),
+                trailing: const Icon(KojiIcons.deconnexion),
                 onTap: () {},
               ),
               const SizedBox(height: 32),
