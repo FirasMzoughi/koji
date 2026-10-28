@@ -31,6 +31,9 @@ abstract final class KojiIcons {
   static const messages =
       'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12';
   static const deconnexion = 'M9 21H5V3h4M16 17l5-5-5-5M21 12H9';
+  // Radar des Chantiers / Marketplace — broadcast-wave glyph.
+  static const radar =
+      'M4.93 19.07a10 10 0 0 1 0-14.14M7.76 16.24a6 6 0 0 1 0-8.49M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2M16.24 7.76a6 6 0 0 1 0 8.49M19.07 4.93a10 10 0 0 1 0 14.14';
 
   // Extra sections of the existing app
   static const interventions = 'M9 3h6v3H9zM8 4.5H5V21h14V4.5h-3M9 13l2 2 4-4';

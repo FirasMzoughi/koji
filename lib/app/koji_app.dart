@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:koji/app/koji_app_config.dart';
+import 'package:koji/app/koji_web_api_client.dart';
 import 'package:koji/apps/client/client_router.dart';
 import 'package:koji/apps/entreprise/entreprise_router.dart';
 import 'package:koji/core/notification_service.dart';
@@ -30,7 +31,18 @@ Future<void> runKojiApp(KojiAppKind kind) async {
     unawaited(NotificationService.instance.notifyOverdueInvoices());
   }
 
-  runApp(const ProviderScope(child: KojiApp()));
+  // Built outside the widget tree so the Marketplace module's koji-web
+  // session (saved on a previous launch) is restored before the router's
+  // first build — otherwise `isLoggedIn` would read false for one frame
+  // even with a valid stored session.
+  final container = ProviderContainer();
+  if (kind == KojiAppKind.client) {
+    await container.read(kojiWebApiClientProvider).restoreSession();
+  }
+
+  runApp(
+    UncontrolledProviderScope(container: container, child: const KojiApp()),
+  );
 }
 
 class KojiApp extends ConsumerStatefulWidget {

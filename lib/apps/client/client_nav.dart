@@ -11,12 +11,17 @@ const _routes = {
   'devis': '/client/devis',
   'chantiers': '/client/chantiers',
   'messages': '/client/messages',
+  'marketplace': '/client/marketplace',
   'profil': '/client/profil',
   'parametres': '/client/parametres',
   'aide': '/client/aide',
 };
 
 /// Top-level client pages: they get the phone bottom bar, deeper pages don't.
+// Marketplace is deliberately NOT added here: the phone bottom bar's layout
+// is sized for exactly 5 tabs elsewhere (KojiShell) — adding a 6th risks
+// breaking that without touching that file too. It's reachable from the
+// "Principales" menu group below (always shown, not width-constrained).
 const clientTabPaths = [
   '/client-home',
   '/client/devis',
@@ -40,6 +45,10 @@ List<KojiNavGroup> clientNavGroups({int pendingDevis = 0}) => [
             id: 'chantiers', label: 'Mes chantiers', icon: KojiIcons.chantiers),
         const KojiNavItem(
             id: 'messages', label: 'Messages', icon: KojiIcons.messages),
+        const KojiNavItem(
+            id: 'marketplace',
+            label: 'Radar des Chantiers',
+            icon: KojiIcons.radar),
       ]),
       const KojiNavGroup(label: 'Configuration', pushToBottom: true, items: [
         KojiNavItem(id: 'profil', label: 'Profil', icon: KojiIcons.profil),
