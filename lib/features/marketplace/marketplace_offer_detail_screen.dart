@@ -112,9 +112,25 @@ class _OfferDetailBody extends StatelessWidget {
           children: [
             Expanded(
               child: KojiButton(
-                label: 'Demander une visite',
+                label: 'Visite',
                 variant: KojiButtonVariant.primary,
                 onPressed: () => context.push('/client/marketplace/${offer['id']}/rdv'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: KojiButton(
+                label: 'Messages',
+                variant: KojiButtonVariant.secondary,
+                onPressed: () => context.push('/client/marketplace/${offer['id']}/messages'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: KojiButton(
+                label: 'Paiement',
+                variant: KojiButtonVariant.secondary,
+                onPressed: () => context.push('/client/marketplace/${offer['id']}/payment/review'),
               ),
             ),
           ],

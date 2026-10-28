@@ -170,4 +170,54 @@ class MarketplaceRepository {
     ) as Map<String, dynamic>;
     return data;
   }
+
+  /// GET /api/marketplace/offres/[id]/messages — list all messages on an offer
+  /// (thread-based, like project messages).
+  Future<List<Map<String, dynamic>>> getOfferMessages(String offerId) async {
+    final data = await _api.get(
+      '/api/marketplace/offres/$offerId/messages',
+    ) as Map<String, dynamic>;
+    return (data['messages'] as List? ?? const [])
+        .cast<Map<String, dynamic>>();
+  }
+
+  /// POST /api/marketplace/offres/[id]/messages — send a message on an offer.
+  Future<Map<String, dynamic>> sendOfferMessage({
+    required String offerId,
+    required String text,
+  }) async {
+    final data = await _api.postJson(
+      '/api/marketplace/offres/$offerId/messages',
+      {'text': text},
+    ) as Map<String, dynamic>;
+    return data['message'] as Map<String, dynamic>;
+  }
+
+  /// GET /api/marketplace/offres/[id]/paiement/[step] — get Stripe Checkout
+  /// session URL for this offer (escrow payment).
+  Future<Map<String, dynamic>> getPaymentCheckoutUrl({
+    required String offerId,
+    String step = 'review',
+  }) async {
+    final data = await _api.get(
+      '/api/marketplace/offres/$offerId/paiement/$step',
+    ) as Map<String, dynamic>;
+    return data;
+  }
+
+  /// POST /api/marketplace/offres/[id]/paiement/[step]/valider — validate
+  /// payment completion (called after Stripe Checkout finishes).
+  Future<Map<String, dynamic>> validatePayment({
+    required String offerId,
+    required String step,
+    String? sessionId,
+  }) async {
+    final data = await _api.postJson(
+      '/api/marketplace/offres/$offerId/paiement/$step/valider',
+      {
+        if (sessionId != null) 'sessionId': sessionId,
+      },
+    ) as Map<String, dynamic>;
+    return data;
+  }
 }

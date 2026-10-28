@@ -20,6 +20,8 @@ import 'package:koji/features/marketplace/marketplace_login_screen.dart';
 import 'package:koji/features/marketplace/marketplace_new_screen.dart';
 import 'package:koji/features/marketplace/marketplace_offer_detail_screen.dart';
 import 'package:koji/features/marketplace/marketplace_offer_rdv_screen.dart';
+import 'package:koji/features/marketplace/marketplace_offer_messages_screen.dart';
+import 'package:koji/features/marketplace/marketplace_offer_payment_screen.dart';
 import 'package:koji/features/signature/signature_list_screen.dart';
 import 'package:koji/features/signature/signature_screen.dart';
 import 'package:koji/features/signature/signature_success_screen.dart';
@@ -95,6 +97,19 @@ GoRouter buildClientRouter({bool requireSession = true}) => GoRouter(
               '/client/marketplace/:offerId/rdv',
               (state) => MarketplaceOfferRdvScreen(
                 offerId: state.pathParameters['offerId']!,
+              ),
+            ),
+            _page(
+              '/client/marketplace/:offerId/messages',
+              (state) => MarketplaceOfferMessagesScreen(
+                offerId: state.pathParameters['offerId']!,
+              ),
+            ),
+            _page(
+              '/client/marketplace/:offerId/payment/:step',
+              (state) => MarketplaceOfferPaymentScreen(
+                offerId: state.pathParameters['offerId']!,
+                step: state.pathParameters['step'] ?? 'review',
               ),
             ),
             _page('/signature/list', (_) => const SignatureListScreen()),
