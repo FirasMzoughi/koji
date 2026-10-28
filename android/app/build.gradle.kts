@@ -37,11 +37,11 @@ android {
     defaultConfig {
         applicationId = "com.koji.pro"
         minSdk = 23
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
 
-        versionName = flutter.versionName 
-        
+        versionName = flutter.versionName
+
         multiDexEnabled = true
     }
 
