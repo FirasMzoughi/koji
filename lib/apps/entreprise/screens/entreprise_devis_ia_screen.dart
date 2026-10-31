@@ -95,7 +95,7 @@ class _EntrepriseDevisIaScreenState
               _streamingText = '';
               _phase = _Phase.recap;
             } else {
-              _streamingText += event.data ?? '';
+              _streamingText += (event.data as String?) ?? '';
             }
           });
           _scrollToBottom();

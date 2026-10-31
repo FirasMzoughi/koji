@@ -90,7 +90,7 @@ class _MarketplaceOfferPaymentScreenState
     return KojiPage(
       title: 'Paiement sécurisé',
       appBarOnPhone: true,
-      child: Stack(
+      main: [Stack(
         children: [
           if (_checkoutUrl != null)
             WebViewWidget(controller: _webViewController),
@@ -112,7 +112,7 @@ class _MarketplaceOfferPaymentScreenState
               ),
             ),
         ],
-      ),
+      )],
     );
   }
 }

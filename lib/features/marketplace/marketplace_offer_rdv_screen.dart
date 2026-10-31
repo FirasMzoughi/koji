@@ -70,7 +70,7 @@ class _MarketplaceOfferRdvScreenState
   Widget build(BuildContext context) {
     return KojiPage(
       title: 'Demander une visite',
-      child: SingleChildScrollView(
+      main: [SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +115,7 @@ class _MarketplaceOfferRdvScreenState
                       '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
                       style: const TextStyle(fontSize: 16),
                     ),
-                    const Icon(KojiIcons.calendar, size: 20),
+                    const Icon(Icons.calendar_today, size: 20),
                   ],
                 ),
               ),
@@ -220,7 +220,7 @@ class _MarketplaceOfferRdvScreenState
             ),
           ],
         ),
-      ),
+      )],
     );
   }
 }

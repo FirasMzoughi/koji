@@ -15,13 +15,14 @@ import 'package:koji/features/auth/koji_auth_screen.dart';
 import 'package:koji/features/client/client_messages_screen.dart';
 import 'package:koji/features/client/client_tasks_screen.dart';
 import 'package:koji/features/help/help_screen.dart';
-import 'package:koji/features/marketplace/marketplace_home_screen.dart';
-import 'package:koji/features/marketplace/marketplace_login_screen.dart';
-import 'package:koji/features/marketplace/marketplace_new_screen.dart';
-import 'package:koji/features/marketplace/marketplace_offer_detail_screen.dart';
-import 'package:koji/features/marketplace/marketplace_offer_rdv_screen.dart';
-import 'package:koji/features/marketplace/marketplace_offer_messages_screen.dart';
-import 'package:koji/features/marketplace/marketplace_offer_payment_screen.dart';
+// TODO: Marketplace features temporarily disabled due to incomplete implementation
+// import 'package:koji/features/marketplace/marketplace_home_screen.dart';
+// import 'package:koji/features/marketplace/marketplace_login_screen.dart';
+// import 'package:koji/features/marketplace/marketplace_new_screen.dart';
+// import 'package:koji/features/marketplace/marketplace_offer_detail_screen.dart';
+// import 'package:koji/features/marketplace/marketplace_offer_rdv_screen.dart';
+// import 'package:koji/features/marketplace/marketplace_offer_messages_screen.dart';
+// import 'package:koji/features/marketplace/marketplace_offer_payment_screen.dart';
 import 'package:koji/features/signature/signature_list_screen.dart';
 import 'package:koji/features/signature/signature_screen.dart';
 import 'package:koji/features/signature/signature_success_screen.dart';
@@ -61,9 +62,10 @@ GoRouter buildClientRouter({bool requireSession = true}) => GoRouter(
         _page('/login', (_) => const KojiAuthScreen()),
         _page('/signup',
             (_) => const KojiAuthScreen(initialTab: KojiAuthTab.signup)),
-        _page('/client/marketplace/login',
-            (_) => const MarketplaceLoginScreen()),
-        _page('/client/marketplace/new', (_) => const MarketplaceNewScreen()),
+        // TODO: Marketplace routes temporarily disabled
+        // _page('/client/marketplace/login',
+        //     (_) => const MarketplaceLoginScreen()),
+        // _page('/client/marketplace/new', (_) => const MarketplaceNewScreen()),
         ShellRoute(
           builder: (context, state, child) => ClientShell(
             location: currentRoutePath(GoRouter.of(context)),
@@ -85,33 +87,34 @@ GoRouter buildClientRouter({bool requireSession = true}) => GoRouter(
             _page('/client/profil', (_) => const ClientProfilScreen()),
             _page('/client/parametres', (_) => const ClientParametresScreen()),
             _page('/client/aide', (_) => const KojiHelpScreen()),
-            _page('/client/marketplace',
-                (_) => const MarketplaceHomeScreen()),
-            _page(
-              '/client/marketplace/:offerId',
-              (state) => MarketplaceOfferDetailScreen(
-                offerId: state.pathParameters['offerId']!,
-              ),
-            ),
-            _page(
-              '/client/marketplace/:offerId/rdv',
-              (state) => MarketplaceOfferRdvScreen(
-                offerId: state.pathParameters['offerId']!,
-              ),
-            ),
-            _page(
-              '/client/marketplace/:offerId/messages',
-              (state) => MarketplaceOfferMessagesScreen(
-                offerId: state.pathParameters['offerId']!,
-              ),
-            ),
-            _page(
-              '/client/marketplace/:offerId/payment/:step',
-              (state) => MarketplaceOfferPaymentScreen(
-                offerId: state.pathParameters['offerId']!,
-                step: state.pathParameters['step'] ?? 'review',
-              ),
-            ),
+            // TODO: Marketplace routes temporarily disabled
+            // _page('/client/marketplace',
+            //     (_) => const MarketplaceHomeScreen()),
+            // _page(
+            //   '/client/marketplace/:offerId',
+            //   (state) => MarketplaceOfferDetailScreen(
+            //     offerId: state.pathParameters['offerId']!,
+            //   ),
+            // ),
+            // _page(
+            //   '/client/marketplace/:offerId/rdv',
+            //   (state) => MarketplaceOfferRdvScreen(
+            //     offerId: state.pathParameters['offerId']!,
+            //   ),
+            // ),
+            // _page(
+            //   '/client/marketplace/:offerId/messages',
+            //   (state) => MarketplaceOfferMessagesScreen(
+            //     offerId: state.pathParameters['offerId']!,
+            //   ),
+            // ),
+            // _page(
+            //   '/client/marketplace/:offerId/payment/:step',
+            //   (state) => MarketplaceOfferPaymentScreen(
+            //     offerId: state.pathParameters['offerId']!,
+            //     step: state.pathParameters['step'] ?? 'review',
+            //   ),
+            // ),
             _page('/signature/list', (_) => const SignatureListScreen()),
             _page('/signature/sign', (state) {
               final extra = state.extra;

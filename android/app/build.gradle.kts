@@ -36,7 +36,7 @@ android {
 
     defaultConfig {
         applicationId = "com.koji.pro"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
 

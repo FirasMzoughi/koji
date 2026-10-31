@@ -86,7 +86,7 @@ class _MarketplaceOfferMessagesScreenState
     return KojiPage(
       title: 'Messages',
       appBarOnPhone: true,
-      child: Column(
+      main: [Column(
         children: [
           Expanded(
             child: _messages.isEmpty
@@ -194,7 +194,7 @@ class _MarketplaceOfferMessagesScreenState
             ),
           ),
         ],
-      ),
+      )],
     );
   }
 }
