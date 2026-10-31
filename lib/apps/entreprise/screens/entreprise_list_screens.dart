@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:koji/design/koji_icons.dart';
 import 'package:koji/design/koji_page.dart';
-import 'package:koji/design/koji_tokens.dart';
 import 'package:koji/design/koji_widgets.dart';
 
 // === DEVIS ===
@@ -18,33 +17,60 @@ class EntrepriseDevisScreen extends ConsumerWidget {
       title: 'Devis',
       appBarOnPhone: true,
       top: [
-        Row(
-          children: [
-            Expanded(
-              child: KojiButton(
-                label: '+ Créer devis',
-                onPressed: () {},
-              ),
-            ),
-          ],
+        KojiButton(
+          label: '+ Créer devis',
+          onPressed: () {},
         ),
       ],
       main: [
-        KojiCard(
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 5,
-            separatorBuilder: (_, __) => const Divider(height: 16),
-            itemBuilder: (context, i) {
-              return ListTile(
-                title: Text('Devis #${1000 + i}'),
-                subtitle: Text('Client Dupont'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/entreprise/devis/${1000 + i}'),
-              );
-            },
-          ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 5,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, i) {
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFFFF),
+                border: Border.all(color: const Color(0xFFD9D9D4)),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Devis #${1000 + i}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Client Dupont',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, size: 20),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
@@ -61,14 +87,27 @@ class EntrepriseDevisDetailScreen extends ConsumerWidget {
       title: 'Devis #$devisId',
       appBarOnPhone: true,
       main: [
-        KojiCard(
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF),
+            border: Border.all(color: const Color(0xFFD9D9D4)),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const KojiSectionTitle('Détails'),
-              Text('Client: SARL Dupont'),
-              Text('Montant: €5,200'),
-              Text('Statut: En attente'),
+              const Text(
+                'Détails',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _DetailRow('Client', 'SARL Dupont'),
+              _DetailRow('Montant', '€5,200'),
+              _DetailRow('Statut', 'En attente'),
             ],
           ),
         ),
@@ -88,33 +127,55 @@ class EntrepriseClientsScreen extends ConsumerWidget {
       title: 'Clients',
       appBarOnPhone: true,
       top: [
-        Row(
-          children: [
-            Expanded(
-              child: KojiButton(
-                label: '+ Ajouter client',
-                onPressed: () {},
-              ),
-            ),
-          ],
+        KojiButton(
+          label: '+ Ajouter client',
+          onPressed: () {},
         ),
       ],
       main: [
-        KojiCard(
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 5,
-            separatorBuilder: (_, __) => const Divider(height: 16),
-            itemBuilder: (context, i) {
-              return ListTile(
-                title: Text('Client ${i + 1}'),
-                subtitle: Text('contact@client$i.com'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/entreprise/clients/client-$i'),
-              );
-            },
-          ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 5,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, i) {
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFFFF),
+                border: Border.all(color: const Color(0xFFD9D9D4)),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Client ${i + 1}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'contact@client$i.com',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, size: 20),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
@@ -131,14 +192,27 @@ class EntrepriseClientDetailScreen extends ConsumerWidget {
       title: 'Client $clientId',
       appBarOnPhone: true,
       main: [
-        KojiCard(
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF),
+            border: Border.all(color: const Color(0xFFD9D9D4)),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const KojiSectionTitle('Informations'),
-              Text('Nom: SARL $clientId'),
-              Text('Email: contact@$clientId.com'),
-              Text('Téléphone: +33 1 23 45 67 89'),
+              const Text(
+                'Informations',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _DetailRow('Nom', 'SARL $clientId'),
+              _DetailRow('Email', 'contact@$clientId.com'),
+              _DetailRow('Téléphone', '+33 1 23 45 67 89'),
             ],
           ),
         ),
@@ -158,33 +232,55 @@ class EntrepriseEquipeScreen extends ConsumerWidget {
       title: 'Équipe',
       appBarOnPhone: true,
       top: [
-        Row(
-          children: [
-            Expanded(
-              child: KojiButton(
-                label: '+ Ajouter membre',
-                onPressed: () {},
-              ),
-            ),
-          ],
+        KojiButton(
+          label: '+ Ajouter membre',
+          onPressed: () {},
         ),
       ],
       main: [
-        KojiCard(
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 4,
-            separatorBuilder: (_, __) => const Divider(height: 16),
-            itemBuilder: (context, i) {
-              return ListTile(
-                title: Text('Membre ${i + 1}'),
-                subtitle: Text('Rôle: Ouvrier'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/entreprise/equipe/member-$i'),
-              );
-            },
-          ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 4,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, i) {
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFFFF),
+                border: Border.all(color: const Color(0xFFD9D9D4)),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Membre ${i + 1}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Rôle: Ouvrier',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, size: 20),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
@@ -201,14 +297,27 @@ class EntrepriseEquipeMemberScreen extends ConsumerWidget {
       title: 'Membre $memberId',
       appBarOnPhone: true,
       main: [
-        KojiCard(
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF),
+            border: Border.all(color: const Color(0xFFD9D9D4)),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const KojiSectionTitle('Profil'),
-              Text('Nom: Équipier $memberId'),
-              Text('Rôle: Ouvrier'),
-              Text('Email: member@koji.pro'),
+              const Text(
+                'Profil',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _DetailRow('Nom', 'Équipier $memberId'),
+              _DetailRow('Rôle', 'Ouvrier'),
+              _DetailRow('Email', 'member@koji.pro'),
             ],
           ),
         ),
@@ -228,22 +337,91 @@ class EntrepriseFacturationScreen extends ConsumerWidget {
       title: 'Facturation',
       appBarOnPhone: true,
       main: [
-        KojiCard(
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 6,
-            separatorBuilder: (_, __) => const Divider(height: 16),
-            itemBuilder: (context, i) {
-              return ListTile(
-                title: Text('Facture #${2000 + i}'),
-                subtitle: Text('€${5000 + (i * 1000)}'),
-                trailing: const Text('Payée'),
-              );
-            },
-          ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 6,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, i) {
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFFFF),
+                border: Border.all(color: const Color(0xFFD9D9D4)),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Facture #${2000 + i}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '€${5000 + (i * 1000)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Text(
+                    'Payée',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ],
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

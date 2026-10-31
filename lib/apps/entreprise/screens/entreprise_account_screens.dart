@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:koji/design/koji_icons.dart';
 import 'package:koji/design/koji_page.dart';
-import 'package:koji/design/koji_tokens.dart';
 import 'package:koji/design/koji_widgets.dart';
 
 // === PROFIL ===
@@ -67,55 +65,60 @@ class _EntrepriseProfilScreenState
       title: 'Profil entreprise',
       appBarOnPhone: true,
       main: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_error != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffffe0e0),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(color: Color(0xffc62828)),
-                  ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_error != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F2),
+                  border: Border.all(color: const Color(0xFFD9D9D4)),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              if (_success != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffe8f5e9),
-                    borderRadius: BorderRadius.circular(8),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 13,
                   ),
-                  child: Text(
-                    _success!,
-                    style: const TextStyle(color: Color(0xff2e7d32)),
-                  ),
-                ),
-              _buildField('Raison sociale', _raisonSocialeController),
-              const SizedBox(height: 16),
-              _buildField('SIRET', _siretController),
-              const SizedBox(height: 16),
-              _buildField('Téléphone', _phoneController),
-              const SizedBox(height: 16),
-              _buildField('Adresse', _addressController, maxLines: 2),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: KojiButton(
-                  label: 'Enregistrer',
-                  onPressed: _saving ? null : _saveProfil,
-                  loading: _saving,
                 ),
               ),
-            ],
-          ),
+            if (_success != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F2),
+                  border: Border.all(color: const Color(0xFFD9D9D4)),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Text(
+                  _success!,
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            _buildField('Raison sociale', _raisonSocialeController),
+            const SizedBox(height: 16),
+            _buildField('SIRET', _siretController),
+            const SizedBox(height: 16),
+            _buildField('Téléphone', _phoneController),
+            const SizedBox(height: 16),
+            _buildField('Adresse', _addressController, maxLines: 2),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: KojiButton(
+                label: 'Enregistrer',
+                onPressed: _saving ? null : _saveProfil,
+                loading: _saving,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -129,16 +132,28 @@ class _EntrepriseProfilScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           maxLines: maxLines,
           decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(2),
+              borderSide: const BorderSide(color: Color(0xFFD9D9D4)),
+            ),
+            filled: true,
+            fillColor: const Color(0xFFFFFFFF),
             contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 12),
+                horizontal: 12, vertical: 10),
           ),
+          style: const TextStyle(fontSize: 14),
         ),
       ],
     );
@@ -156,87 +171,207 @@ class EntrepriseParametresScreen extends ConsumerWidget {
       title: 'Paramètres',
       appBarOnPhone: true,
       main: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Thème', style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xffe0e6ed)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    RadioListTile(
-                      title: const Text('Clair'),
-                      value: 'light',
-                      groupValue: 'light',
-                      onChanged: (_) {},
-                    ),
-                    RadioListTile(
-                      title: const Text('Sombre'),
-                      value: 'dark',
-                      groupValue: 'light',
-                      onChanged: (_) {},
-                    ),
-                  ],
-                ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Theme section
+            Text(
+              'Thème',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
               ),
-              const SizedBox(height: 32),
-              Text('Notifications',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              CheckboxListTile(
-                title: const Text('Nouveaux devis'),
-                value: true,
-                onChanged: (_) {},
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F2),
+                border: Border.all(color: const Color(0xFFD9D9D4)),
+                borderRadius: BorderRadius.circular(2),
               ),
-              CheckboxListTile(
-                title: const Text('Nouveaux messages'),
-                value: true,
-                onChanged: (_) {},
+              child: Column(
+                children: [
+                  _ParameterRow('Clair', true),
+                  _ParameterRow('Sombre', false),
+                ],
               ),
-              const SizedBox(height: 32),
-              Text('Compte',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              ListTile(
-                title: const Text('Abonnement'),
-                subtitle: const Text('Koji Pro - Annuel'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+            ),
+            const SizedBox(height: 24),
+
+            // Notifications section
+            Text(
+              'Notifications',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
               ),
-              ListTile(
-                title: const Text('Déconnexion'),
-                trailing: const Icon(KojiIcons.deconnexion),
-                onTap: () {},
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F2),
+                border: Border.all(color: const Color(0xFFD9D9D4)),
+                borderRadius: BorderRadius.circular(2),
               ),
-              const SizedBox(height: 32),
-              Text('Zone dangereuse',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xffc62828),
-                  )),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffffe0e0),
-                    foregroundColor: const Color(0xffc62828),
-                  ),
-                  onPressed: () {},
-                  child: const Text('Supprimer le compte'),
-                ),
+              child: Column(
+                children: [
+                  _CheckboxRow('Nouveaux devis', true),
+                  _CheckboxRow('Nouveaux messages', true),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 24),
+
+            // Account section
+            Text(
+              'Compte',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F2),
+                border: Border.all(color: const Color(0xFFD9D9D4)),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Column(
+                children: [
+                  _AccountRow('Abonnement', 'Koji Pro - Annuel'),
+                  _AccountRow('Déconnexion', null),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+}
+
+class _ParameterRow extends StatelessWidget {
+  final String label;
+  final bool selected;
+
+  const _ParameterRow(this.label, this.selected);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: const Color(0xFFD9D9D4),
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14),
+          ),
+          if (selected)
+            const Icon(
+              Icons.check,
+              color: Color(0xFF171B1E),
+              size: 20,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CheckboxRow extends StatelessWidget {
+  final String label;
+  final bool checked;
+
+  const _CheckboxRow(this.label, this.checked);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: const Color(0xFFD9D9D4),
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14),
+          ),
+          Checkbox(
+            value: checked,
+            onChanged: (_) {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountRow extends StatelessWidget {
+  final String label;
+  final String? value;
+
+  const _AccountRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: const Color(0xFFD9D9D4),
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (value != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    value!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: Color(0xFF171B1E),
+          ),
+        ],
+      ),
     );
   }
 }
